@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# API key thật (NVIDIA/Groq) — KHÔNG commit. Xem dart_define.example.json để
+# biết cấu trúc, copy thành dart_define.json và điền key thật vào đó.
+dart_define.json

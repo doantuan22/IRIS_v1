@@ -3,14 +3,42 @@
     "content": "Ở độ tuổi 24-36 tháng, phần lớn trẻ đã có thể ghép 2-3 từ thành câu ngắn (VD: \"mẹ bế con\"), gọi tên đồ vật quen thuộc và làm theo yêu cầu đơn giản gồm 2 bước. Đây là mốc phát triển ngôn ngữ tham khảo để so sánh, không phải tiêu chuẩn bắt buộc cho mọi trẻ.",
     "content_type": "so_sanh",
     "linh_vuc": "ngon_ngu",
-    "do_tuoi_min": 24,
-    "do_tuoi_max": 36
+    "do_tuoi_thang_min": 24,
+    "do_tuoi_thang_max": 36
   },
   {
     "content": "Nhiều phụ huynh chia sẻ rằng con mình ở giai đoạn 2-3 tuổi rất thích lặp lại lời nói của người lớn, đôi khi nói ngọng hoặc nuốt âm cuối — điều này thường tự cải thiện khi trẻ lớn hơn nếu được trò chuyện thường xuyên và không bị la mắng khi nói sai.",
     "content_type": "chia_se_phu_huynh",
     "linh_vuc": "ngon_ngu",
-    "do_tuoi_min": 24,
-    "do_tuoi_max": 36
+    "do_tuoi_thang_min": 24,
+    "do_tuoi_thang_max": 36
+  },
+  {
+    "content": "[Placeholder minh hoạ] Ở độ tuổi 18-30 tháng, phần lớn trẻ bắt đầu thể hiện khả năng tự kiểm soát hành vi đơn giản như chờ đến lượt trong trò chơi ngắn, dù vẫn còn dễ mất kiên nhẫn. Nội dung tham khảo thật sẽ được cập nhật sau.",
+    "content_type": "so_sanh",
+    "linh_vuc": "hanh_vi",
+    "do_tuoi_thang_min": 18,
+    "do_tuoi_thang_max": 30
+  },
+  {
+    "content": "[Placeholder minh hoạ] Về mặt y khoa, giai đoạn 12-24 tháng là lúc trẻ bắt đầu hình thành gắn bó rõ rệt với người chăm sóc chính, thể hiện qua phản ứng lo lắng khi xa cách — đây là cột mốc phát triển quan hệ xã hội bình thường. Nội dung tham khảo thật sẽ được cập nhật sau.",
+    "content_type": "bac_si",
+    "linh_vuc": "quan_he_xa_hoi",
+    "do_tuoi_thang_min": 12,
+    "do_tuoi_thang_max": 24
+  },
+  {
+    "content": "[Placeholder minh hoạ] Chân dung biểu hiện cảm xúc thường gặp ở trẻ 3-4 tuổi: dễ thay đổi cảm xúc nhanh, bắt đầu gọi tên được một số cảm xúc cơ bản (vui, buồn, giận) dù chưa diễn đạt trọn vẹn nguyên nhân. Nội dung tham khảo thật sẽ được cập nhật sau.",
+    "content_type": "chan_dung",
+    "linh_vuc": "cam_xuc",
+    "do_tuoi_thang_min": 36,
+    "do_tuoi_thang_max": 48
+  },
+  {
+    "content": "[Placeholder minh hoạ] Nhiều phụ huynh chia sẻ trẻ ở giai đoạn 6-18 tháng có phản ứng rất khác nhau với âm thanh lớn hoặc kết cấu bề mặt mới lạ — một số trẻ tò mò khám phá, số khác né tránh, cả hai đều là biến thể bình thường trong giai đoạn này. Nội dung tham khảo thật sẽ được cập nhật sau.",
+    "content_type": "chia_se_phu_huynh",
+    "linh_vuc": "giac_quan",
+    "do_tuoi_thang_min": 6,
+    "do_tuoi_thang_max": 18
   }
 ]

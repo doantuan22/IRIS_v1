@@ -45,7 +45,7 @@ dependencies:
   path_provider: ^2.1.5
 
   # Quay & phát video tình huống / video mẫu tham khảo
-  camera: ^0.11.1
+  camera: ^0.12.0
   video_player: ^2.9.5
 
   # Gọi thẳng NVIDIA (embedding) và Groq (generation) API
@@ -64,6 +64,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Chạy sqflite trên desktop (Dart VM test), không cần thiết bị/emulator.
+  # Cần sqlite3.dll (Windows) sẵn trên PATH khi chạy `flutter test` — xem
+  # ghi chú trong SETUP_REPORT.md.
+  sqflite_common_ffi: ^2.3.4+4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

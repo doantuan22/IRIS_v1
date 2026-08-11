@@ -20,18 +20,31 @@ class AppDatabase {
 
   static Database? _db;
 
+  /// Chỉ dùng trong test — cho phép ghi đè đường dẫn DB (VD:
+  /// `inMemoryDatabasePath` của sqflite_common_ffi) để chạy trên Dart VM
+  /// test mà không phụ thuộc path_provider (cần platform channel thật).
+  static String? debugPathOverride;
+
   Future<Database> get database async {
     _db ??= await _initDatabase();
     return _db!;
   }
 
+  /// Chỉ dùng trong test — đóng cache để lần gọi `database` kế tiếp mở lại
+  /// một database sạch.
+  static void resetForTest() {
+    _db = null;
+  }
+
   Future<Database> _initDatabase() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final path = join(directory.path, 'iris.db');
+    final path = debugPathOverride ?? await _defaultPath();
 
     return openDatabase(
       path,
       version: 1,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: (db, version) async {
         await db.execute(childrenTableCreate);
         await db.execute(screeningsTableCreate);
@@ -43,5 +56,10 @@ class AppDatabase {
         await db.execute(aiConversationsTableCreate);
       },
     );
+  }
+
+  Future<String> _defaultPath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return join(directory.path, 'iris.db');
   }
 }

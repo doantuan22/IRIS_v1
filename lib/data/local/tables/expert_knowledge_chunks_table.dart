@@ -9,8 +9,8 @@ CREATE TABLE expert_knowledge_chunks (
   content TEXT NOT NULL,
   content_type TEXT NOT NULL,
   linh_vuc TEXT,
-  do_tuoi_min INTEGER,
-  do_tuoi_max INTEGER,
+  do_tuoi_thang_min INTEGER,
+  do_tuoi_thang_max INTEGER,
   nguon_tai_lieu TEXT,
   embedding BLOB NOT NULL
 );

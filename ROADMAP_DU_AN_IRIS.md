@@ -112,13 +112,12 @@ CREATE TABLE children (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   dob TEXT,                      -- ngày sinh, dạng ISO8601
-  age_years INTEGER,             -- dùng khi không có ngày sinh chính xác
+  age_years INTEGER,             -- ĐƠN VỊ: NĂM — chỉ dùng khi không có ngày sinh chính xác
   gender TEXT,
   status TEXT DEFAULT 'active',  -- active / archived
   created_at TEXT NOT NULL
 );
 
--- Kết quả sàng lọc
 -- Kết quả sàng lọc — chỉ có bản ghi khi người dùng THỰC SỰ chọn "Có" ở Bước 3 và hoàn thành.
 -- Nếu người dùng chọn "Chưa muốn", KHÔNG tạo bản ghi nào ở đây — việc không có dòng nào
 -- cho child_id tương ứng chính là tín hiệu "chưa sàng lọc" (không cần cột trạng thái riêng).
@@ -176,8 +175,8 @@ CREATE TABLE expert_knowledge_chunks (
   content TEXT NOT NULL,
   content_type TEXT NOT NULL,     -- 'so_sanh' / 'chia_se_phu_huynh' / 'bac_si' / 'chan_dung'
   linh_vuc TEXT,
-  do_tuoi_min INTEGER,
-  do_tuoi_max INTEGER,
+  do_tuoi_thang_min INTEGER,      -- đơn vị: THÁNG tuổi (không phải năm) — khớp mốc các công cụ sàng lọc thực tế
+  do_tuoi_thang_max INTEGER,      -- VD: 16-30 (tháng), không phải 1-3 (năm)
   nguon_tai_lieu TEXT,
   embedding BLOB NOT NULL
 );
@@ -209,6 +208,8 @@ CREATE INDEX idx_history_child ON history_logs(child_id, event_date);
 ```
 
 > `embedding` lưu dạng BLOB (bytes của `Float32List`) — khi cần so sánh, đọc ra và chạy cosine similarity thuần Dart, không cần extension vector cho SQLite ở quy mô dữ liệu này.
+
+> **Quan trọng — đơn vị tuổi không đồng nhất giữa 2 bảng, phải quy đổi khi query**: `children.age_years` tính theo **năm** (đúng UI Bước 2 cho người dùng nhập tự nhiên), nhưng `expert_knowledge_chunks.do_tuoi_thang_min/max` tính theo **tháng** (đúng mốc các công cụ sàng lọc thực tế). Bắt buộc phải có 1 hàm quy đổi dùng chung, VD `int childAgeInMonths(Child child)`: nếu có `dob` thì tính số tháng chính xác từ `dob` đến hiện tại; nếu chỉ có `age_years` thì lấy `age_years * 12`. Mọi nơi query `expert_knowledge_chunks` theo độ tuổi trẻ (đặc biệt tầng RAG ở mục 3) đều phải đi qua hàm này, không được so trực tiếp `age_years` với `do_tuoi_thang_min/max`.
 
 ---
 

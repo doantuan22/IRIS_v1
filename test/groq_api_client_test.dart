@@ -75,4 +75,23 @@ void main() {
     // ignore: avoid_print
     print('PASS: GroqApiClient.generate() ném GroqApiException khi response rỗng/sai định dạng');
   });
+
+  test('generate() ném GroqApiException rõ ràng khi quá thời gian chờ (timeout)', () async {
+    final mockClient = MockClient((request) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return http.Response(jsonEncode({'choices': <dynamic>[]}), 200);
+    });
+    final client = GroqApiClient(client: mockClient, timeout: const Duration(milliseconds: 20));
+
+    await expectLater(
+      client.generate(systemPrompt: 'x', userQuestion: 'y'),
+      throwsA(isA<GroqApiException>().having(
+        (e) => e.message,
+        'message',
+        contains('Hết thời gian chờ'),
+      )),
+    );
+    // ignore: avoid_print
+    print('PASS: GroqApiClient.generate() ném GroqApiException rõ ràng khi timeout, không treo vô hạn');
+  });
 }

@@ -45,6 +45,14 @@ void main() {
     test('vector 0 không chia cho 0 (trả 0 thay vì NaN)', () {
       expect(service.cosineSimilarity([0, 0], [1, 1]), 0.0);
     });
+
+    test('vector khác chiều dài => trả 0, KHÔNG ném lỗi (dữ liệu embedding không đồng nhất)', () {
+      expect(service.cosineSimilarity([1, 0, 0], [1, 0]), 0.0);
+      expect(service.cosineSimilarity([1, 0], [1, 0, 0, 0]), 0.0);
+      expect(service.cosineSimilarity(<double>[], [1, 0]), 0.0);
+      // ignore: avoid_print
+      print('PASS: cosineSimilarity xử lý có kiểm soát khi 2 vector khác chiều dài, không throw');
+    });
   });
 
   test('searchProfileChunks: sắp xếp giảm dần theo similarity và giới hạn đúng topK', () async {

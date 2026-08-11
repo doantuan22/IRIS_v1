@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../domain/models/child.dart';
+import '../multi_child_dashboard/multi_child_dashboard_page.dart';
 import 'create_profile/create_profile_page.dart';
 import 'profile_detail/profile_detail_page.dart';
 
@@ -41,12 +42,43 @@ class _ChildListPageState extends State<ChildListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ trẻ')),
+      appBar: AppBar(
+        title: const Text('Hồ sơ trẻ'),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MultiChildDashboardPage()),
+              );
+              _reload();
+            },
+            tooltip: 'Quản lý nhiều trẻ',
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Child>>(
         future: _childrenFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const SizedBox(height: 12),
+                    Text('Không tải được danh sách hồ sơ: ${snapshot.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                  ],
+                ),
+              ),
+            );
           }
           final children = snapshot.data ?? [];
           if (children.isEmpty) {

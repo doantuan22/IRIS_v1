@@ -1,7 +1,22 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Ký release Android — đọc `android/key.properties` thật (gitignore, không
+// commit) nếu tồn tại. Không có file này thì fallback về debug signing như
+// hành vi mặc định trước đây (không phá build hiện tại). Xem
+// `android/key.properties.example` để biết cấu trúc + SETUP_REPORT.md mục
+// "Việc cần tự làm thủ công" cho các bước tự tạo keystore thật.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseSigning = keystorePropertiesFile.exists()
+val keystoreProperties = Properties()
+if (hasReleaseSigning) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -25,11 +40,28 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Có android/key.properties thật (tự tạo, xem key.properties.example)
+            // thì ký bằng keystore release thật; không có thì fallback về debug
+            // keys như hành vi mặc định trước đây, để `flutter run --release`
+            // vẫn chạy được ngay cả khi chưa tạo keystore thật.
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -23,7 +23,13 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    _logsFuture = _historyLogRepository.getForChild(widget.child.id);
+    _reload();
+  }
+
+  void _reload() {
+    setState(() {
+      _logsFuture = _historyLogRepository.getForChild(widget.child.id);
+    });
   }
 
   String _formatDate(DateTime d) =>
@@ -67,6 +73,23 @@ class _HistoryPageState extends State<HistoryPage> {
       body: FutureBuilder<List<HistoryLog>>(
         future: _logsFuture,
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const SizedBox(height: 12),
+                    Text('Không tải được lịch sử: ${snapshot.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                  ],
+                ),
+              ),
+            );
+          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }

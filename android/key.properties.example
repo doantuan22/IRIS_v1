@@ -1,0 +1,14 @@
+# Mẫu cấu hình ký release Android — copy file này thành `key.properties`
+# (cùng thư mục `android/`, đã gitignore, KHÔNG commit) rồi điền giá trị thật.
+#
+# Cách tạo keystore thật (tự chạy, không dùng key.properties.example để build
+# thật — chỉ dùng để tham khảo cấu trúc):
+#   keytool -genkey -v -keystore ~/iris-release-key.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias iris
+#
+# Xem thêm SETUP_REPORT.md mục "Việc cần tự làm thủ công".
+
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=iris
+storeFile=REPLACE_WITH_ABSOLUTE_PATH_TO_KEYSTORE_JKS_FILE

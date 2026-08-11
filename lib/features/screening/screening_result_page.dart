@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/child.dart';
+import 'assessment_summary_page.dart';
 
 /// Kết quả sàng lọc — luôn hiển thị rõ đây KHÔNG phải kết luận chẩn đoán.
 class ScreeningResultPage extends StatelessWidget {
@@ -48,14 +49,10 @@ class ScreeningResultPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             FilledButton(
-              onPressed: () {
-                // Ngăn xếp hiện tại: ...ProfileDetail, Intro, [Questionnaire đã bị
-                // thay bằng] Result — pop 2 lần để quay thẳng về ProfileDetail.
-                final navigator = Navigator.of(context);
-                navigator.pop();
-                navigator.pop();
-              },
-              child: const Text('Quay lại hồ sơ trẻ'),
+              onPressed: () => Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => AssessmentSummaryPage(child: child)),
+              ),
+              child: const Text('Tiếp tục'),
             ),
           ],
         ),

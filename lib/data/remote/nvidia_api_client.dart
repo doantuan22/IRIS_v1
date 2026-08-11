@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import '../../core/constants/api_config.dart';
+
+/// Embedding là request nhỏ (1 câu văn ngắn) — 15 giây đủ dư cho request
+/// bình thường, chặn treo vô hạn khi mạng chập chờn.
+const Duration _nvidiaTimeout = Duration(seconds: 15);
 
 /// Lỗi khi gọi NVIDIA embedding API — HTTP lỗi, response sai định dạng,
 /// hoặc thiếu dữ liệu embedding.
@@ -19,8 +24,12 @@ class NvidiaApiException implements Exception {
 /// khảo) thành vector, dùng cho vector search local.
 class NvidiaApiClient {
   final http.Client _client;
+  final Duration _timeout;
 
-  NvidiaApiClient({http.Client? client}) : _client = client ?? http.Client();
+  /// [timeout] cho phép ghi đè trong test (mặc định 15 giây khi dùng thật).
+  NvidiaApiClient({http.Client? client, Duration? timeout})
+      : _client = client ?? http.Client(),
+        _timeout = timeout ?? _nvidiaTimeout;
 
   Future<List<double>> embed(String text) async {
     final http.Response response;
@@ -38,6 +47,10 @@ class NvidiaApiClient {
           'input_type': 'query',
           'encoding_format': 'float',
         }),
+      ).timeout(_timeout);
+    } on TimeoutException {
+      throw NvidiaApiException(
+        'Hết thời gian chờ khi gọi NVIDIA embedding API (quá ${_timeout.inSeconds} giây)',
       );
     } catch (e) {
       throw NvidiaApiException('Không gọi được NVIDIA embedding API: $e');

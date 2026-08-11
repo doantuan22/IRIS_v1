@@ -12,7 +12,13 @@ class VectorSearchService {
 
   VectorSearchService(this._profileChunkRepository, this._expertKnowledgeRepository);
 
+  /// Trả 0 (coi như không liên quan) thay vì ném lỗi khi 2 vector khác chiều
+  /// dài — dữ liệu embedding không đồng nhất/corrupt (VD đổi model embedding
+  /// giữa các lần ingest) không được phép làm crash luồng hỏi đáp AI, đúng
+  /// cách xử lý đã dùng cho trường hợp vector rỗng (`normA/normB == 0`) bên
+  /// dưới.
   double cosineSimilarity(List<double> a, List<double> b) {
+    if (a.length != b.length) return 0;
     double dot = 0, normA = 0, normB = 0;
     for (int i = 0; i < a.length; i++) {
       dot += a[i] * b[i];

@@ -37,6 +37,12 @@ class _DescriptionPageState extends State<DescriptionPage> {
 
   late Future<List<Assessment>> _descriptionsFuture;
   bool _saving = false;
+  bool _retrying = false;
+
+  /// Mô tả vừa lưu thành công nhưng bước embed cho AI bị lỗi — giữ lại nội
+  /// dung để hiện nút "Thử lại xử lý cho AI" ngay tại chỗ, không bắt người
+  /// dùng nhập lại. `null` = không có gì đang chờ thử lại.
+  String? _pendingEmbedContent;
 
   @override
   void initState() {
@@ -90,7 +96,24 @@ class _DescriptionPageState extends State<DescriptionPage> {
 
     // Bước 2-3 — embed + lưu profile_chunks. Lỗi ở đây KHÔNG được làm mất
     // mô tả đã lưu ở bước 1, chỉ báo cho người dùng biết để thử lại sau.
-    String snackBarMessage = 'Đã lưu mô tả và xử lý xong cho AI.';
+    final embedSucceeded = await _embedAndSaveChunk(content);
+    final snackBarMessage = embedSucceeded
+        ? 'Đã lưu mô tả và xử lý xong cho AI.'
+        : 'Đã lưu mô tả, nhưng chưa xử lý được cho AI (thử lại sau).';
+
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      _pendingEmbedContent = embedSucceeded ? null : content;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snackBarMessage)));
+  }
+
+  /// Gọi NVIDIA embed + lưu `profile_chunks` cho [content]. Trả `true` nếu
+  /// thành công. Dùng chung cho lần lưu đầu (`_save`) và nút "Thử lại xử lý
+  /// cho AI" (`_retryEmbedding`) — không tạo bản ghi `assessments` mới, chỉ
+  /// xử lý lại bước embedding cho mô tả đã có sẵn.
+  Future<bool> _embedAndSaveChunk(String content) async {
     try {
       final embedding = await _nvidiaApiClient.embed(content);
       await _profileChunkRepository.add(
@@ -100,13 +123,27 @@ class _DescriptionPageState extends State<DescriptionPage> {
         nguon: 'phu_huynh',
         embedding: embedding,
       );
+      return true;
     } catch (_) {
-      snackBarMessage = 'Đã lưu mô tả, nhưng chưa xử lý được cho AI (thử lại sau).';
+      return false;
     }
+  }
+
+  Future<void> _retryEmbedding() async {
+    final content = _pendingEmbedContent;
+    if (content == null || _retrying) return;
+
+    setState(() => _retrying = true);
+    final succeeded = await _embedAndSaveChunk(content);
 
     if (!mounted) return;
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snackBarMessage)));
+    setState(() {
+      _retrying = false;
+      if (succeeded) _pendingEmbedContent = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(succeeded ? 'Đã xử lý xong cho AI.' : 'Vẫn chưa xử lý được cho AI, thử lại sau.'),
+    ));
   }
 
   void _goNext() {
@@ -147,6 +184,19 @@ class _DescriptionPageState extends State<DescriptionPage> {
                   )
                 : const Text('Lưu'),
           ),
+          if (_pendingEmbedContent != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _retrying ? null : _retryEmbedding,
+              child: _retrying
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Thử lại xử lý cho AI'),
+            ),
+          ],
           const SizedBox(height: 24),
           Text('Mô tả đã lưu', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),

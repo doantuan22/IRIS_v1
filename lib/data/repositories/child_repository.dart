@@ -57,9 +57,28 @@ class ChildRepository {
     await db.update('children', {'status': 'archived'}, where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> unarchive(String id) async {
+    final db = await _db.database;
+    await db.update('children', {'status': 'active'}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Xoá hồ sơ trẻ. `PRAGMA foreign_keys = ON` (bật trong [AppDatabase]) chặn
+  /// xoá thẳng `children` nếu còn dòng tham chiếu ở bảng khác — không bảng
+  /// nào khai báo `ON DELETE CASCADE` trong schema, nên phải tự xoá đúng thứ
+  /// tự các bảng con trước, trong 1 transaction để đảm bảo toàn vẹn (không để
+  /// xoá dở dang nếu có lỗi giữa chừng). `expert_knowledge_chunks` không có
+  /// child_id (dữ liệu tham khảo dùng chung) nên không đụng tới.
   Future<void> delete(String id) async {
     final db = await _db.database;
-    await db.delete('children', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete('screenings', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('assessments', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('history_logs', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('profile_chunks', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('videos', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('ai_conversations', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('children', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   Map<String, Object?> _toRow(Child child) => {

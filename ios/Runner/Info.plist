@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>IRIS cần quyền truy cập camera để quay video tình huống quan sát trẻ.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>IRIS cần quyền truy cập micro để ghi âm thanh khi quay video tình huống quan sát trẻ.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import '../../core/constants/api_config.dart';
+
+/// Sinh câu trả lời có thể mất nhiều thời gian hơn embedding (model lớn hơn,
+/// câu trả lời dài hơn) — 30 giây đủ dư trước khi coi là treo.
+const Duration _groqTimeout = Duration(seconds: 30);
 
 /// Lỗi khi gọi Groq API — HTTP lỗi, response sai định dạng, hoặc thiếu nội
 /// dung câu trả lời.
@@ -20,8 +25,12 @@ class GroqApiException implements Exception {
 /// ưu tiên đúng chức năng trước, streaming để dành lúc làm đẹp UI.
 class GroqApiClient {
   final http.Client _client;
+  final Duration _timeout;
 
-  GroqApiClient({http.Client? client}) : _client = client ?? http.Client();
+  /// [timeout] cho phép ghi đè trong test (mặc định 30 giây khi dùng thật).
+  GroqApiClient({http.Client? client, Duration? timeout})
+      : _client = client ?? http.Client(),
+        _timeout = timeout ?? _groqTimeout;
 
   Future<String> generate({
     required String systemPrompt,
@@ -43,6 +52,10 @@ class GroqApiClient {
             {'role': 'user', 'content': userQuestion},
           ],
         }),
+      ).timeout(_timeout);
+    } on TimeoutException {
+      throw GroqApiException(
+        'Hết thời gian chờ khi gọi Groq API (quá ${_timeout.inSeconds} giây)',
       );
     } catch (e) {
       throw GroqApiException('Không gọi được Groq API: $e');

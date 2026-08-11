@@ -63,4 +63,24 @@ void main() {
     // ignore: avoid_print
     print('PASS: NvidiaApiClient.embed() ném NvidiaApiException khi response rỗng/sai định dạng');
   });
+
+  test('embed() ném NvidiaApiException rõ ràng khi quá thời gian chờ (timeout)', () async {
+    final mockClient = MockClient((request) async {
+      // Chờ lâu hơn timeout đã cấu hình để mô phỏng mạng treo/chập chờn.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return http.Response(jsonEncode({'data': <dynamic>[]}), 200);
+    });
+    final client = NvidiaApiClient(client: mockClient, timeout: const Duration(milliseconds: 20));
+
+    await expectLater(
+      client.embed('test'),
+      throwsA(isA<NvidiaApiException>().having(
+        (e) => e.message,
+        'message',
+        contains('Hết thời gian chờ'),
+      )),
+    );
+    // ignore: avoid_print
+    print('PASS: NvidiaApiClient.embed() ném NvidiaApiException rõ ràng khi timeout, không treo vô hạn');
+  });
 }

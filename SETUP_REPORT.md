@@ -444,3 +444,169 @@ Xác nhận: `HistoryLogRepository` ([history_log_repository.dart](lib/data/repo
 - Chưa verify tay trạng thái rỗng (hồ sơ chưa có sự kiện nào) trên UI thật trong phiên này — nút "+" tạo hồ sơ mới không phản hồi tap trong 2 lần thử (nghi cùng loại vấn đề định vị toạ độ nút đã gặp ở Giai đoạn 5, chưa điều tra sâu vì không chặn tiêu chí hoàn thành). Logic trạng thái rỗng trong `history_page.dart` dùng đúng pattern đã verify thật ở `video_list_page.dart` (Giai đoạn 5: `if (list.isEmpty) return ...`), rủi ro thấp.
 - Không đụng tới Lịch sử hỏi đáp AI (`ai_conversations`) hay Dashboard nhiều trẻ — đúng ngoài phạm vi.
 - Không commit git — vẫn còn tồn đọng từ các giai đoạn trước.
+
+## 11. Vá 3 mục "chặn demo" phát hiện qua audit (2026-08-11)
+
+Phạm vi: xử lý đúng 3 vấn đề `TRANG_THAI_DU_AN.md` (audit 11/08/2026) xếp vào nhóm "chặn demo" — (1) Chức năng #3 "Xác định hướng đánh giá theo độ tuổi" chưa có code, (2) thiếu `INTERNET` permission ở manifest chính, (3) `flutter analyze`/`flutter test` không hoàn tất được trong phiên audit trước, số liệu 42/42 PASS cũ chưa tái xác nhận. Đọc lại `TRANG_THAI_DU_AN.md` và code thật trước khi sửa — xác nhận đúng cả 3 mô tả của audit (không giả định).
+
+### Nhiệm vụ 1 — Phân nhánh sàng lọc theo tuổi (Chức năng #3)
+
+- [screening_question_bank.dart](lib/domain/services/screening_question_bank.dart) *(mới)* — định nghĩa 2 bộ câu hỏi mock 6 câu: **Bộ A (16–30 tháng)** (giữ nguyên nội dung bộ câu hỏi cũ) và **Bộ B (31 tháng trở lên)** *(mới, chủ đề xã hội/ngôn ngữ/sinh hoạt phù hợp trẻ lớn hơn)*, cùng hàm `selectScreeningQuestionSet(ageMonths)` — ranh giới 30 tháng tham khảo mốc khuyến nghị M-CHAT-R/F. Dùng lại `childAgeInMonths()` có sẵn từ `domain/models/child.dart`, không viết hàm quy đổi tuổi mới.
+- [screening_questionnaire_page.dart](lib/features/screening/screening_questionnaire_page.dart) — bỏ hằng số 6 câu cứng cũ, dùng `selectScreeningQuestionSet(childAgeInMonths(widget.child))`; UI hiện thêm dòng "Công cụ sàng lọc: {label}" phía trên danh sách câu hỏi; `toolName` lưu vào `screenings` cũng kèm label bộ câu hỏi đã dùng.
+
+### Nhiệm vụ 2 — Bước 4: Tổng hợp hồ sơ & đề xuất hướng đánh giá
+
+- [assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart) *(mới)* — đọc dữ liệu thật (không hardcode): độ tuổi (`formatAgeLabel`), đã sàng lọc chưa + điểm gần nhất (`ScreeningRepository`), số lĩnh vực đã có mô tả trên tổng 9 (`AssessmentRepository`, lọc `content_type='mo_ta'`, đếm `linh_vuc` duy nhất). Đề xuất hướng đánh giá tính bằng `_buildSuggestion()` — logic Dart if/else thuần dựa trên tổ hợp (đã sàng lọc?, số lĩnh vực đã làm, tuổi qua nhãn bộ câu hỏi tương ứng), **không gọi AI**, 5 nhánh nội dung khác nhau tuỳ trạng thái hồ sơ. Nút "Bắt đầu đánh giá" vào `DomainListPage`.
+- Gắn route (Nhiệm vụ 4.3/4.5 prompt): cả 2 nhánh Bước 3 đều dẫn tới trang này trước khi vào 9 lĩnh vực:
+  - `screening_intro_page.dart`: nhánh "Chưa muốn" trước đây `Navigator.pop()` (không tạo bản ghi, quay thẳng về hồ sơ) — nay `push` sang `AssessmentSummaryPage` (vẫn không tạo bản ghi `screenings`).
+  - `screening_result_page.dart`: nút cuối trước đây "Quay lại hồ sơ trẻ" (pop 2 lần) — nay đổi thành "Tiếp tục", `pushReplacement` sang `AssessmentSummaryPage`.
+  - **Lỗi phát hiện & tự sửa trong lúc làm**: bản nháp đầu tiên dùng `pushReplacement` ngay tại `ScreeningIntroPage` cho cả 2 nút — điều này khiến `ProfileDetailPage._openScreening()` (đang `await Navigator.push(...)` chính route `ScreeningIntroPage`) hoàn tất **ngay khi bấm nút**, thay vì khi người dùng thực sự quay lại hồ sơ, làm badge "Đã sàng lọc"/"Chưa sàng lọc" không được làm mới đúng lúc. Đã sửa lại dùng `push` (giữ `ScreeningIntroPage` trong ngăn xếp) cho 2 nút của `ScreeningIntroPage`; các trang sau đó (`Result`, `Summary`) dùng `pushReplacement` cho chính chúng vẫn an toàn vì không có `await` nào phụ thuộc vào thời điểm chúng bị gỡ khỏi ngăn xếp. Đánh đổi nhỏ: bấm "quay lại" từ Bước 4 sẽ đi qua lại màn `ScreeningIntroPage` một lần trước khi về hồ sơ — chấp nhận được để giữ đúng hành vi làm mới badge.
+
+### Nhiệm vụ 3 — `INTERNET` permission
+
+`android/app/src/main/AndroidManifest.xml` — thêm `<uses-permission android:name="android.permission.INTERNET"/>`. Đọc lại trực tiếp file sau khi sửa để xác nhận. `flutter build apk --release`: **thành công** (170.7s, `app-release.apk` 52.6MB). Xác nhận thêm bằng `aapt dump permissions app-release.apk` — `android.permission.INTERNET` có mặt thật trong APK release đã build (không chỉ đọc file nguồn).
+
+### Nhiệm vụ 4 — Chạy lại `flutter analyze`/`flutter test` cho có kết quả thật
+
+Nguyên nhân timeout ở phiên audit trước không xác định được (không tái diễn ở phiên này) — xử lý bằng cách chạy qua cơ chế tiến trình nền của công cụ (không dùng `&` lồng trong lệnh shell, ghi output ra file, đợi tiến trình thật sự báo hoàn tất rồi mới đọc file):
+
+- `flutter analyze > analyze_out.txt 2>&1`: **hoàn tất thật, 44.1s — "No issues found!"** (0 lỗi, 0 warning).
+- `flutter test > test_out.txt 2>&1`: **hoàn tất thật, ~60s, exit code 0 — "All tests passed!"**. **46/46 PASS** (42 ca cũ + 4 ca mới trong `screening_question_bank_test.dart`, đơn vị test thuần Dart xác nhận `selectScreeningQuestionSet()` chọn đúng Bộ A/Bộ B theo tuổi, gồm cả 2 mốc ranh giới 30/31 tháng). Không có FAIL nào. Số liệu này **thay thế số 42/42 chưa tái xác nhận** ghi trong audit.
+- `screening_flow_test.dart` được cập nhật để khớp luồng điều hướng mới (Bước 3 → Bước 4 → hồ sơ): xác nhận nhánh "Chưa muốn" dẫn vào Bước 4 đúng dữ liệu ("Chưa sàng lọc"), nhánh "Có" với hồ sơ 36 tháng tuổi được chọn đúng **Bộ B (31 tháng trở lên)** (không còn dùng cứng 1 bộ), và Bước 4 sau khi sàng lọc hiển thị đúng dữ liệu thật ("Đã sàng lọc", "Kết quả sàng lọc gần nhất: 0/6", "Đã có mô tả cho 0/9 lĩnh vực") — cả 2 trường hợp thuộc 2 dải tuổi khác nhau đều được test bằng mã, đúng yêu cầu tiêu chí hoàn thành.
+
+### Nhiệm vụ 5 — Kiểm chứng & phạm vi chưa làm
+
+- Không verify tay qua adb/emulator cho riêng phần vá lần này — prompt cho phép "verify bằng cách đọc code và/hoặc test", đã đáp ứng đầy đủ qua widget test + unit test thật (không phải suy đoán). Các tính năng khác (quay video, hỏi đáp AI, lịch sử) đã verify tay ở các giai đoạn trước, không đụng lại trong lần vá này.
+- Không mở rộng thành công cụ sàng lọc lâm sàng thật, không đổi schema, không động tới phần 2-5 của 9 lĩnh vực, dashboard, hay các mục "để sau" khác trong audit — đúng phạm vi đã giới hạn.
+- Không commit git.
+
+## 12. Dashboard nhiều trẻ — Phụ lục 1 (2026-08-11)
+
+Phạm vi: xây `MultiChildDashboardPage` thật (thay `Placeholder()`), gắn route, tổng quan số liệu, danh sách trẻ kèm tiến độ/trạng thái, tìm kiếm/lọc, menu thao tác (xem/lịch sử/lưu trữ/xoá), tab xem hồ sơ đã lưu trữ.
+
+### Nhiệm vụ 1 — Rà soát trước khi code
+
+Đọc trực tiếp `MultiChildDashboardPage` (xác nhận đúng `Placeholder()`, chưa gắn route như audit ghi), `ChildListPage`, `ChildRepository`, `AssessmentRepository`, `HistoryLogRepository`, và toàn bộ 8 file `data/local/tables/*.dart` để xác nhận chính xác foreign key nào tham chiếu `children(id)` — kết quả: **6 bảng** (`screenings`, `assessments`, `history_logs`, `profile_chunks`, `videos`, `ai_conversations`) tham chiếu `child_id`, **không bảng nào khai báo `ON DELETE CASCADE`**. Kết hợp với `PRAGMA foreign_keys = ON` đã bật sẵn trong `AppDatabase` — xác nhận đúng rủi ro audit nêu: xoá thẳng `children` khi còn dữ liệu liên quan sẽ ném lỗi ràng buộc khoá ngoại.
+
+### Nhiệm vụ 2 — Sửa `ChildRepository`
+
+[child_repository.dart](lib/data/repositories/child_repository.dart):
+- `delete(id)` — viết lại: xoá theo đúng thứ tự 6 bảng con trước (mỗi bảng lọc theo `child_id`), rồi mới xoá `children`, toàn bộ trong 1 `db.transaction()` để đảm bảo toàn vẹn (không xoá dở dang nếu lỗi giữa chừng). `expert_knowledge_chunks` không có `child_id` (dữ liệu tham khảo dùng chung) nên không đụng tới.
+- Thêm `unarchive(id)` — đối xứng với `archive(id)` có sẵn, set `status='active'`, phục vụ tab "Đã lưu trữ" khôi phục hồ sơ.
+
+### Nhiệm vụ 3 — `MultiChildDashboardPage`
+
+[multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart) — viết lại từ `Placeholder()`:
+- Tiến độ mỗi trẻ = số `linh_vuc` duy nhất có bản ghi `assessments` (`content_type='mo_ta'`), dạng x/9. Trạng thái: 0/9 → "Chưa đánh giá", 9/9 → "Đã đánh giá", còn lại → "Đang đánh giá" — đúng quy tắc đơn giản hoá đã nêu trong prompt, không cố khớp mockup gốc.
+- Cập nhật gần nhất = `event_date` mới nhất trong `history_logs` của trẻ (repository đã sắp `DESC`, lấy `.first`); rỗng → "—".
+- 2 tab (`Đang quản lý` / `Đã lưu trữ`) qua `DefaultTabController`, tách theo `child.status`. Card thống kê tổng (tổng số trẻ tính trên `status='active'`, đã/đang/chưa đánh giá). Ô tìm theo tên (lọc tại chỗ, không query DB riêng) + dropdown lọc theo trạng thái đánh giá (`_ProgressFilter`: Tất cả/Chưa/Đang/Đã). Mỗi dòng trẻ có `PopupMenuButton` 4 mục — nhãn đổi theo `child.status` (`active` → "Lưu trữ hồ sơ", `archived` → "Khôi phục hồ sơ"); "Xem hồ sơ"/"Lịch sử đánh giá" liên kết thẳng `ProfileDetailPage`/`HistoryPage` có sẵn, không viết lại. Nút "+ Thêm trẻ" tái sử dụng `CreateProfilePage` có sẵn (nhận `bool` kết quả để reload).
+
+### Nhiệm vụ 4 — Gắn route
+
+`ChildListPage` — thêm `IconButton` (icon `dashboard_outlined`, tooltip "Quản lý nhiều trẻ") vào `actions` của `AppBar`, điều hướng sang `MultiChildDashboardPage`, reload danh sách khi quay lại. Đây là màn chính (home) của app — entry point hợp lý duy nhất hiện có.
+
+### Nhiệm vụ 5 — Test
+
+[child_repository_test.dart](test/child_repository_test.dart) *(mới)* — 3 test, trọng tâm vào rủi ro cao nhất (xoá hồ sơ):
+- `archive`/`unarchive` cập nhật đúng `status`, `getAll()` mặc định ẩn hồ sơ lưu trữ.
+- **`delete()` tạo dữ liệu thật ở đủ 6 bảng con** (screenings/assessments/history_logs/profile_chunks/videos/ai_conversations) rồi xoá — xác nhận không ném lỗi, và cả 6 bảng lẫn `children` đều sạch sau khi xoá.
+- `delete()` không ảnh hưởng dữ liệu trẻ khác (test cách ly theo `child_id`).
+
+### Nhiệm vụ 6 — Kiểm chứng
+
+- `flutter analyze`: **0 lỗi, 0 warning**.
+- `flutter test`: **49/49 PASS** (46 cũ + 3 test mới `child_repository_test.dart`). Không có ca FAIL nào mới phát sinh.
+- Build thật + cài thật trên `emulator-5554` (Pixel_7): **PASS**.
+- **Verify tay qua adb + screenshot thật + đối chiếu database**, dùng 3 hồ sơ có trạng thái tiến độ khác nhau (tạo 2 hồ sơ mới qua UI thật, 1 hồ sơ seed đủ 9/9 lĩnh vực trực tiếp qua database để tránh nhập tay 9 lần — chỉ dùng cho việc tạo dữ liệu test, không thay cho verify UI):
+  - Mở Dashboard → **card tổng số liệu khớp chính xác 100% với dữ liệu thật**: 3 tổng số trẻ, 1 đã đánh giá, 1 đang đánh giá, 1 chưa đánh giá; từng dòng hiển thị đúng tuổi, x/9 lĩnh vực, trạng thái, cập nhật gần nhất (kể cả dấu "—" cho trẻ chưa có `history_logs`).
+  - **Tìm kiếm** theo tên: gõ "Video" → lọc đúng còn 1 kết quả.
+  - **Bộ lọc** trạng thái: chọn "Chưa đánh giá" → lọc đúng còn 1 hồ sơ khớp tiêu chí.
+  - **Xem hồ sơ**: mở đúng `ProfileDetailPage` của đúng trẻ.
+  - **Lịch sử đánh giá**: mở đúng `HistoryPage` của đúng trẻ, hiển thị đúng log đã seed.
+  - **Lưu trữ hồ sơ**: dialog xác nhận đúng nội dung → xác nhận → hồ sơ biến mất khỏi "Đang quản lý" (tổng số trẻ 3→2), card số liệu cập nhật đúng, xuất hiện đúng ở tab "Đã lưu trữ".
+  - **Khôi phục hồ sơ** (từ tab "Đã lưu trữ"): dialog xác nhận đúng → xác nhận → hồ sơ trở lại "Đang quản lý" (3), tab "Đã lưu trữ" về trạng thái rỗng đúng thông báo, không lỗi.
+  - **Xoá hồ sơ** (rủi ro cao nhất — trẻ có dữ liệu ở sàng lọc + đánh giá + lịch sử + video): dialog xác nhận nêu rõ mất dữ liệu vĩnh viễn → xác nhận → **hồ sơ biến mất hoàn toàn, app không crash, không treo**, tổng số trẻ 3→2. Đối chiếu trực tiếp database thật ngay sau đó (pull qua `adb exec-out run-as ... cat`): cả 6 bảng con (`screenings`, `assessments`, `history_logs`, `profile_chunks`, `videos`, `ai_conversations`) đều **0 dòng** cho `child_id` đã xoá, bảng `children` không còn hồ sơ đó — xác nhận transaction xoá hoạt động đúng, không lỗi ràng buộc khoá ngoại dù `PRAGMA foreign_keys = ON`.
+
+### Chưa làm / lưu ý
+
+- Không xây multi-user/đăng nhập/đồng bộ nhiều thiết bị thật — đúng ngoài phạm vi.
+- Không xây lại `ProfileDetailPage`, `HistoryPage`, `VideoListPage`, `AiChatPage`, `CreateProfilePage` — chỉ liên kết/tái sử dụng như yêu cầu.
+- Không đổi schema database.
+- Không commit git.
+
+## 13. Vá các mục "không chặn demo nhưng nên xử lý" từ audit (2026-08-11)
+
+Phạm vi: 7 mục trong `TRANG_THAI_DU_AN.md` mục 5 (phần "Không chặn demo nhưng nên xử lý"), **trừ** 2 mục đã xác nhận là đánh đổi kiến trúc có chủ đích (API key qua `--dart-define`, SQLite không mã hoá) — không đụng tới 2 mục đó theo đúng chỉ định của prompt.
+
+### Nhiệm vụ 1 — Verify nút mô phỏng chuyên gia (tồn đọng từ Giai đoạn 5, đã trượt 2 lần trước)
+
+Nguyên nhân trượt ở 2 lần trước: toạ độ tính tay từ ảnh chụp bị lệch (nhất là khi bàn phím/dialog làm layout đổi vị trí). Lần này dùng `uiautomator dump` lấy `bounds` chính xác cho **từng bước** của luồng (chọn hồ sơ → Quay video tình huống → chọn tình huống → Bắt đầu quay → Dừng quay → Gửi cho chuyên gia → mở lại video → cuộn xuống → bấm nút debug), không suy đoán từ ảnh:
+
+- Quay 1 video thật mới (do dữ liệu cũ đã bị xoá qua thao tác Xoá hồ sơ ở mục Dashboard trước đó), gửi thành công (`status: pending`).
+- Bấm "Debug: Mô phỏng chuyên gia phản hồi" → **UI cập nhật ngay**: "Trạng thái: 🟢 Đã có nhận xét" + hiện đúng đoạn "Nhận xét chuyên gia" (screenshot đã chụp).
+- Đối chiếu trực tiếp database thật (pull qua `adb exec-out run-as ... cat`): `videos.status = 'reviewed'`, `expert_note` chứa đúng nội dung nhận xét đã hiện trên UI, khớp 100%.
+
+**Kết luận: đã verify chắc chắn, không còn tồn đọng.**
+
+### Nhiệm vụ 2 — Timeout HTTP
+
+`NvidiaApiClient`/`GroqApiClient` — thêm `.timeout()` cho lệnh gọi HTTP (embedding 15s, generation 30s — generation cho phép lâu hơn vì model/câu trả lời lớn hơn), bắt riêng `TimeoutException` trả về `NvidiaApiException`/`GroqApiException` với thông báo rõ ràng thay vì để `Future` treo vô hạn. Cả 2 client nhận thêm tham số `timeout` optional qua constructor (mặc định đúng giá trị 15s/30s khi dùng thật) để test được bằng timeout ngắn (20ms) thay vì phải chờ thật.
+
+`test/nvidia_api_client_test.dart` + `test/groq_api_client_test.dart` — mỗi file thêm 1 test dùng `MockClient` cố tình delay lâu hơn timeout đã cấu hình, xác nhận đúng exception + đúng thông báo "Hết thời gian chờ" được ném ra, không treo.
+
+### Nhiệm vụ 3 — Nút "Thử lại xử lý cho AI"
+
+[description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart) — tách logic embed+lưu `profile_chunks` thành `_embedAndSaveChunk()` dùng chung cho cả lần lưu đầu và nút thử lại; khi bước embed lỗi, giữ lại nội dung mô tả vào `_pendingEmbedContent` và hiện nút "Thử lại xử lý cho AI" ngay dưới nút "Lưu". Bấm nút chỉ gọi lại bước embed+`profile_chunks`, **không** tạo thêm bản ghi `assessments`.
+
+**Verify tay trên `emulator-5554`** (không có API key trong lần chạy debug này nên bước embed cố ý lỗi — đúng kịch bản cần test): lưu mô tả "Test retry embedding button" → SnackBar "Đã lưu mô tả, nhưng chưa xử lý được cho AI (thử lại sau)." + nút "Thử lại xử lý cho AI" hiện đúng → bấm nút → gọi lại, vẫn lỗi (do vẫn thiếu key) → SnackBar "Vẫn chưa xử lý được cho AI, thử lại sau." đúng. Đối chiếu database: **đúng 1 dòng `assessments`** (không trùng lặp do bấm thử lại), `profile_chunks` vẫn 0 dòng (đúng vì vẫn lỗi) — xác nhận nút không tạo dữ liệu trùng.
+
+### Nhiệm vụ 4 — Kiểm tra độ dài vector trong `cosineSimilarity()`
+
+[vector_search_service.dart](lib/domain/services/vector_search_service.dart) — thêm `if (a.length != b.length) return 0;` ngay đầu hàm, cùng cách xử lý "kiểm soát" đã dùng cho trường hợp vector rỗng (`normA/normB == 0 → return 0`) thay vì để `RangeError` không kiểm soát làm crash luồng hỏi đáp AI khi dữ liệu embedding không đồng nhất (VD đổi model embedding giữa các lần ingest). Không cần sửa gì ở `searchProfileChunks`/`searchExpertChunks` vì lỗi đã được chặn ngay tại nguồn.
+
+`test/vector_search_service_test.dart` — thêm 1 test xác nhận `cosineSimilarity()` trả `0.0` (không throw) với 3 trường hợp: vector dài hơn/ngắn hơn/rỗng so với vector còn lại.
+
+### Nhiệm vụ 5 — Xử lý lỗi rõ ràng cho `FutureBuilder` chính
+
+Rà soát đúng 4 trang nêu trong prompt — cả 4 đều chỉ xét `hasData`, bỏ qua `hasError` (khi lỗi: `ChildListPage`/`MultiChildDashboardPage`/`VideoListPage` treo vô hạn ở `CircularProgressIndicator`; riêng `ChildListPage` dùng `snapshot.data ?? []` nên còn tệ hơn — âm thầm hiện "Chưa có hồ sơ trẻ nào" dù thực chất là lỗi truy vấn, đúng kiểu lỗi "màn trắng/treo im lặng" audit mô tả). Đã thêm nhánh `snapshot.hasError` ở cả 4 trang — hiện icon lỗi + thông báo (`snapshot.error`) + nút "Thử lại" gọi lại đúng hàm `_reload()` sẵn có (thêm mới `_reload()` cho `HistoryPage` vì trước đó gán `Future` thẳng trong `initState`, không có cách nào gọi lại):
+
+- [child_list_page.dart](lib/features/child_profile/child_list_page.dart)
+- [multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart)
+- [history_page.dart](lib/features/history/history_page.dart)
+- [video_list_page.dart](lib/features/video_recording/video_list_page.dart)
+
+`test/future_builder_error_test.dart` *(mới)* — 1 widget test dùng `ChildListPage` làm đại diện (cùng pattern xử lý lỗi nhân bản giống hệt ở cả 4 trang): đóng kết nối database thật (không mock) để buộc query đầu tiên thất bại thật, xác nhận UI hiện đúng thông báo lỗi + nút "Thử lại"; sau đó mở lại database hợp lệ và bấm "Thử lại", xác nhận trang tải lại đúng dữ liệu, không còn kẹt ở trạng thái lỗi.
+
+### Nhiệm vụ 6 — Hạ tầng ký release Android (không tạo keystore thật)
+
+- [android/key.properties.example](android/key.properties.example) *(mới, có thể commit)* — mẫu cấu trúc + hướng dẫn lệnh `keytool` để tự tạo keystore thật.
+- `.gitignore` — thêm `android/key.properties`, `android/*.jks`, `android/*.keystore`, `android/app/*.jks`, `android/app/*.keystore` (chưa có trước đó).
+- [android/app/build.gradle.kts](android/app/build.gradle.kts) — đọc `android/key.properties` nếu tồn tại, tạo `signingConfigs.release` từ đó; `buildTypes.release.signingConfig` dùng `release` nếu có file, **fallback về `debug` như hành vi cũ** nếu không có (chưa tạo keystore thật ở máy này) — không phá build hiện tại.
+- **Verify bằng build thật**: `flutter build apk --debug` **và** `flutter build apk --release` đều **PASS** sau khi sửa (release: 56.2s, `app-release.apk` 53.0MB) — xác nhận nhánh fallback debug-signing hoạt động đúng khi chưa có `key.properties` thật.
+- Đã ghi rõ trong mục "Việc cần tự làm thủ công" bên dưới các bước người dùng cần tự chạy `keytool` + điền `key.properties` trước khi phát hành thật.
+
+### Nhiệm vụ 7 — iOS permission text
+
+[ios/Runner/Info.plist](ios/Runner/Info.plist) — thêm `NSCameraUsageDescription` + `NSMicrophoneUsageDescription` (chỉ sửa text, không build — máy hiện tại không có Xcode/macOS). Đọc lại trực tiếp file sau khi sửa để xác nhận đã có đủ 2 khoá.
+
+### Nhiệm vụ 8 — Kiểm chứng tổng hợp
+
+- `flutter analyze`: **0 lỗi, 0 warning** (10.7s).
+- `flutter test`: **53/53 PASS** (49 cũ + 4 mới: 1 timeout NVIDIA, 1 timeout Groq, 1 vector length, 1 widget test FutureBuilder error). Không có FAIL nào.
+- `flutter build apk --debug`: PASS (67.1s). `flutter build apk --release`: PASS (56.2s, 53.0MB) — xác nhận thay đổi gradle không phá build ở cả 2 nhánh.
+- Verify tay trên `emulator-5554` (Pixel_7) qua `adb` + `uiautomator dump` (không suy đoán toạ độ): nút mô phỏng chuyên gia (mục 1) và nút "Thử lại xử lý cho AI" (mục 3) đều có bằng chứng screenshot + đối chiếu database trực tiếp.
+
+### Việc cần tự làm thủ công (bổ sung)
+
+- **Tạo keystore Android thật cho bản release** (không tự làm thay, đúng yêu cầu "không tự chọn mật khẩu"):
+  1. Chạy `keytool -genkey -v -keystore <đường-dẫn>/iris-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias iris`, tự đặt mật khẩu.
+  2. Copy `android/key.properties.example` thành `android/key.properties` (đã gitignore), điền `storePassword`, `keyPassword`, `keyAlias`, `storeFile` (đường dẫn tuyệt đối tới file `.jks` vừa tạo) bằng giá trị thật.
+  3. Chạy lại `flutter build apk --release` — lúc này sẽ tự dùng keystore thật thay vì fallback debug-signing.
+- Máy hiện tại không có Xcode/macOS nên **chưa build/verify iOS thật** — 2 khoá quyền trong `Info.plist` mới chỉ xác nhận qua đọc file, chưa chạy thật trên thiết bị/simulator iOS.
+
+### Không làm / ngoài phạm vi
+
+- Không mã hoá SQLite, không đổi cách truyền API key — đúng đánh đổi kiến trúc đã chấp nhận cho dự án thi, không tự ý đổi.
+- Không xây hệ thống retry/backfill embedding chạy nền — chỉ retry thủ công tại điểm lỗi như yêu cầu.
+- Không làm đẹp UI/theme.
+- Không commit git.

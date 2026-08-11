@@ -4,18 +4,8 @@ import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
+import '../../domain/services/screening_question_bank.dart';
 import 'screening_result_page.dart';
-
-/// Bộ câu hỏi sàng lọc MOCK (demo) — 6 câu có/không, chưa phải bộ công cụ
-/// sàng lọc chuẩn thật (VD M-CHAT-R). Dùng để minh hoạ luồng chức năng.
-const List<String> _mockQuestions = [
-  'Trẻ có tránh giao tiếp bằng mắt khi được gọi tên không?',
-  'Trẻ có ít khi chỉ tay vào đồ vật để chia sẻ sự thích thú không?',
-  'Trẻ có lặp đi lặp lại một số hành động hoặc từ ngữ không?',
-  'Trẻ có phản ứng bất thường với âm thanh (quá nhạy hoặc không phản ứng) không?',
-  'Trẻ có khó thích nghi khi thay đổi thói quen hàng ngày không?',
-  'Trẻ có ít chơi giả vờ (VD: giả vờ nấu ăn, chăm búp bê) so với bạn cùng tuổi không?',
-];
 
 class ScreeningQuestionnairePage extends StatefulWidget {
   final Child child;
@@ -32,7 +22,12 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
   final Map<int, bool> _answers = {};
   bool _saving = false;
 
-  bool get _allAnswered => _answers.length == _mockQuestions.length;
+  /// Bộ câu hỏi mock phù hợp theo tuổi trẻ (Chức năng #3 roadmap — "Xác định
+  /// hướng đánh giá theo độ tuổi"), không dùng cứng 1 bộ cho mọi độ tuổi.
+  late final ScreeningQuestionSet _questionSet =
+      selectScreeningQuestionSet(childAgeInMonths(widget.child));
+
+  bool get _allAnswered => _answers.length == _questionSet.questions.length;
 
   Future<void> _submit() async {
     if (!_allAnswered) {
@@ -44,14 +39,15 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
 
     setState(() => _saving = true);
     final flaggedCount = _answers.values.where((answeredYes) => answeredYes).length;
-    final total = _mockQuestions.length;
+    final total = _questionSet.questions.length;
     final resultSummary =
         'Có $flaggedCount/$total câu hỏi ghi nhận dấu hiệu cần chú ý. '
         'Đây là kết quả sàng lọc tham khảo bằng bộ câu hỏi demo, không phải kết luận chẩn đoán.';
 
     final screening = await _screeningRepository.save(
       childId: widget.child.id,
-      toolName: 'Bộ câu hỏi sàng lọc mock (demo) — chưa phải bộ công cụ chuẩn',
+      toolName:
+          'Bộ câu hỏi sàng lọc mock (demo) — ${_questionSet.label} — chưa phải bộ công cụ chuẩn',
       score: '$flaggedCount/$total',
       resultSummary: resultSummary,
       performedAt: DateTime.now(),
@@ -84,13 +80,24 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
 
   @override
   Widget build(BuildContext context) {
+    final questions = _questionSet.questions;
     return Scaffold(
       appBar: AppBar(title: Text('Sàng lọc — ${widget.child.name}')),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _mockQuestions.length + 1,
+        itemCount: questions.length + 2,
         itemBuilder: (context, index) {
-          if (index == _mockQuestions.length) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Công cụ sàng lọc: ${_questionSet.label}',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            );
+          }
+          final questionIndex = index - 1;
+          if (questionIndex == questions.length) {
             return Padding(
               padding: const EdgeInsets.only(top: 16),
               child: FilledButton(
@@ -106,8 +113,8 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
             );
           }
 
-          final question = _mockQuestions[index];
-          final answer = _answers[index];
+          final question = questions[questionIndex];
+          final answer = _answers[questionIndex];
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
@@ -115,7 +122,7 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${index + 1}. $question'),
+                  Text('${questionIndex + 1}. $question'),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -124,18 +131,18 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
                           style: answer == true
                               ? OutlinedButton.styleFrom(backgroundColor: Colors.orange.withValues(alpha: 0.2))
                               : null,
-                          onPressed: () => setState(() => _answers[index] = true),
+                          onPressed: () => setState(() => _answers[questionIndex] = true),
                           child: const Text('Có'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton(
-                          key: ValueKey('answer_no_$index'),
+                          key: ValueKey('answer_no_$questionIndex'),
                           style: answer == false
                               ? OutlinedButton.styleFrom(backgroundColor: Colors.green.withValues(alpha: 0.2))
                               : null,
-                          onPressed: () => setState(() => _answers[index] = false),
+                          onPressed: () => setState(() => _answers[questionIndex] = false),
                           child: const Text('Không'),
                         ),
                       ),

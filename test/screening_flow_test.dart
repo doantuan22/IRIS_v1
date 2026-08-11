@@ -74,7 +74,8 @@ void main() {
     // ignore: avoid_print
     print('PASS: hồ sơ mới hiển thị badge "Chưa sàng lọc" đúng');
 
-    // --- Nhiệm vụ 2, nhánh "Chưa muốn": không tạo bản ghi screenings ---
+    // --- Nhiệm vụ 2, nhánh "Chưa muốn": không tạo bản ghi screenings,
+    // vẫn dẫn tiếp vào Bước 4 (tổng hợp & đề xuất) trước khi quay lại hồ sơ ---
     await tester.tap(find.widgetWithText(FilledButton, 'Sàng lọc'));
     await pumpFrames(tester);
 
@@ -84,16 +85,32 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Chưa muốn'));
     await pumpFrames(tester);
 
+    expect(find.text('Tổng hợp hồ sơ & đề xuất'), findsOneWidget);
     expect(find.text('Chưa sàng lọc'), findsOneWidget);
     // ignore: avoid_print
-    print('PASS: nhánh "Chưa muốn" quay lại chi tiết hồ sơ, badge vẫn "Chưa sàng lọc", không tạo bản ghi');
+    print('PASS: nhánh "Chưa muốn" dẫn vào Bước 4 (Tổng hợp & đề xuất), không tạo bản ghi screenings');
+
+    // Quay lại hồ sơ (Bước 4 -> Intro -> ProfileDetail) — badge vẫn "Chưa sàng lọc".
+    await tester.pageBack();
+    await pumpFrames(tester);
+    await tester.pageBack();
+    await pumpFrames(tester);
+
+    expect(find.text('Chưa sàng lọc'), findsOneWidget);
+    // ignore: avoid_print
+    print('PASS: quay lại hồ sơ sau nhánh "Chưa muốn", badge vẫn "Chưa sàng lọc"');
 
     // --- Nhiệm vụ 2, nhánh "Có": trả lời bộ câu hỏi mock, lưu kết quả ---
+    // "Bé Test Flow" 3 tuổi (36 tháng) → thuộc dải tuổi Bộ B (31 tháng trở lên).
     await tester.tap(find.widgetWithText(FilledButton, 'Sàng lọc'));
     await pumpFrames(tester);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Có'));
     await pumpFrames(tester);
+
+    expect(find.text('Công cụ sàng lọc: Bộ B (31 tháng trở lên)'), findsOneWidget);
+    // ignore: avoid_print
+    print('PASS: trẻ 36 tháng tuổi được chọn đúng Bộ B (31 tháng trở lên), không còn dùng cứng 1 bộ');
 
     // ListView.builder chỉ dựng sẵn item trong viewport — phải scroll từng
     // câu vào tầm nhìn trước khi tap (không thể tap thẳng item ngoài màn hình).
@@ -119,7 +136,22 @@ void main() {
     // ignore: avoid_print
     print('PASS: hoàn thành bộ câu hỏi mock (6 câu "Không"), kết quả "0/6" + dòng chữ disclaimer hiển thị đúng');
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Quay lại hồ sơ trẻ'));
+    // --- Bước 4: tổng hợp & đề xuất, đọc đúng dữ liệu thật sau khi sàng lọc ---
+    await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
+    await pumpFrames(tester);
+
+    expect(find.text('Tổng hợp hồ sơ & đề xuất'), findsOneWidget);
+    expect(find.text('Đã sàng lọc'), findsOneWidget);
+    expect(find.text('Kết quả sàng lọc gần nhất: 0/6'), findsOneWidget);
+    expect(find.text('Đã có mô tả cho 0/9 lĩnh vực'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Bắt đầu đánh giá'), findsOneWidget);
+    // ignore: avoid_print
+    print('PASS: Bước 4 hiển thị đúng dữ liệu thật sau khi sàng lọc (đã sàng lọc, điểm 0/6, 0/9 lĩnh vực)');
+
+    // Quay lại hồ sơ (Bước 4 -> Intro -> ProfileDetail) — badge cập nhật đúng.
+    await tester.pageBack();
+    await pumpFrames(tester);
+    await tester.pageBack();
     await pumpFrames(tester);
 
     expect(find.text('Đã sàng lọc'), findsOneWidget);

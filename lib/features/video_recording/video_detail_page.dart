@@ -68,6 +68,37 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
     super.dispose();
   }
 
+  Future<void> _deleteVideo() async {
+    final hasNote = _video.expertNote != null;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xoá video?'),
+        content: Text(
+          hasNote
+              ? 'Video và nhận xét chuyên gia đi kèm sẽ bị xoá vĩnh viễn, không thể khôi phục.'
+              : 'Video này sẽ bị xoá vĩnh viễn, không thể khôi phục.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xoá')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _videoRepository.delete(_video.id);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không xoá được video: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _simulateExpertReview() async {
     if (_simulating) return;
     setState(() => _simulating = true);
@@ -106,7 +137,16 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_video.situation ?? 'Video')),
+      appBar: AppBar(
+        title: Text(_video.situation ?? 'Video'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Xoá video',
+            onPressed: _deleteVideo,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

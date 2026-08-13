@@ -46,6 +46,29 @@ void main() {
     print('PASS: ChildRepository tạo + đọc hồ sơ trẻ');
   });
 
+  test('ChildRepository: tạo hồ sơ có "Người đánh giá" + "Vai trò" đọc lại đúng, không điền thì null',
+      () async {
+    final repo = ChildRepository(appDatabase);
+
+    final withRole = await repo.create(
+      name: 'Bé Có Vai Trò',
+      ageYears: 4,
+      nguoiDanhGia: 'Cô Lan',
+      vaiTro: 'Giáo viên',
+    );
+    final withoutRole = await repo.create(name: 'Bé Không Vai Trò', ageYears: 4);
+
+    final readWithRole = await repo.getById(withRole.id);
+    final readWithoutRole = await repo.getById(withoutRole.id);
+
+    expect(readWithRole?.nguoiDanhGia, 'Cô Lan');
+    expect(readWithRole?.vaiTro, 'Giáo viên');
+    expect(readWithoutRole?.nguoiDanhGia, isNull);
+    expect(readWithoutRole?.vaiTro, isNull);
+    // ignore: avoid_print
+    print('PASS: ChildRepository lưu + đọc đúng "nguoi_danh_gia"/"vai_tro", null khi không điền');
+  });
+
   test('ScreeningRepository: hasScreening phản ánh đúng có/chưa sàng lọc', () async {
     final childRepo = ChildRepository(appDatabase);
     final screeningRepo = ScreeningRepository(appDatabase);

@@ -191,6 +191,10 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
                   Text(child.name, style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 4),
                   Text('${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}'),
+                  const SizedBox(height: 4),
+                  Text('Người đánh giá: ${child.nguoiDanhGia ?? "Chưa cập nhật"}'),
+                  const SizedBox(height: 4),
+                  Text('Vai trò: ${child.vaiTro ?? "Chưa cập nhật"}'),
                   const SizedBox(height: 8),
                   FutureBuilder<bool>(
                     future: _hasScreeningFuture,

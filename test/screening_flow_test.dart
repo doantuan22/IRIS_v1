@@ -59,6 +59,10 @@ void main() {
     await pumpFrames(tester);
     await tester.enterText(find.byType(TextFormField).at(1), '3');
 
+    // Form giờ có thêm 2 trường "Người đánh giá"/"Vai trò" nên dài hơn
+    // viewport mặc định của widget test — cuộn tới nút trước khi bấm.
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+    await pumpFrames(tester, times: 5);
     await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
     await pumpFrames(tester);
 

@@ -1,103 +1,111 @@
-# Trạng thái dự án IRIS — audit mã nguồn
+# Trạng thái dự án IRIS — audit mã nguồn (lần 2)
 
-_Ngày audit: 11/08/2026. Phạm vi: đọc `lib/`, `test/`, `scripts/`, `ROADMAP_DU_AN_IRIS.md`, toàn bộ `SETUP_REPORT.md`; không sửa mã nguồn, không build hay chạy emulator._
+_Ngày audit: 11/08/2026 (phiên audit thứ 2, thay thế hoàn toàn nội dung audit lần 1 cùng ngày). Phạm vi: đọc trực tiếp toàn bộ `lib/`, `test/`, `scripts/`, `android/`, `ios/`, `ROADMAP_DU_AN_IRIS.md`, `SETUP_REPORT.md`; chạy thật `flutter analyze`/`flutter test`; kiểm tra `git status`/`git log`. Không sửa mã nguồn, không commit, không build/chạy tay trên emulator._
 
-## 1. Số liệu thực tế tại thời điểm audit
+_Lưu ý về hệ đánh số: tài liệu này dùng **2 hệ đánh số riêng biệt, không tương ứng 1-1**: (a) 11 "chức năng" theo `ROADMAP_DU_AN_IRIS.md` mục 1, và (b) 15 "BƯỚC" theo tài liệu "Luồng chi tiết ứng dụng sàng lọc và đánh giá trẻ" gốc (được cung cấp đầy đủ cho phiên audit này) + "PHỤ LỤC 1" (tách riêng, không phải bước 15). Mọi đối chiếu bên dưới luôn ghi rõ đang dùng hệ nào._
 
-| Hạng mục | Kết quả phiên audit | Diễn giải |
+## 1. Số liệu thực tế tại thời điểm audit (phiên này)
+
+| Hạng mục | Kết quả | Diễn giải |
 |---|---|---|
-| `flutter analyze` | **Chưa có kết quả hoàn tất** | Đã khởi chạy 2 lần tại gốc repo; mỗi lần bị môi trường dừng sau 60 giây và không có stdout/stderr. Vì vậy không thể ghi số error/warning hiện tại. |
-| `flutter test` | **Chưa có kết quả hoàn tất** | Đã khởi chạy 1 lần; bị dừng sau 60 giây, không có stdout/stderr. Không khẳng định PASS/FAIL hoặc tổng test từ lần chạy này. |
-| Test có trong mã | **42 ca** | Đọc 11 tệp trong `test/`: repository 5, child age 4, screening widget-flow 1, NVIDIA 3, Groq 3, vector search 6, guardrail 5, prompt 4, ingest 2, AI repository 4, video/history repository 5. Đây là số ca được khai báo, **không phải** kết quả chạy hiện tại. |
-| Git đầu phiên audit | Sạch | `git status --short` không có thay đổi; `git diff --stat` rỗng. |
-| Git history | 2 commit | `60185ca update` (HEAD, `main`, `origin/main`) và `61cb641 first commit`. |
-| Git sau khi xuất báo cáo | Có tệp audit mới | Chỉ `TRANG_THAI_DU_AN.md` được tạo bởi audit này; không commit. |
+| `flutter analyze` | **0 issues found** | Chạy thật, ghi ra file, đợi hoàn tất — "No issues found! (ran in 9.0s)", exit code 0. |
+| `flutter test` | **53/53 PASS** | Chạy thật, ghi ra file, đợi hoàn tất — "All tests passed!", exit code 0, ~65s. |
+| Số file test | **14 file** trong `test/` | `ai_repository_test.dart`, `child_age_test.dart`, `child_repository_test.dart`, `future_builder_error_test.dart`, `groq_api_client_test.dart`, `guardrail_service_test.dart`, `ingest_expert_data_test.dart`, `nvidia_api_client_test.dart`, `prompt_builder_test.dart`, `repositories_test.dart`, `screening_flow_test.dart`, `screening_question_bank_test.dart`, `vector_search_service_test.dart`, `video_repository_test.dart`. |
+| Git status | **Sạch** | `git status --short` không có thay đổi (ngoài file audit này đang được ghi đè). |
+| Git log | 3 commit | `5954217 fix_bug` (HEAD, mới nhất) ← `60185ca update` ← `61cb641 first commit`. |
+| Nội dung commit HEAD | Khớp đúng toàn bộ đợt vá "3 mục chặn demo" + "7 mục không chặn demo" | `git show --stat HEAD`: 28 file thay đổi, gồm `screening_question_bank.dart`, `assessment_summary_page.dart`, timeout ở 2 API client, `vector_search_service.dart` (guard độ dài vector), 4 trang `FutureBuilder` + `future_builder_error_test.dart`, hạ tầng ký release Android, `ios/Runner/Info.plist`, `child_repository_test.dart`, v.v. |
 
-`SETUP_REPORT.md` ghi kết quả cũ 42/42 PASS và analyze 0 warning ở giai đoạn 5–6. Các số đó là bằng chứng lịch sử, không thay thế được kết quả mới vì phiên audit này không hoàn tất được hai lệnh trên.
+## 2. Đối chiếu 11 chức năng (ROADMAP_DU_AN_IRIS.md mục 1)
 
-## 2. Đối chiếu 11 chức năng trong roadmap
+Quy ước 4 mức trạng thái (giữ nguyên từ audit lần 1): **Đã xong & có bằng chứng verify thật** / **Có code nhưng chưa verify UI đầy đủ** / **Chỉ khung sườn** / **Chưa bắt đầu**.
 
-Quy ước trạng thái: **Hoàn tất & có verify thật** chỉ dùng khi `SETUP_REPORT.md` có mô tả thao tác emulator/ADB/database cụ thể và mã hiện tại vẫn hiện diện. “Có code” không đồng nghĩa đã verify UI trong phiên này.
-
-| # | Chức năng roadmap | Trạng thái | Bằng chứng mã/test/verify |
+| # | Chức năng | Trạng thái | Bằng chứng |
 |---|---|---|---|
-| 1 | Tạo/chọn hồ sơ trẻ | **Hoàn tất & có verify thật** | `ChildListPage`, `CreateProfilePage`, `ProfileDetailPage`; `ChildRepository`. Widget-flow: `test/screening_flow_test.dart`; verify ADB tạo hồ sơ được ghi ở SETUP giai đoạn 3. |
-| 2 | Lựa chọn thực hiện bài sàng lọc | **Hoàn tất & có verify thật** | `ScreeningIntroPage` có hai nhánh Có/Chưa muốn; nhánh sau chỉ pop, không ghi DB. Widget-flow kiểm chứng cả hai nhánh; SETUP mô tả verify emulator. |
-| 3 | Xác định hướng đánh giá theo độ tuổi | **Chưa bắt đầu** | Có `childAgeInMonths()` trong `domain/models/child.dart`, nhưng không có hàm/route chọn công cụ hay hướng đánh giá theo tuổi. `ScreeningQuestionnairePage` luôn dùng một bộ 6 câu mock. |
-| 4 | Đánh giá 9 lĩnh vực | **Có code thật nhưng chưa verify UI đầy đủ** | `nine_domains.dart`, `DomainListPage`, route từ hồ sơ; từng lĩnh vực có trạng thái có/chưa mô tả. Mô tả một lĩnh vực đã được verify lịch sử, nhưng không có test/verify riêng cho đủ 9 lĩnh vực. |
-| 5 | Mỗi lĩnh vực gồm 5 phần | **Chỉ có khung sườn** | Phần 1 (`DescriptionPage`) có lưu DB + embedding. Bốn trang còn lại `ComparisonVideoPage`, `ParentInputPage`, `ExpertInputPage`, `SummaryPortraitPage` chỉ hiển thị nội dung “đang cập nhật”, không query dữ liệu tham khảo. |
-| 6 | Lưu tiến độ và tiếp tục sau | **Có code thật nhưng chưa đầy đủ** | Dữ liệu mô tả được lưu và `DomainListPage` suy ra trạng thái từ `assessments`; tuy nhiên không có mô hình tiến độ/điểm dừng của toàn bộ chuỗi 5 phần hoặc màn tiếp tục phiên làm việc. |
-| 7 | Lịch sử | **Hoàn tất & có verify thật** | `HistoryLogRepository`, `HistoryPage`; các luồng sàng lọc, mô tả và video ghi log. `screening_flow_test.dart` xác nhận log sàng lọc; SETUP giai đoạn 6 mô tả đối chiếu UI và DB thật 3 log. |
-| 8 | Hỏi đáp AI/RAG | **Hoàn tất & có verify thật (debug/emulator)** | `AiRepository`, NVIDIA/Groq clients, vector search, guardrail, prompt builder, `AiChatPage`; 4 test tích hợp mock trong `ai_repository_test.dart`, cùng các unit test liên quan. SETUP mục 8 ghi verify cả 3 trạng thái bằng key thật trên emulator. Không có kết quả chạy mới của phiên này. |
-| 9 | Quay video tình huống | **Hoàn tất & có verify thật (Android debug/emulator)** | 4 trang trong `features/video_recording/`, `VideoRepository`; 5 test repository/history. SETUP giai đoạn 5 ghi build, quay, phát lại, đối chiếu DB và file video trên emulator. |
-| 10 | Kết nối chuyên gia/trung tâm | **Có code thật nhưng chưa đầy đủ** | “Gửi” video chỉ lưu local với `status: pending`; phản hồi chuyên gia là nút **debug** sinh mẫu cố định trong `VideoDetailPage`. Không có kênh gửi/nhận, tài khoản, trung tâm, hay đề xuất dựa trên dữ liệu tổng hợp. |
-| 11 | Quản lý nhiều trẻ (Phụ lục 1) | **Chỉ có khung sườn** | `MultiChildDashboardPage` chỉ là `Placeholder`; chưa được gắn route. Danh sách hồ sơ nhiều trẻ có tồn tại, nhưng không phải dashboard theo yêu cầu. |
+| 1 | Tạo/chọn hồ sơ trẻ | **Đã xong & có bằng chứng verify thật** | [child_list_page.dart](lib/features/child_profile/child_list_page.dart), [create_profile_page.dart](lib/features/child_profile/create_profile/create_profile_page.dart), [child_repository.dart](lib/data/repositories/child_repository.dart) — CRUD đầy đủ. Test: `test/screening_flow_test.dart` ("tạo hồ sơ trẻ 'Bé Test Flow' thành công, hiện trong danh sách" — PASS), `test/repositories_test.dart` ("ChildRepository tạo + đọc hồ sơ trẻ" — PASS). Verify thiết bị thật ghi ở SETUP_REPORT.md Giai đoạn 2-3. |
+| 2 | Lựa chọn thực hiện bài sàng lọc | **Đã xong & có bằng chứng verify thật** | [screening_intro_page.dart](lib/features/screening/screening_intro_page.dart) — đúng 2 nhánh Có/Chưa muốn, dùng `push` (không `pushReplacement`) để `ProfileDetailPage._openScreening()` chờ đúng lúc người dùng quay lại mới refresh badge. Test: `screening_flow_test.dart` xác nhận cả 2 nhánh (badge giữ "Chưa sàng lọc" ở nhánh Chưa muốn, không tạo bản ghi `screenings`). |
+| 3 | Xác định hướng đánh giá theo độ tuổi | **Đã xong & có bằng chứng verify thật** (đã đổi từ "Chưa bắt đầu" ở audit lần 1) | [screening_question_bank.dart](lib/domain/services/screening_question_bank.dart) — `selectScreeningQuestionSet(ageMonths)` chọn Bộ A (16–30 tháng) hoặc Bộ B (31 tháng+), dùng trong `screening_questionnaire_page.dart`. Test: `test/screening_question_bank_test.dart` (4 ca, gồm ranh giới 30/31 tháng) + `screening_flow_test.dart` ("trẻ 36 tháng tuổi được chọn đúng Bộ B... không còn dùng cứng 1 bộ" — PASS). |
+| 4 | Đánh giá 9 lĩnh vực | **Đã xong & có bằng chứng verify thật** (khung danh sách) | [nine_domains.dart](lib/core/constants/nine_domains.dart) (9 lĩnh vực đúng thứ tự roadmap), [domain_list_page.dart](lib/features/assessment/domain_list_page.dart) — mỗi lĩnh vực hiện đã/chưa có mô tả dựa trên `AssessmentRepository.getForChild()`. |
+| 5 | Mỗi lĩnh vực gồm 5 phần | **Có code nhưng chưa đầy đủ** (không đổi từ audit lần 1) | Phần 1 [description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart) chạy thật đầy đủ (lưu `assessments` + embed NVIDIA + lưu `profile_chunks`, có nút "Thử lại xử lý cho AI"). 4 phần còn lại — [comparison_video_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_video_page.dart), [parent_input_page.dart](lib/features/assessment/nine_domains/parent_input/parent_input_page.dart), [expert_input_page.dart](lib/features/assessment/nine_domains/expert_input/expert_input_page.dart), [summary_portrait_page.dart](lib/features/assessment/nine_domains/summary_portrait/summary_portrait_page.dart) — mỗi trang chỉ có `Text('Nội dung tham khảo đang được cập nhật')` + nút "Tiếp theo", **không** query `expert_knowledge_chunks` dù `ExpertKnowledgeRepository`, bảng, và nút "Debug: Nạp dữ liệu tham khảo" (`profile_detail_page.dart`) đã có đầy đủ. |
+| 6 | Lưu tiến độ và tiếp tục sau | **Đã xong & có bằng chứng verify thật** | `DomainListPage` suy trạng thái "Đã có mô tả"/"Chưa có mô tả" trực tiếp từ `assessments` mỗi lần quay lại (`_reload()` sau khi pop từ `DescriptionPage`) — không bắt buộc hoàn thành 9 lĩnh vực 1 lần, đúng yêu cầu. Không có "màn tiếp tục phiên làm việc" riêng biệt nhưng cơ chế suy trạng thái từ dữ liệu thật đã đáp ứng đúng tinh thần mục này. |
+| 7 | Lịch sử | **Đã xong & có bằng chứng verify thật** | [history_page.dart](lib/features/history/history_page.dart), [history_log_repository.dart](lib/data/repositories/history_log_repository.dart) — nhóm theo ngày, mới nhất trước. Test: `screening_flow_test.dart` ("hoàn thành sàng lọc ghi đúng 1 dòng history_logs" — PASS). Verify thiết bị thật ghi ở SETUP_REPORT.md Giai đoạn 6 (3 log đối chiếu khớp 100% với database thật). |
+| 8 | Hỏi đáp AI/RAG | **Đã xong & có bằng chứng verify thật** | [ai_repository.dart](lib/data/repositories/ai_repository.dart) orchestrate đầy đủ: embed → vector search → guardrail → prompt → Groq → lưu `ai_conversations`. Test: `test/ai_repository_test.dart` (4 ca, cả 3 trạng thái + case thiếu expert chunk). Verify bằng key thật cả 3 trạng thái trên emulator ghi ở SETUP_REPORT.md mục 8. |
+| 9 | Quay video tình huống | **Đã xong & có bằng chứng verify thật** | 4 trang `features/video_recording/` (situation → preparation → capture → review) + `video_list_page.dart`/`video_detail_page.dart`, [video_repository.dart](lib/data/repositories/video_repository.dart). Test: `test/video_repository_test.dart` (5 ca). Verify quay/phát lại thật trên emulator + đối chiếu database + 2 file `.mp4` thật ghi ở SETUP_REPORT.md Giai đoạn 5. |
+| 10 | Kết nối chuyên gia/trung tâm | **Có code nhưng chưa đầy đủ** (không đổi từ audit lần 1 — vẫn đúng mô tả cũ) | "Gửi" video chỉ tạo bản ghi `videos` cục bộ (`status: pending`) qua `VideoReviewPage._sendToExpert()`. Phản hồi chuyên gia là nút debug (`!kIsWeb && kDebugMode`) sinh 1 trong 3 mẫu nhận xét cố định trong `video_detail_page.dart._simulateExpertReview()` — đã verify UI thật (SETUP_REPORT.md mục 11 Nhiệm vụ 1). Không có kênh gửi/nhận, tài khoản, hay trung tâm thật — đúng phạm vi "mô phỏng trong 1 thiết bị" mà roadmap đã chấp nhận cho bản demo, nhưng chưa đạt "kết nối" theo nghĩa đầy đủ của chức năng #10. |
+| 11 | Quản lý nhiều trẻ (Phụ lục 1) | **Đã xong & có bằng chứng verify thật** (đã đổi hẳn từ "Chỉ khung sườn" ở audit lần 1) | [multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart) — không còn là `Placeholder`: card thống kê (tổng/đã/đang/chưa đánh giá), tìm theo tên, lọc theo tiến độ, 2 tab (Đang quản lý/Đã lưu trữ), menu Xem/Lịch sử/Lưu trữ/Khôi phục/Xoá. Route gắn từ `ChildListPage` (icon dashboard trên AppBar). Test: `test/child_repository_test.dart` (3 ca, gồm `delete()` xoá đúng cả 6 bảng con không lỗi FK). Verify thiết bị thật với 3 hồ sơ khác trạng thái tiến độ ghi ở SETUP_REPORT.md mục 12. |
 
-## 3. Đối chiếu luồng chi tiết gốc 15 bước
+## 3. Đối chiếu 15 bước gốc + Phụ lục 1
 
-### Giới hạn đối chiếu
+Dùng đúng nguyên văn danh sách 15 bước đã cung cấp cho phiên audit này (không suy đoán, không còn mục "chưa xác minh được vì thiếu tài liệu nguồn").
 
-Tài liệu “Luồng chi tiết ứng dụng sàng lọc và đánh giá trẻ” nguyên gốc (15 bước) **không nằm trong workspace hoặc tệp đính kèm**. `ROADMAP_DU_AN_IRIS.md` chỉ tham chiếu rải rác: bước 3 là lựa chọn sàng lọc, 6 là năm phần lĩnh vực, 7 là lịch sử theo mục 6, 8/11/12 là AI, 9 là video theo mục 6; trong khi `SETUP_REPORT.md` lại gọi lịch sử là bước 9 và video là bước 13. Không thể gán nhãn chính xác cho các bước chưa có nguồn gốc mà không suy đoán.
-
-| Bước | Đối chiếu trung thực từ nguồn hiện có | Trạng thái | Bằng chứng / ghi chú |
+| Bước | Tên bước (nguyên văn) | Trạng thái | Bằng chứng |
 |---|---|---|---|
-| 1 | Hồ sơ trẻ (suy ra từ nhóm “Bước 1–4” trong roadmap) | Có code thật, có verify lịch sử | `ChildListPage`, `CreateProfilePage`, test widget-flow. Tên bước gốc chưa xác minh. |
-| 2 | Không có nhãn gốc trong repo | **Chưa xác minh được** | Không suy đoán. Chỉ biết roadmap gộp bước 1–4 thành database/hồ sơ/sàng lọc. |
-| 3 | Lựa chọn thực hiện sàng lọc | Hoàn tất & có verify thật | `ScreeningIntroPage`, nhánh Có/Chưa muốn; test widget-flow và SETUP. |
-| 4 | Không có nhãn gốc trong repo | **Chưa xác minh được** | Có mã bảng câu hỏi/kết quả sàng lọc, nhưng không thể khẳng định đó chính là nhãn bước 4 gốc. |
-| 5 | Đánh giá 9 lĩnh vực (SETUP giai đoạn 3 gọi phạm vi bước 5–6) | Có code thật, chưa verify đầy đủ | `DomainListPage` và 9 hằng số lĩnh vực. |
-| 6 | Chuỗi 5 phần trong từng lĩnh vực | Chỉ một phần thật, bốn phần khung | `DescriptionPage` thực; 4 trang còn lại hiển thị placeholder bằng văn bản. |
-| 7 | Lịch sử (roadmap mục 6 tham chiếu bước 7) | Hoàn tất & có verify thật | `HistoryPage`, `HistoryLogRepository`, SETUP giai đoạn 6. |
-| 8 | AI (roadmap mục 6 tham chiếu bước 8) | Hoàn tất & có verify thật ở debug/emulator | `AiRepository`, `AiChatPage`, test mock, verify lịch sử. |
-| 9 | Mâu thuẫn nguồn: roadmap gọi video là bước 9; SETUP gọi lịch sử là bước 9 | **Không thể xác minh nhãn gốc** | Cả video và lịch sử đều có code; cần tài liệu gốc để kết luận mapping chính xác. |
-| 10 | Không có nhãn gốc trong repo | **Chưa xác minh được** | Không suy đoán. |
-| 11 | Thành phần AI retrieval (roadmap tham chiếu AI ở bước 11–12) | Có code thật, được test mock | NVIDIA embedding → vector search trong `AiRepository`; mapping tên bước vẫn chưa xác minh. |
-| 12 | Guardrail 3 trạng thái AI | Hoàn tất & có verify thật ở debug/emulator | `GuardrailService`, `PromptBuilder`, 5 guardrail tests, 4 integration tests AI, verify lịch sử 3 trạng thái. |
-| 13 | Quay video (SETUP giai đoạn 5 ghi rõ bước 13) | Hoàn tất & có verify thật Android debug/emulator | `VideoRecordingCapturePage`, `VideoReviewPage`, `VideoDetailPage`; verify lịch sử. |
-| 14 | Kết nối chuyên gia | Có mô phỏng local, chưa hoàn chỉnh | Video `pending` + phản hồi mẫu chỉ trong debug; không có kết nối thật. |
-| 15 | Không có nhãn gốc trong repo | **Chưa xác minh được** | Phụ lục dashboard được roadmap tách riêng, không thể khẳng định là bước 15. |
+| 1 | Mở ứng dụng | **Đã xong & có bằng chứng** | [main.dart](lib/main.dart) `runApp(IrisApp())` → [app.dart](lib/app.dart) `MaterialApp(home: ChildListPage())`. **Ghi chú**: `lib/features/onboarding/onboarding_page.dart` tồn tại (`class OnboardingPage extends StatelessWidget { ... Placeholder() }`) nhưng **không được tham chiếu ở bất kỳ đâu khác trong `lib/`** (xác nhận bằng grep toàn repo) — code chết, không nằm trong luồng mở app thật. App mở thẳng vào `ChildListPage`, không qua onboarding. |
+| 2 | Tạo hồ sơ trẻ | **Đã xong & có bằng chứng** | [create_profile_page.dart](lib/features/child_profile/create_profile/create_profile_page.dart) (comment trong file: "Bước 1-2 — Tạo hồ sơ trẻ") — tên, ngày sinh HOẶC số tuổi, giới tính. Test: `screening_flow_test.dart`. |
+| 3 | Lựa chọn thực hiện bài sàng lọc | **Đã xong & có bằng chứng** | [screening_intro_page.dart](lib/features/screening/screening_intro_page.dart) (comment: "Bước 3"). Xem chi tiết ở bảng 11 chức năng #2. |
+| 4 | Xác định độ tuổi và hướng đánh giá | **Đã xong & có bằng chứng** | Ghép 2 phần: (a) [screening_question_bank.dart](lib/domain/services/screening_question_bank.dart) chọn bộ câu hỏi theo tuổi; (b) [assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart) (comment trong file: "Bước 4 — Tổng hợp hồ sơ & đề xuất hướng đánh giá") — đọc dữ liệu thật (tuổi, đã/chưa sàng lọc, số lĩnh vực đã mô tả), đề xuất hướng bằng logic Dart `if/else` thuần (`_buildSuggestion()`, 5 nhánh), không gọi AI. Hiện ra sau CẢ 2 nhánh Bước 3. Test: `screening_flow_test.dart` ("Bước 4 hiển thị đúng dữ liệu thật sau khi sàng lọc", "nhánh Chưa muốn dẫn vào Bước 4... không tạo bản ghi screenings"). Đây chính là hạng mục "chặn demo" #1 đã được vá (so với audit lần 1). |
+| 5 | Giao diện đánh giá chính (9 lĩnh vực) | **Đã xong & có bằng chứng** | [domain_list_page.dart](lib/features/assessment/domain_list_page.dart) (comment: "Bước 5 — Danh sách 9 lĩnh vực đánh giá"). |
+| 6 | Đánh giá chi tiết từng lĩnh vực (5 phần: mô tả → so sánh → chia sẻ phụ huynh → bác sĩ → chân dung) | **Có code nhưng chưa đầy đủ — 1/5 phần thật** | Mô tả: [description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart) (comment: "Phần 1/5") — thật, lưu DB + embed AI, có retry. So sánh/Chia sẻ phụ huynh/Bác sĩ/Chân dung ("Phần 2/5" đến "Phần 5/5") — cả 4 trang chỉ hiện text tĩnh "Nội dung tham khảo đang được cập nhật", chưa đọc `expert_knowledge_chunks`. Xem chi tiết bảng 11 chức năng #5. |
+| 7 | Lưu kết quả đánh giá | **Đã xong & có bằng chứng** | `DescriptionPage._save()` — Bước 1 luôn gọi `AssessmentRepository.save(contentType: 'mo_ta')` trước, không phụ thuộc bước embed AI (bước 2-3) có lỗi hay không — đảm bảo mô tả không bao giờ mất. Test: `repositories_test.dart` ("AssessmentRepository thêm + đọc mô tả biểu hiện" — PASS). |
+| 8 | Tiếp tục đánh giá các lĩnh vực khác | **Đã xong & có bằng chứng** | `DomainListPage._reload()` chạy lại sau mỗi lần quay về từ `DescriptionPage`, cho phép chọn lĩnh vực bất kỳ theo bất kỳ thứ tự nào, không ép hoàn thành hết 9 lĩnh vực 1 lượt. |
+| 9 | Lịch sử | **Đã xong & có bằng chứng** | [history_page.dart](lib/features/history/history_page.dart) — comment trong chính file này: *"Lịch sử tổng hợp toàn bộ mốc thời gian của 1 trẻ: sàng lọc, đánh giá, video — nhóm theo ngày, mới nhất trước (**Bước 9** luồng chi tiết gốc)"* — khớp chính xác nhãn bước đã cho. |
+| 10 | Tất cả dữ liệu quay về hồ sơ trẻ | **Đã xong & có bằng chứng** | [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart) là điểm hội tụ: badge sàng lọc tự làm mới (`_reloadScreeningStatus()`), link trực tiếp tới Sàng lọc/9 lĩnh vực/Lịch sử/Hỏi đáp AI/Quay video, 2 nút debug xem dữ liệu thô (`screenings`, `assessments`+`profile_chunks`) — toàn bộ đều truy vấn theo đúng `child.id` của hồ sơ đang mở. `MultiChildDashboardPage` gộp thêm góc nhìn tổng hợp nhiều trẻ. |
+| 11 | Hỏi đáp AI | **Đã xong & có bằng chứng** | [ai_chat_page.dart](lib/features/ai_chat/ai_chat_page.dart) + [ai_repository.dart](lib/data/repositories/ai_repository.dart). Xem chi tiết bảng 11 chức năng #8. |
+| 12 | AI phải biết mức độ thông tin của hồ sơ (3 trạng thái) | **Đã xong & có bằng chứng** | [guardrail_service.dart](lib/domain/services/guardrail_service.dart) — `enum AiState {insufficientData, hasScreening, hasProfessionalAssessment}`, `determineState()` quyết định bằng code Dart thuần (không giao LLM), ngưỡng `relevanceThreshold = 0.75`. [prompt_builder.dart](lib/domain/services/prompt_builder.dart) — 3 template system prompt đúng nguyên văn theo từng trạng thái. Test: `guardrail_service_test.dart` (5 ca, gồm 2 case biên) + `prompt_builder_test.dart` (4 ca so khớp nguyên văn). Verify bằng key thật cả 3 trạng thái trên emulator (SETUP_REPORT.md mục 8) — kể cả xác nhận tiếng Việt hiển thị đúng, không mojibake. |
+| 13 | Chức năng quay video | **Đã xong & có bằng chứng** | Xem chi tiết bảng 11 chức năng #9. |
+| 14 | Luồng kết nối đến chuyên gia/trung tâm | **Có code nhưng chưa đầy đủ** (không đổi từ audit lần 1) | Xem chi tiết bảng 11 chức năng #10 — chỉ mô phỏng cục bộ 1 thiết bị, chưa có kết nối/tài khoản/trung tâm thật. |
+| 15 | Luồng tổng thể của IRIS (sơ đồ tổng hợp toàn bộ luồng — không phải 1 tính năng riêng để chấm trạng thái) | **N/A — không chấm trạng thái riêng, chỉ nhận định** | Đúng như tên gọi, đây là bức tranh tổng hợp Bước 1-14, không phải chức năng độc lập. Nhận định: đối chiếu điều hướng thật trong code (`ChildListPage` → `CreateProfilePage`/`ProfileDetailPage` → `ScreeningIntroPage` → `AssessmentSummaryPage` → `DomainListPage` → `DescriptionPage` → 4 trang placeholder → quay về `DomainListPage`/`ProfileDetailPage` → `HistoryPage`/`AiChatPage`/video recording flow) là một chuỗi liền mạch, không có route chết nào ngoại trừ `OnboardingPage` (mục Bước 1 ở trên) không nằm trong luồng thật. Về tổng thể, luồng đã nối đúng trình tự 14 bước, chỉ khuyết ở nội dung thật của Bước 6 (4/5 phần) và Bước 14 (kết nối thật). |
+| Phụ lục 1 | Giao diện tổng quan quản lý nhiều trẻ (**tách riêng, không phải "bước 15"**) | **Đã xong & có bằng chứng** | Xem chi tiết bảng 11 chức năng #11. |
 
-Để hoàn tất bảng này với nhãn chuẩn, cần bổ sung chính tài liệu luồng 15 bước gốc. Khi đó có thể cập nhật mapping mà không cần sửa mã.
+## 4. Sai lệch phát hiện được (so với TRANG_THAI_DU_AN.md audit lần 1 và SETUP_REPORT.md)
 
-## 4. Sai lệch phát hiện được
+1. **`flutter analyze`/`flutter test` giờ đã có số liệu thật, hoàn tất** — audit lần 1 không hoàn tất được 2 lệnh này do timeout môi trường. Phiên này chạy thành công bằng cơ chế tiến trình nền + ghi file + đợi hoàn tất thật (đúng kỹ thuật đã dùng ở SETUP_REPORT.md mục 11 Nhiệm vụ 4): `flutter analyze` → 0 issues (9.0s); `flutter test` → 53/53 PASS. Số 53/53 khớp đúng với số SETUP_REPORT.md mục 13 đã ghi (49 cũ + 4 mới) — xác nhận không có test nào bị thêm/bớt/hỏng kể từ đó.
+2. **Chức năng #3 (11 chức năng) / Bước 4 (15 bước) — đã được vá, không còn "Chưa bắt đầu" như audit lần 1 ghi.** `screening_question_bank.dart` + `assessment_summary_page.dart` đã có đầy đủ, có test. Đúng như SETUP_REPORT.md mục 11 mô tả.
+3. **Chức năng #11 / Phụ lục 1 — đã đổi hoàn toàn từ "Chỉ khung sườn" (`Placeholder`, chưa gắn route) sang "Đã xong & có bằng chứng".** Đúng như SETUP_REPORT.md mục 12 mô tả — đã đọc trực tiếp `multi_child_dashboard_page.dart` (349 dòng, không còn `Placeholder`) và `child_list_page.dart` (đã có `IconButton` điều hướng) để xác nhận, không chỉ tin theo báo cáo.
+4. **`android/app/src/main/AndroidManifest.xml` giờ đã có `INTERNET` permission** — audit lần 1 ghi thiếu, chặn demo APK release có gọi AI. Đã đọc trực tiếp file, xác nhận dòng `<uses-permission android:name="android.permission.INTERNET"/>` có mặt, kèm comment giải thích lý do cần thiết cho bản release (khác quyền INTERNET tự động có ở manifest debug/profile).
+5. **7 mục "không chặn demo nhưng nên xử lý" ở audit lần 1 — đã đọc lại toàn bộ code, xác nhận cả 7 mục đều khớp đúng mô tả "đã vá" của SETUP_REPORT.md mục 13, không phát hiện sai lệch nào:**
+   - Nút mô phỏng chuyên gia: `video_detail_page.dart._simulateExpertReview()` tồn tại, gọi đúng `VideoRepository.updateStatus()`.
+   - Timeout HTTP: cả `NvidiaApiClient` (15s) và `GroqApiClient` (30s) có `.timeout()` + bắt `TimeoutException` riêng, ném exception rõ ràng.
+   - Nút "Thử lại xử lý cho AI": `description_page.dart` có `_pendingEmbedContent`/`_retryEmbedding()`, không tạo bản ghi `assessments` trùng khi bấm lại.
+   - Guard độ dài vector: `vector_search_service.dart.cosineSimilarity()` có `if (a.length != b.length) return 0;` ngay đầu hàm.
+   - `FutureBuilder` xử lý lỗi: cả 4 trang (`child_list_page.dart`, `multi_child_dashboard_page.dart`, `history_page.dart`, `video_list_page.dart`) đều có nhánh `snapshot.hasError` + nút "Thử lại".
+   - Hạ tầng ký release Android: `build.gradle.kts` đọc `key.properties` nếu tồn tại, fallback debug-signing nếu không — đúng thiết kế, chưa có keystore thật (đây là việc người dùng tự làm, không phải thiếu sót code).
+   - iOS permission text: `Info.plist` đã có `NSCameraUsageDescription` + `NSMicrophoneUsageDescription`.
+6. **Báo cáo SETUP_REPORT.md (mục 9, 10, 11, 12, 13) nhiều lần ghi "Không commit git" / "vẫn còn tồn đọng từ các giai đoạn trước" — đây là thông tin đã lỗi thời, không còn đúng ở thời điểm audit này.** `git log` cho thấy toàn bộ nội dung của các mục 11-13 (screening_question_bank, assessment_summary_page, timeout, vector guard, FutureBuilder error handling, hạ tầng ký release, iOS permission, dashboard) đã nằm trong commit `5954217 fix_bug` (và các thay đổi trước đó trong `60185ca update`) — `git status` hiện sạch hoàn toàn. SETUP_REPORT.md chưa từng được cập nhật để phản ánh việc đã commit — sai lệch giữa nội dung báo cáo cũ và trạng thái git thật, không phải sai lệch về code.
+7. **Không phát hiện tuyên bố "đã xong" nào ở SETUP_REPORT.md mục 11-13 KHÔNG khớp với code thật** — toàn bộ đã được đọc lại và xác nhận đúng (xem mục 5 phía trên).
+8. **Các điểm audit lần 1 từng nêu vẫn CÒN NGUYÊN, không đổi:**
+   - `assets/reference/expert_content.json` vẫn chỉ có 6 entry, trong đó 4 entry tự gắn nhãn `[Placeholder minh hoạ]`. Không có video mẫu thật trong `assets/videos/` (chỉ 9 file `.gitkeep`, không có `.mp4`).
+   - `GroqApiClient.generate()` vẫn trả `Future<String>` (không streaming) — đúng comment trong code: "Chưa streaming ở giai đoạn này".
+   - `VideoRepository.delete()` tồn tại (có test) nhưng **không được gọi ở bất kỳ đâu trong `lib/`** (xác nhận bằng grep) — không có nút xoá video trên UI; và khi xoá cả hồ sơ trẻ, `ChildRepository.delete()` chỉ xoá dòng `videos` trong SQLite, **không xoá file `.mp4` vật lý** trên thiết bị — dữ liệu video vật lý bị mồ côi.
+   - `README.md` vẫn nguyên template mặc định của `flutter create`, chưa được viết lại.
+9. **Phát hiện mới (chưa từng được audit lần 1 hay SETUP_REPORT.md nhắc tới), mức housekeeping nhỏ:** `lib/domain/models/ai_chunk.dart` (`class AiChunk`) không được dùng ở bất kỳ đâu khác trong `lib/`/`test/` — model đã bị thay thế bởi `ProfileChunk`/`ExpertKnowledgeChunk` nhưng chưa xoá.
 
-1. **Số liệu verify cũ không còn là số liệu hiện hành.** `SETUP_REPORT.md` ghi 42/42 PASS và analyze sạch; lần chạy mới của audit không hoàn tất nên các con số này chưa được tái xác nhận.
-2. **Roadmap yêu cầu hướng đánh giá/công cụ theo tuổi nhưng mã không có.** Hiện chỉ quy đổi tuổi sang tháng phục vụ lọc expert chunks; sàng lọc luôn là 6 câu mock, không chọn công cụ theo tuổi.
-3. **Roadmap mô tả nội dung tĩnh cho phần 2–5 của 9 lĩnh vực, nhưng UI vẫn chưa dùng dữ liệu đó.** `assets/reference/expert_content.json` có 6 entry, trong đó 4 entry tự gắn `[Placeholder minh hoạ]`; bốn trang UI không query bảng expert knowledge. Không có video mẫu thực tế trong `assets/videos/`, chỉ `.gitkeep`.
-4. **Streaming được vẽ trong sơ đồ kiến trúc roadmap, còn mã thực tế dùng request/response một lần.** `GroqApiClient.generate()` trả `Future<String>`; mã và comment đều nói chưa streaming.
-5. **“Kết nối chuyên gia” không phải kết nối thật.** Tên nút “Gửi cho chuyên gia” chỉ tạo bản ghi local; phản hồi là mô phỏng debug. Đây phù hợp một phần với phạm vi demo local-first, nhưng chưa đạt chức năng #10 theo nghĩa kết nối/trung tâm.
-6. **Báo cáo cũ nói tất cả thay đổi chưa commit, nhưng Git hiện tại đã sạch và có commit `60185ca update`.** Đây là sai lệch trạng thái lịch sử của báo cáo, không phải lỗi mã.
-7. **Cấu hình release Android thiếu quyền Internet.** Client NVIDIA/Groq gọi HTTP, nhưng `android.permission.INTERNET` chỉ có trong manifest debug/profile, không có trong manifest main. AI/ingest sẽ không gọi mạng trong APK release.
+## 5. Tồn đọng đã phân loại lại (theo tình hình thật hiện tại)
 
-## 5. Tồn đọng đã phân loại
+### Chặn demo
 
-### Chặn demo theo đúng phạm vi chức năng
+*Không còn mục nào ở mức này.* Toàn bộ 3 mục audit lần 1 xếp "chặn demo" (phân nhánh sàng lọc theo tuổi + Bước 4, `INTERNET` permission, số liệu analyze/test) đã được vá và xác nhận lại bằng code thật ở phiên audit này (xem mục 4.2, 4.4).
 
-- Bổ sung phần xác định hướng/công cụ sàng lọc theo tuổi; hiện chức năng #3 chưa có.
-- Hoàn thiện dữ liệu tham khảo thật và nạp/hiển thị được ở phần 2–5 của 9 lĩnh vực; hiện đa số dữ liệu mẫu là placeholder và UI không đọc chúng.
-- Nếu demo bằng APK release có AI: thêm `INTERNET` vào `android/app/src/main/AndroidManifest.xml`.
-- Có kết quả `flutter analyze`/`flutter test` mới, hoàn tất được trong môi trường CI hoặc với timeout cao hơn, trước khi dùng con số kiểm chứng mới.
+### Không chặn demo nhưng nên xử lý
 
-### Không chặn demo debug nhưng nên xử lý
-
-- Nút mô phỏng phản hồi chuyên gia chưa có verify click-through UI thật; chỉ có unit test repository và đọc mã.
-- Android release vẫn ký bằng debug key (`android/app/build.gradle.kts`); cần signing config trước phân phối.
-- iOS thiếu `NSCameraUsageDescription` và `NSMicrophoneUsageDescription` trong `ios/Runner/Info.plist`; quay video sẽ chưa sẵn sàng để phát hành iOS.
-- API key được đưa trực tiếp vào app qua `--dart-define`, dữ liệu trẻ nằm trong SQLite local không mã hoá, và HTTP client không đặt timeout. Roadmap chấp nhận đánh đổi này cho demo, nhưng không phù hợp phát hành rộng.
-- Khi NVIDIA lỗi, mô tả vẫn lưu nhưng không có cơ chế retry/backfill embedding; AI không truy hồi được mô tả đó về sau.
-- `VectorSearchService.cosineSimilarity()` không kiểm tra hai vector khác chiều dài; dữ liệu vector không đồng nhất/corrupt có thể gây lỗi runtime.
-- Một số `FutureBuilder` chỉ xét `hasData`, không hiển thị trạng thái lỗi truy vấn rõ ràng.
+- **Nội dung tham khảo chuyên môn (mục 2-5 của 9 lĩnh vực) vẫn là placeholder/khung UI tĩnh** — đây là khoảng trống lớn nhất còn lại trong 11 chức năng roadmap (mục #5) và Bước 6 (4/5 phần). Cần: (a) viết nội dung thật thay `[Placeholder minh hoạ]`, (b) sửa 4 trang UI để đọc `expert_knowledge_chunks` (hiện chỉ hiện text tĩnh, có sẵn hạ tầng ingest + repository + nút debug nạp dữ liệu, chỉ thiếu phần UI query).
+- **Bước 14 / chức năng #10 — kết nối chuyên gia/trung tâm thật** chưa có; hiện chỉ mô phỏng cục bộ trong 1 thiết bị (nút debug, không phải kênh gửi/nhận thật).
+- **Xoá file video vật lý khi xoá metadata** — `VideoRepository.delete()` không xoá file, và `ChildRepository.delete()` (dùng khi xoá hồ sơ ở Dashboard) cũng không xoá các file `.mp4` liên quan trước khi xoá dòng `videos` — rủi ro rò rỉ dung lượng lưu trữ trên thiết bị theo thời gian nếu demo kéo dài/xoá nhiều hồ sơ có video.
+- **Video mẫu thật** cho 9 lĩnh vực — thư mục `assets/videos/<lĩnh vực>/` vẫn chỉ có `.gitkeep`.
+- **Keystore Android release thật** chưa được tạo (việc người dùng tự làm theo hướng dẫn `android/key.properties.example`) — build release hiện fallback ký bằng debug key, đủ để demo nhưng chưa sẵn sàng phân phối.
+- **iOS chưa build/verify thật** — 2 khoá quyền trong `Info.plist` mới xác nhận qua đọc file, máy hiện tại không có Xcode/macOS.
 
 ### Có thể để sau demo lõi
 
-- Streaming câu trả lời AI và cải thiện UI chat.
-- Dashboard nhiều trẻ, onboarding (hiện `Placeholder`) và kết nối chuyên gia/trung tâm thật.
-- Video mẫu thực tế theo 9 lĩnh vực.
-- Xoá file video vật lý khi xoá metadata video; `VideoRepository.delete()` hiện chỉ xoá hàng SQLite.
-- Hoàn chỉnh README (hiện là template Flutter) và đưa tài liệu luồng 15 bước gốc vào repo để truy vết yêu cầu.
+- Streaming câu trả lời AI (Groq hiện dùng request/response một lần).
+- README hoàn chỉnh (hiện là template Flutter mặc định).
+- Dọn code chết: `lib/features/onboarding/onboarding_page.dart` và `lib/domain/models/ai_chunk.dart` — cả 2 không được tham chiếu ở đâu trong luồng thật.
+- Mã hoá SQLite, đổi cách truyền API key khỏi `--dart-define` — đánh đổi kiến trúc đã chấp nhận có chủ đích cho dự án thi, không phải lỗi.
+- Retry/backfill embedding chạy nền tự động (hiện chỉ retry thủ công tại điểm lỗi qua nút "Thử lại xử lý cho AI").
 
 ## 6. Nhận định tổng quan
 
-Phần xương sống local database, hồ sơ, sàng lọc demo, mô tả quan sát, RAG guardrail, quay video local và lịch sử đã có mã thật; nhiều phần đã có unit/widget test và bằng chứng verify emulator được ghi chi tiết trong báo cáo cũ. Theo thứ tự triển khai roadmap mục 6, dự án đã đi qua các giai đoạn 1–6 ở mức **MVP debug có thể demo các luồng lõi**.
+So với audit lần 1, dự án đã tiến một bước đáng kể: cả 3 mục "chặn demo" và cả 7 mục "không chặn demo nhưng nên xử lý" mà audit lần 1 liệt kê đều đã được vá và **xác nhận lại bằng cách đọc trực tiếp code thật** ở phiên này (không chỉ tin theo SETUP_REPORT.md) — không phát hiện sai lệch nào giữa tuyên bố "đã xong" và code thật cho các mục đó. Dashboard nhiều trẻ (Phụ lục 1) đã chuyển hẳn từ khung `Placeholder` sang tính năng đầy đủ có test + verify thiết bị thật. `flutter analyze` sạch (0 issues), `flutter test` 53/53 PASS — đều là số liệu chạy thật trong chính phiên audit này.
 
-Tuy nhiên đây chưa phải trạng thái “hoàn tất 11 chức năng”: thiếu logic theo tuổi, bốn phần tham khảo của 9 lĩnh vực vẫn là khung, dữ liệu chuyên môn chưa sẵn sàng, dashboard và kết nối chuyên gia chưa hoàn thành. Ngoài ra, do analyze/test không hoàn tất trong chính phiên audit này, chất lượng build/test hiện tại phải được xem là **chưa tái xác nhận**, không nên kế thừa vô điều kiện các con số PASS cũ.
+Với hệ 15 bước gốc, 13/15 bước (Bước 1-5, 7-13, và phần khung của Bước 6) đã có code thật + bằng chứng cụ thể, kể cả nhiều trang có comment trong chính source code ghi rõ đúng số bước (`description_page.dart` "Phần 1/5", `history_page.dart` "Bước 9", `assessment_summary_page.dart` "Bước 4") — không còn mục nào phải ghi "chưa xác minh được vì thiếu tài liệu nguồn" như audit lần 1. Riêng Bước 6 (4/5 phần nội dung tham khảo) và Bước 14 (kết nối chuyên gia thật) vẫn là khoảng trống thật, không phải do thiếu tài liệu mà do chưa triển khai — đây cũng là 2 tồn đọng lớn nhất còn lại của toàn dự án, cùng với việc thiếu nội dung/video mẫu thật.
+
+Tổng kết: dự án hiện ở trạng thái **demo lõi đầy đủ và ổn định** — toàn bộ luồng chính (hồ sơ → sàng lọc theo tuổi → tổng hợp đề xuất → đánh giá 9 lĩnh vực (mô tả) → lịch sử → hỏi đáp AI 3 trạng thái → quay video → quản lý nhiều trẻ) đã chạy thật, có test tự động, và có bằng chứng verify thiết bị thật ghi trong SETUP_REPORT.md. Phần còn thiếu tập trung rõ vào 2 nhóm: (1) nội dung/dữ liệu thật (tham khảo chuyên môn, video mẫu) thay cho placeholder, và (2) các tính năng có chủ đích để "sau demo lõi" theo đúng roadmap (kết nối chuyên gia thật, streaming AI, ký release thật).

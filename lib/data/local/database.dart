@@ -41,7 +41,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -54,6 +54,17 @@ class AppDatabase {
         await db.execute(expertKnowledgeChunksTableCreate);
         await db.execute(videosTableCreate);
         await db.execute(aiConversationsTableCreate);
+      },
+      // Version 2 — thêm 2 cột `nguoi_danh_gia`/`vai_tro` vào `children` cho
+      // hồ sơ trẻ đã tồn tại từ trước (cài mới đã có sẵn 2 cột này qua
+      // `childrenTableCreate` ở onCreate, không đi qua đường này).
+      // `ALTER TABLE ... ADD COLUMN` không đụng tới dữ liệu dòng đã có —
+      // các dòng cũ tự động nhận giá trị NULL cho 2 cột mới.
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE children ADD COLUMN nguoi_danh_gia TEXT');
+          await db.execute('ALTER TABLE children ADD COLUMN vai_tro TEXT');
+        }
       },
     );
   }

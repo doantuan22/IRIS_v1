@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iris_app/data/local/database.dart';
 import 'package:iris_app/data/repositories/child_repository.dart';
@@ -104,6 +106,50 @@ void main() {
     expect(list, isEmpty);
     // ignore: avoid_print
     print('PASS: VideoRepository.delete xoá đúng video khỏi bảng videos');
+  });
+
+  test('VideoRepository: delete xoá cả file .mp4 vật lý trên đĩa, không chỉ dòng DB', () async {
+    final childRepo = ChildRepository(appDatabase);
+    final videoRepo = VideoRepository(appDatabase);
+
+    final tempDir = await Directory.systemTemp.createTemp('iris_video_test_');
+    final videoFile = File('${tempDir.path}/situation.mp4');
+    await videoFile.writeAsBytes([1, 2, 3]);
+    expect(await videoFile.exists(), isTrue);
+
+    try {
+      final child = await childRepo.create(name: 'Bé Vật Lý', ageYears: 3);
+      final video = await videoRepo.save(childId: child.id, filePath: videoFile.path, status: 'pending');
+
+      await videoRepo.delete(video.id);
+
+      expect(await videoRepo.getForChild(child.id), isEmpty);
+      expect(await videoFile.exists(), isFalse);
+      // ignore: avoid_print
+      print('PASS: VideoRepository.delete xoá cả dòng DB lẫn file .mp4 vật lý');
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
+  });
+
+  test('VideoRepository: delete không throw nếu file vật lý đã không còn tồn tại', () async {
+    final childRepo = ChildRepository(appDatabase);
+    final videoRepo = VideoRepository(appDatabase);
+
+    final tempDir = await Directory.systemTemp.createTemp('iris_video_test_missing_');
+    final missingPath = '${tempDir.path}/already_gone.mp4';
+
+    try {
+      final child = await childRepo.create(name: 'Bé File Mất', ageYears: 3);
+      final video = await videoRepo.save(childId: child.id, filePath: missingPath, status: 'pending');
+
+      await expectLater(videoRepo.delete(video.id), completes);
+      expect(await videoRepo.getForChild(child.id), isEmpty);
+      // ignore: avoid_print
+      print('PASS: VideoRepository.delete không throw khi file vật lý đã không còn tồn tại');
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
   });
 
   test('HistoryLogRepository: add + getForChild ghi và đọc đúng event video, sắp xếp mới nhất trước', () async {

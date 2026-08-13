@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/video.dart';
@@ -48,9 +51,30 @@ class VideoRepository {
     await db.update('videos', values, where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Xoá bản ghi `videos` VÀ file `.mp4` vật lý tương ứng trên đĩa. Xoá file
+  /// vật lý chỉ log lỗi (không throw) nếu file không còn tồn tại hoặc không
+  /// xoá được — không được để lỗi ở bước này chặn việc xoá dòng DB.
   Future<void> delete(String id) async {
     final db = await _db.database;
+    final rows = await db.query('videos', columns: ['file_path'], where: 'id = ?', whereArgs: [id]);
     await db.delete('videos', where: 'id = ?', whereArgs: [id]);
+
+    if (rows.isNotEmpty) {
+      await deletePhysicalFile(rows.first['file_path'] as String);
+    }
+  }
+
+  /// Xoá 1 file video vật lý qua đường dẫn, nuốt mọi lỗi (file không tồn
+  /// tại, không có quyền, v.v.) — chỉ log ra debug console.
+  static Future<void> deletePhysicalFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('VideoRepository: không xoá được file vật lý "$filePath": $e');
+    }
   }
 
   Map<String, Object?> _toRow(Video video) => {

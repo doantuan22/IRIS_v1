@@ -610,3 +610,143 @@ Rà soát đúng 4 trang nêu trong prompt — cả 4 đều chỉ xét `hasData
 - Không xây hệ thống retry/backfill embedding chạy nền — chỉ retry thủ công tại điểm lỗi như yêu cầu.
 - Không làm đẹp UI/theme.
 - Không commit git.
+
+## 14. Dọn housekeeping: code chết + xoá file video vật lý (2026-08-13)
+
+Phạm vi: đúng 2 mục housekeeping nêu ở `TRANG_THAI_DU_AN.md` mục 4 (điểm 8–9) — xoá code chết, và đảm bảo file `.mp4` vật lý luôn được dọn khi xoá video (đơn lẻ hoặc theo cả hồ sơ trẻ).
+
+### Nhiệm vụ 1 — Xác nhận lại rồi xoá code chết
+
+Grep toàn bộ `lib/` + `test/` cho `OnboardingPage` và `AiChunk` trước khi xoá — xác nhận đúng như audit đã ghi: cả 2 chỉ xuất hiện trong file định nghĩa của chính chúng (và trong `TRANG_THAI_DU_AN.md`, một tài liệu, không phải code), không có tham chiếu nào khác trong `lib/`/`test/`. Không có test riêng cho `AiChunk`.
+
+Đã xoá:
+- `lib/features/onboarding/onboarding_page.dart` (kèm xoá thư mục `lib/features/onboarding/` vì rỗng sau đó).
+- `lib/domain/models/ai_chunk.dart`.
+
+### Nhiệm vụ 2 — Xoá file `.mp4` vật lý khi xoá 1 video
+
+[video_repository.dart](lib/data/repositories/video_repository.dart) — `delete(id)` giờ đọc `file_path` của dòng trước khi xoá, xoá dòng DB, rồi gọi `deletePhysicalFile()` (hàm `static` mới, dùng chung với `ChildRepository`) — hàm này `try/catch` quanh `File(filePath).delete()`, chỉ `debugPrint` chứ không throw nếu file không tồn tại/không xoá được, để không chặn việc dòng DB đã xoá xong.
+
+### Nhiệm vụ 3 — Nút "Xoá video" trên UI
+
+[video_detail_page.dart](lib/features/video_recording/video_detail_page.dart) — thêm icon xoá trên `AppBar`, mở `AlertDialog` xác nhận (nêu rõ sẽ mất cả video và nhận xét chuyên gia nếu `expertNote != null`), gọi `VideoRepository.delete()` rồi `pop(true)`. [video_list_page.dart](lib/features/video_recording/video_list_page.dart) không cần sửa vì đã gọi `_reload()` vô điều kiện ngay sau khi `push` tới `VideoDetailPage` trả về — danh sách tự làm mới sau khi xoá.
+
+### Nhiệm vụ 4 — Xoá file vật lý khi xoá cả hồ sơ trẻ
+
+[child_repository.dart](lib/data/repositories/child_repository.dart) — `delete(id)` giờ query trước danh sách `file_path` của mọi video thuộc trẻ đó (ngoài transaction), chạy transaction xoá 6 bảng + `children` như cũ, rồi sau khi transaction commit thành công mới lặp qua từng `filePath` gọi `VideoRepository.deletePhysicalFile()` — mỗi file xoá độc lập, lỗi ở 1 file không chặn các file còn lại (và không có gì để rollback vì DB đã xoá xong).
+
+### Nhiệm vụ 5 — Test mới
+
+- `test/video_repository_test.dart` — 2 test mới: (a) tạo file thật trong `Directory.systemTemp`, lưu video trỏ tới file đó, gọi `delete()`, xác nhận cả dòng DB lẫn file trên đĩa đều biến mất; (b) `delete()` không throw khi `file_path` trỏ tới file đã không còn tồn tại.
+- `test/child_repository_test.dart` — 1 test mới: tạo 1 trẻ với 2 video trỏ tới 2 file thật trong thư mục temp, gọi `childRepo.delete()`, xác nhận cả 2 file vật lý đều biến mất cùng lúc với dữ liệu DB.
+
+### Nhiệm vụ 6 — Kiểm chứng tổng hợp
+
+- `flutter analyze`: **0 issues** (85.8s) — không phát sinh lỗi import sau khi xoá 2 file code chết.
+- `flutter test`: **56/56 PASS** (53 cũ + 3 mới: 2 xoá file vật lý video, 1 xoá file vật lý khi xoá hồ sơ trẻ). Không có FAIL nào.
+- **Verify tay trên thiết bị thật — hoàn tất ở phiên sau (2026-08-13), xem Nhiệm vụ 7.**
+
+### Nhiệm vụ 7 — Verify tay trên thiết bị thật (2026-08-13, phiên riêng sau khi có lại emulator)
+
+Phiên housekeeping ban đầu không kết nối được emulator nên chưa verify được phần này (đã ghi rõ, không khai "đã xong"). Phiên này `adb devices` xác nhận `emulator-5554` sẵn sàng; build lại `flutter build apk --debug` (56.2s) và `adb install -r` bản mới nhất (xác nhận đang chạy đúng code đã có xoá file vật lý + 2 trường "Người đánh giá"/"Vai trò" — `ProfileDetailPage` hiện đúng "Chưa cập nhật" cho 2 trường mới trên hồ sơ có sẵn, và form tạo hồ sơ đã có 2 field mới).
+
+Toàn bộ thao tác UI lái qua `adb shell input tap` + `uiautomator dump` lấy `bounds` chính xác cho từng bước (không suy đoán toạ độ từ ảnh chụp). Đối chiếu database dùng cách lấy file **binary-safe**: `adb shell run-as com.iris.app.iris_app base64 <path>` (đầu ra text an toàn), decode lại bằng `certutil -decode` trên máy host, rồi query bằng 1 script Dart nhỏ dùng `package:sqlite3` (đã có sẵn trong `pubspec.lock` qua `sqflite_common_ffi`) — cách lấy DB trực tiếp qua `adb exec-out ... > file` bị hỏng do PowerShell chuyển mã nhị phân (`SqliteException: file is not a database`), đã phát hiện và đổi cách lấy trước khi tin vào bất kỳ kết quả nào.
+
+**Kịch bản 1 — xoá 1 video (hồ sơ "Be Da Danh Gia", có sẵn trên emulator từ trước):**
+
+1. Quay 1 video tình huống "Trẻ chơi cùng người khác" (~7 giây) qua đúng luồng Quay video tình huống → Bắt đầu quay → Dừng quay → Xem lại & gửi → Gửi cho chuyên gia (bản ghi `videos` chỉ được tạo ở bước này, đúng code `video_review_page.dart._sendToExpert()`).
+2. Đối chiếu **trước khi xoá**: `adb shell run-as ... ls -la .../videos/` → file `11f413b1-467f-4014-9dcd-590bf07ec304.mp4` (6.960.059 bytes) tồn tại. Query DB → dòng `videos` `a07477dc-d70f-4a9b-b78b-90041413eb60` có `file_path` khớp đúng file trên, `status: pending`.
+3. Trên UI: mở lại video vừa quay → bấm icon "Xoá video" trên AppBar → dialog "Xoá video?" hiện đúng nội dung "Video này sẽ bị xoá vĩnh viễn, không thể khôi phục." (đúng nhánh video chưa có `expertNote`) → bấm "Xoá" → danh sách video quay lại rỗng ngay trên UI.
+4. Đối chiếu **sau khi xoá**: `ls -la .../videos/` → file `11f413b1-...mp4` **không còn trong danh sách** (chỉ còn 3 file cũ không liên quan). Query DB → bảng `videos` không còn dòng `a07477dc-...` nào (rỗng, vì đó là dòng video duy nhất của trẻ này tại thời điểm đó).
+
+**Kết quả: PASS** — cả file vật lý lẫn dòng DB đều bị xoá đúng, khớp 100% với code đã viết.
+
+**Kịch bản 2 — xoá hồ sơ trẻ có video (hồ sơ "Be Chua Danh Gia", có sẵn 1 video từ trước):**
+
+1. Đối chiếu **trước khi xoá**: `ls -la .../videos/` → file `cb103655-1e48-4bb4-9bd1-8d5b6fb79a31.mp4` (10.849.772 bytes) tồn tại. Query đầy đủ DB → trẻ "Be Chua Danh Gia" (`id: f48a833c-...`) có đúng 1 dòng `videos` (`file_path` khớp file trên), 1 dòng `assessments`, 2 dòng `history_logs`; không có `screenings`/`profile_chunks`/`ai_conversations`.
+2. Trên UI: Dashboard nhiều trẻ → menu ⋮ ("Show menu") ở hồ sơ "Be Chua Danh Gia" → "Xoá hồ sơ" → dialog "Xoá hồ sơ" → bấm "Xác nhận" → Dashboard cập nhật ngay: "Tổng số trẻ" từ 2 → 1, hồ sơ "Be Chua Danh Gia" biến mất khỏi danh sách, không có lỗi/crash (đúng như kỳ vọng — `PRAGMA foreign_keys = ON` không chặn vì đã xoá đúng thứ tự 6 bảng con trước).
+3. Đối chiếu **sau khi xoá**: `ls -la .../videos/` → file `cb103655-...mp4` **không còn**. Query đầy đủ DB → bảng `children` không còn dòng `f48a833c-...`; **cả 6 bảng con** (`screenings`, `assessments`, `history_logs`, `profile_chunks`, `videos`, `ai_conversations`) không còn dòng nào tham chiếu `child_id = f48a833c-...` — dòng `assessments` và 2 dòng `history_logs` của trẻ này đã biến mất đúng, trong khi 9 dòng `assessments` + 2 dòng `history_logs` của trẻ còn lại ("Be Da Danh Gia") **vẫn nguyên vẹn, không bị đụng tới**.
+
+**Kết quả: PASS** — file vật lý, dòng `videos`, và cả 5 bảng con còn lại đều sạch đúng cho trẻ đã xoá; dữ liệu trẻ khác không bị ảnh hưởng.
+
+**Không phát hiện bug nào trong lúc verify** — code xoá file vật lý (`VideoRepository.delete()`, `VideoRepository.deletePhysicalFile()`, `ChildRepository.delete()`) hoạt động đúng như đã viết và đã test unit, không cần sửa gì thêm.
+
+### Không làm / ngoài phạm vi
+
+- Không xoá code/class nào khác ngoài `OnboardingPage` và `AiChunk`.
+- Không thêm tính năng ngoài phạm vi đã nêu (VD: không thêm xoá hàng loạt, không thêm undo).
+- Không đổi schema database.
+- Không làm đẹp UI/theme.
+- Không commit git.
+
+## 15. Thêm trường "Người đánh giá" / "Vai trò" vào hồ sơ trẻ (2026-08-13)
+
+Phạm vi: thêm đúng 2 cột `nguoi_danh_gia`, `vai_tro` vào bảng `children` — nhập khi tạo hồ sơ, hiển thị trong hồ sơ chi tiết — không đụng cột nào khác, không phá dữ liệu hồ sơ cũ.
+
+### Nhiệm vụ 1 — Migration schema (rủi ro cao nhất: mất dữ liệu người dùng)
+
+[database.dart](lib/data/local/database.dart) trước đó khai `version: 1`, **không có `onUpgrade`** — bất kỳ thay đổi schema nào trước giờ đều phải qua `onCreate` (chỉ chạy cho database mới toanh, không đụng tới database đã tồn tại). Đã sửa:
+
+- `version: 1` → `version: 2`.
+- Thêm `onUpgrade: (db, oldVersion, newVersion) async { if (oldVersion < 2) { ALTER TABLE children ADD COLUMN nguoi_danh_gia TEXT; ALTER TABLE children ADD COLUMN vai_tro TEXT; } }` — chỉ thêm cột, không đụng dữ liệu dòng đã có (`ALTER TABLE ADD COLUMN` của SQLite không xoá/sửa dữ liệu cũ, các dòng cũ tự nhận `NULL` cho 2 cột mới).
+- [children_table.dart](lib/data/local/tables/children_table.dart) — `childrenTableCreate` (dùng ở `onCreate`, cho cài đặt mới) đã gồm sẵn 2 cột mới, để máy cài mới đi thẳng đúng schema mới nhất mà không cần chạy qua `onUpgrade`.
+
+**Verify bằng test thật** (`test/child_migration_test.dart`, mới) — không tin vào suy luận, dựng đúng kịch bản rủi ro: dùng `openDatabase` tạo 1 file database THẬT ở đúng schema version 1 cũ (không có 2 cột mới), insert sẵn 1 hồ sơ trẻ, đóng lại; sau đó mở lại **đúng bằng `AppDatabase` thật của app** (`version: 2` + `onUpgrade`) trỏ vào cùng file, mô phỏng đúng hành vi "người dùng mở app sau khi cập nhật". Xác nhận: hồ sơ cũ vẫn đọc được nguyên vẹn (tên, tuổi, giới tính), 2 cột mới đọc ra `null` (không lỗi, không giá trị rác), tạo hồ sơ mới sau migration dùng đúng 2 cột mới hoạt động bình thường, cả hồ sơ cũ lẫn mới cùng tồn tại (`getAll()` trả đúng 2). Test **PASS**.
+
+### Nhiệm vụ 2 — Model & Repository
+
+[child.dart](lib/domain/models/child.dart) — thêm `nguoiDanhGia`/`vaiTro` (`String?`, nullable, không bắt buộc). [child_repository.dart](lib/data/repositories/child_repository.dart) — `create()` nhận thêm 2 tham số optional; `_toRow()`/`_fromRow()` map đúng 2 cột `nguoi_danh_gia`/`vai_tro`. `update()` không cần sửa vì đã dùng `_toRow(child)` cho toàn bộ object.
+
+### Nhiệm vụ 3 — Form tạo hồ sơ
+
+[create_profile_page.dart](lib/features/child_profile/create_profile/create_profile_page.dart) — thêm ngay sau trường Giới tính: `TextFormField` "Người đánh giá" (nhập tự do, không bắt buộc, rỗng → lưu `null`), `DropdownButtonFormField` "Vai trò" (đúng 3 lựa chọn cố định: Phụ huynh / Giáo viên / Chuyên viên, không bắt buộc — giá trị lưu DB chính là nhãn tiếng Việt, không qua mã hoá riêng). Không đụng logic validate của các trường bắt buộc khác (tên, tuổi).
+
+### Nhiệm vụ 4 — Hiển thị hồ sơ chi tiết
+
+[profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart) — thêm 2 dòng "Người đánh giá: ..." / "Vai trò: ..." trong Card thông tin cơ bản, ngay dưới dòng tuổi/giới tính; dùng `?? "Chưa cập nhật"` cho cả 2 trường khi `null`.
+
+### Nhiệm vụ 5 — Test
+
+- `test/repositories_test.dart` — thêm 1 test: tạo hồ sơ có đủ "Người đánh giá"/"Vai trò" → đọc lại đúng giá trị; tạo hồ sơ không điền → đọc lại `null` cho cả 2.
+- `test/child_migration_test.dart` *(mới)* — test migration ở Nhiệm vụ 1.
+- `test/screening_flow_test.dart` — form `CreateProfilePage` dài hơn (thêm 2 field) khiến nút "Lưu hồ sơ" ra ngoài viewport mặc định của widget test (800×600), `tap()` không hit-test trúng nút (cảnh báo "would not hit test on the specified widget"), làm bước tạo hồ sơ trong luồng test thất bại ở bước sau. Sửa bằng `tester.ensureVisible()` cuộn tới nút trước khi `tap()`. Không phải lỗi ở code app — chỉ là hệ quả cần xử lý trong widget test khi form dài hơn.
+- Các test khác gọi `childRepo.create(...)`/`Child(...)` (video_repository_test, child_repository_test, ai_repository_test, child_age_test, vector_search_service_test) đều dùng tham số đặt tên (named parameters) nên không cần sửa — 2 trường mới optional, không phá tương thích ngược.
+
+### Nhiệm vụ 6 — Kiểm chứng tổng hợp
+
+- `flutter analyze`: **0 issues** (phát hiện 1 `unnecessary_import` ở bản nháp đầu của `child_migration_test.dart` do `sqflite_common_ffi/sqflite_ffi.dart` đã re-export `package:sqflite/sqflite.dart` — đã sửa, xác nhận lại 0 issues).
+- `flutter test`: **58/58 PASS** (56 cũ + 2 mới: 1 round-trip "Người đánh giá"/"Vai trò", 1 migration version 1→2). Không có FAIL nào.
+- **Verify tay trên thiết bị thật — hoàn tất ở phiên sau (2026-08-13), xem Nhiệm vụ 7.**
+
+### Nhiệm vụ 7 — Verify migration trên thiết bị thật bằng kịch bản cài đè (2026-08-13, phiên riêng)
+
+Mục tiêu: verify đúng kịch bản người dùng thật gặp phải — app bản cũ (schema version 1, chưa có 2 cột mới) đã có dữ liệu trên máy → cập nhật lên bản mới bằng **cài đè** (`adb install -r`, không gỡ trước) → mở lại → không mất dữ liệu, không crash.
+
+**Xác định commit cũ**: `git log --oneline` cho thấy chỉ 3 commit (`5954217 fix_bug` ← `60185ca update` ← `61cb641 first commit`), và **toàn bộ thay đổi của mục 14 lẫn mục 15 vẫn đang ở trạng thái chưa commit** (working tree). Do đó HEAD (`5954217`) chính xác là commit ngay trước khi có bất kỳ thay đổi nào của mục 15 — đã xác nhận trực tiếp bằng `git show HEAD:lib/data/local/tables/children_table.dart` (7 cột, không có `nguoi_danh_gia`/`vai_tro`) và `git show HEAD:lib/data/local/database.dart` (`version: 1`, không có `onUpgrade`). Không cần đoán, không có nhập nhằng.
+
+**Build bản cũ an toàn qua git worktree**: `git worktree add ../IRIS_v1_migration_test_old HEAD` — tạo thư mục hoàn toàn tách biệt tại `D:\IRIS_v1_migration_test_old`. Xác nhận `git status` ở thư mục chính **không đổi** ngay sau khi tạo worktree (vẫn đúng 16 file thay đổi + 1 file mới như trước). Chạy `flutter pub get` + `flutter build apk --debug` (89.4s) trong thư mục tạm này — không đụng gì tới thư mục chính.
+
+**Cài bản cũ, tạo dữ liệu thật**: `adb uninstall com.iris.app.iris_app` (đảm bảo sạch) → `adb install` APK cũ vừa build. Lái UI qua `adb shell input tap` + `uiautomator dump` (không suy đoán toạ độ) tạo hồ sơ **"Be_Migration_Test"**, 5 tuổi, giới tính Nữ. Xác nhận form tạo hồ sơ ở bản này **không có** 2 trường "Người đánh giá"/"Vai trò" (đúng bản cũ). Pull database thật (cách binary-safe: `adb shell run-as com.iris.app.iris_app base64 <path>` → decode bằng `certutil -decode` trên host → query bằng script Dart dùng `package:sqlite3`) — xác nhận `PRAGMA user_version = 1`, bảng `children` đúng 7 cột, có đúng 1 dòng `Be_Migration_Test` (`id: 591cfc76-510c-4b28-8c14-35652f35ec43`, `age_years: 5`, `gender: nu`).
+
+**Cài đè bản mới (upgrade, giữ dữ liệu)**: Build `flutter build apk --debug` từ **thư mục làm việc chính** (code hiện tại, đã có 2 cột mới). `adb install -r` đè trực tiếp lên bản cũ — **không** `adb uninstall` trước đó, đúng mô phỏng hành vi người dùng thật cập nhật app từ Play Store/APK mới.
+
+**Kết quả sau khi cập nhật**:
+- Mở lại app: **không crash** — xác nhận qua `adb logcat -d` không có `FATAL EXCEPTION` cho tiến trình app (chỉ có log khởi động Flutter bình thường), và UI hiện đúng `ChildListPage` với hồ sơ cũ.
+- Hồ sơ "Be_Migration_Test": tên/tuổi/giới tính còn nguyên (`Be_Migration_Test • 5 tuổi • nu`), `ProfileDetailPage` hiện đúng **"Người đánh giá: Chưa cập nhật"** và **"Vai trò: Chưa cập nhật"**.
+- Tạo thêm hồ sơ mới **"Be_Sau_Migration"** (4 tuổi, Người đánh giá = "Co_Lan", Vai trò = "Giáo viên") qua đúng form mới (đã có 2 field mới) — lưu thành công, hiển thị đúng `ProfileDetailPage`: **"Người đánh giá: Co_Lan"**, **"Vai trò: Giáo viên"**, tồn tại song song với hồ sơ cũ trên `ChildListPage` (2/2 hồ sơ hiện đủ).
+- Pull + query database thật lần cuối xác nhận đầy đủ: `PRAGMA user_version = 2`; bảng `children` giờ có đúng **9 cột** (7 cũ + `nguoi_danh_gia`, `vai_tro`); 2 dòng dữ liệu:
+  - `{id: 591cfc76-..., name: Be_Migration_Test, age_years: 5, gender: nu, nguoi_danh_gia: null, vai_tro: null}` — **cùng `id` với trước khi cập nhật**, dữ liệu cũ nguyên vẹn 100%, 2 cột mới đúng `null`.
+  - `{id: c6bd715c-..., name: Be_Sau_Migration, age_years: 4, nguoi_danh_gia: Co_Lan, vai_tro: Giáo viên}` — hồ sơ mới lưu đúng.
+
+**Kết quả: PASS** — migration chạy đúng khi cài đè thật trên thiết bị (không phải giả lập bằng test tự động), không mất dữ liệu, không crash, 2 trường mới hoạt động đúng cho cả hồ sơ cũ lẫn hồ sơ mới.
+
+**Không phát hiện bug nào trong lúc verify** — migration hoạt động đúng như code đã viết, không cần sửa gì thêm.
+
+**Dọn dẹp**: `git worktree remove ../IRIS_v1_migration_test_old --force` báo lỗi `Filename too long` khi xoá vật lý thư mục (do đường dẫn sâu trong `build/`/Gradle cache của worktree, không phải lỗi của git worktree hay của code) — git đã gỡ đăng ký worktree khỏi `.git/worktrees` thành công (`git worktree list` không còn liệt kê), chỉ còn thư mục vật lý mồ côi; xoá dứt điểm bằng `rm -rf` (Bash) sau khi `Remove-Item` (PowerShell) từ chối vì lý do an toàn đường dẫn. Xác nhận **`git status --short` và `git log --oneline -5` ở thư mục chính giống hệt (byte-for-byte, đối chiếu bằng `diff`) trước và sau toàn bộ thao tác worktree** — thư mục làm việc chính không hề bị ảnh hưởng.
+
+### Không làm / ngoài phạm vi
+
+- Không đổi cột nào khác trong bảng `children`.
+- Không làm các phần UI khác của app.
+- Không làm đẹp theme/màu sắc ngoài đúng 2 trường mới.
+- Không commit git.

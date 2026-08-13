@@ -17,18 +17,21 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _ageYearsController = TextEditingController();
+  final _nguoiDanhGiaController = TextEditingController();
 
   final _childRepository = ChildRepository(AppDatabase.instance);
 
   _AgeInputMode _ageInputMode = _AgeInputMode.dob;
   DateTime? _selectedDob;
   String? _gender;
+  String? _vaiTro;
   bool _saving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _ageYearsController.dispose();
+    _nguoiDanhGiaController.dispose();
     super.dispose();
   }
 
@@ -74,6 +77,10 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             ? int.parse(_ageYearsController.text.trim())
             : null,
         gender: _gender,
+        nguoiDanhGia: _nguoiDanhGiaController.text.trim().isEmpty
+            ? null
+            : _nguoiDanhGiaController.text.trim(),
+        vaiTro: _vaiTro,
       );
       if (mounted) Navigator.of(context).pop(true);
     } finally {
@@ -148,6 +155,22 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                 DropdownMenuItem(value: 'khac', child: Text('Khác')),
               ],
               onChanged: (value) => setState(() => _gender = value),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _nguoiDanhGiaController,
+              decoration: const InputDecoration(labelText: 'Người đánh giá'),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _vaiTro,
+              decoration: const InputDecoration(labelText: 'Vai trò'),
+              items: const [
+                DropdownMenuItem(value: 'Phụ huynh', child: Text('Phụ huynh')),
+                DropdownMenuItem(value: 'Giáo viên', child: Text('Giáo viên')),
+                DropdownMenuItem(value: 'Chuyên viên', child: Text('Chuyên viên')),
+              ],
+              onChanged: (value) => setState(() => _vaiTro = value),
             ),
             const SizedBox(height: 24),
             FilledButton(

@@ -5,6 +5,8 @@ class Child {
   final String? dob;
   final int? ageYears;
   final String? gender;
+  final String? nguoiDanhGia;
+  final String? vaiTro;
   final String status;
   final DateTime createdAt;
 
@@ -14,6 +16,8 @@ class Child {
     this.dob,
     this.ageYears,
     this.gender,
+    this.nguoiDanhGia,
+    this.vaiTro,
     this.status = 'active',
     required this.createdAt,
   });

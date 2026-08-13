@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iris_app/data/local/database.dart';
 import 'package:iris_app/data/repositories/ai_conversation_repository.dart';
@@ -96,6 +98,39 @@ void main() {
     expect(await aiConversationRepo.getForChild(child.id), isEmpty);
     // ignore: avoid_print
     print('PASS: delete() xoá sạch dữ liệu ở 6 bảng con + bảng children, không lỗi khoá ngoại');
+  });
+
+  test(
+      'delete() xoá cả file .mp4 vật lý của mọi video thuộc trẻ đó — không để lại dữ liệu mồ côi trên đĩa',
+      () async {
+    final childRepo = ChildRepository(AppDatabase.instance);
+    final videoRepo = VideoRepository(AppDatabase.instance);
+
+    final tempDir = await Directory.systemTemp.createTemp('iris_child_delete_test_');
+    final videoFileA = File('${tempDir.path}/a.mp4');
+    final videoFileB = File('${tempDir.path}/b.mp4');
+    await videoFileA.writeAsBytes([1]);
+    await videoFileB.writeAsBytes([2]);
+
+    try {
+      final child = await childRepo.create(name: 'Bé Nhiều Video', ageYears: 4);
+      await videoRepo.save(childId: child.id, filePath: videoFileA.path, situation: 'Tình huống 1');
+      await videoRepo.save(childId: child.id, filePath: videoFileB.path, situation: 'Tình huống 2');
+
+      expect(await videoFileA.exists(), isTrue);
+      expect(await videoFileB.exists(), isTrue);
+
+      await childRepo.delete(child.id);
+
+      expect(await childRepo.getById(child.id), isNull);
+      expect(await videoRepo.getForChild(child.id), isEmpty);
+      expect(await videoFileA.exists(), isFalse);
+      expect(await videoFileB.exists(), isFalse);
+      // ignore: avoid_print
+      print('PASS: ChildRepository.delete() xoá sạch file .mp4 vật lý của mọi video thuộc trẻ đã xoá');
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
   });
 
   test('delete() không ảnh hưởng dữ liệu của trẻ khác', () async {

@@ -37,6 +37,7 @@ void main() {
       {
         'content': 'Nội dung mẫu 1',
         'content_type': 'so_sanh',
+        'phan_loai': 'thuong_gap',
         'linh_vuc': 'ngon_ngu',
         'do_tuoi_thang_min': 24,
         'do_tuoi_thang_max': 36,
@@ -63,6 +64,7 @@ void main() {
 
     final row1 = rows.firstWhere((r) => r['content'] == 'Nội dung mẫu 1');
     expect(row1['content_type'], 'so_sanh');
+    expect(row1['phan_loai'], 'thuong_gap');
     expect(row1['linh_vuc'], 'ngon_ngu');
     expect(row1['do_tuoi_thang_min'], 24);
     expect(row1['do_tuoi_thang_max'], 36);
@@ -72,6 +74,7 @@ void main() {
     final row2 = rows.firstWhere((r) => r['content'] == 'Nội dung mẫu 2');
     expect(row2['linh_vuc'], 'hanh_vi');
     expect(row2['do_tuoi_thang_min'], null);
+    expect(row2['phan_loai'], null);
     // ignore: avoid_print
     print('PASS: ingestEntries insert đúng field + đúng embedding cho từng entry');
   });

@@ -6,6 +6,7 @@ import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../domain/models/child.dart';
+import '../../domain/services/active_child_service.dart';
 import '../child_profile/create_profile/create_profile_page.dart';
 import '../child_profile/profile_detail/profile_detail_page.dart';
 import '../history/history_page.dart';
@@ -35,8 +36,10 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
   final _childRepository = ChildRepository(AppDatabase.instance);
   final _assessmentRepository = AssessmentRepository(AppDatabase.instance);
   final _historyLogRepository = HistoryLogRepository(AppDatabase.instance);
+  final _activeChildService = ActiveChildService();
 
   late Future<List<_ChildSummary>> _summariesFuture;
+  late Future<String?> _activeChildIdFuture;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   _ProgressFilter _filter = _ProgressFilter.all;
@@ -45,9 +48,21 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
   void initState() {
     super.initState();
     _reload();
+    _activeChildIdFuture = _activeChildService.getActiveChildId();
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
     });
+  }
+
+  /// Bấm vào 1 dòng hồ sơ (khác menu ⋮) → chọn làm hồ sơ đang hoạt động,
+  /// quay thẳng về Trang chủ. Dùng `popUntil((route) => route.isFirst)` vì
+  /// `HomePage` luôn là route gốc duy nhất của app (kể cả khi màn này được
+  /// mở từ nhiều tầng điều hướng khác nhau — tab "Tài khoản" hoặc icon dashboard
+  /// ở `ChildListPage`), nên luôn quay đúng về Trang chủ bất kể mở từ đâu.
+  Future<void> _selectAsActive(Child child) async {
+    await _activeChildService.setActiveChildId(child.id);
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
@@ -194,18 +209,30 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     );
   }
 
-  Widget _buildChildTile(_ChildSummary s) {
+  Widget _buildChildTile(_ChildSummary s, String? activeChildId) {
     final child = s.child;
     final total = nineDomains.length;
+    final isActive = child.id == activeChildId;
     return Card(
       child: ListTile(
         leading: CircleAvatar(child: Text(child.name.isNotEmpty ? child.name[0] : '?')),
-        title: Text(child.name),
+        title: Row(
+          children: [
+            Flexible(child: Text(child.name)),
+            if (isActive) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.check_circle, size: 16, color: Colors.green),
+              const SizedBox(width: 2),
+              Text('Đang dùng', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.green)),
+            ],
+          ],
+        ),
         subtitle: Text(
           '${formatAgeLabel(child)} • ${s.doneDomainCount}/$total lĩnh vực • '
           '${_statusLabel(s.doneDomainCount)}\nCập nhật gần nhất: ${_formatLastUpdated(s.lastUpdated)}',
         ),
         isThreeLine: true,
+        onTap: () => _selectAsActive(child),
         trailing: PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(value, child),
           itemBuilder: (context) => [
@@ -222,7 +249,7 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     );
   }
 
-  Widget _buildList(List<_ChildSummary> summaries, String emptyMessage) {
+  Widget _buildList(List<_ChildSummary> summaries, String emptyMessage, String? activeChildId) {
     final filtered = _applySearchAndFilter(summaries);
     if (filtered.isEmpty) {
       return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(emptyMessage)));
@@ -230,7 +257,7 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: filtered.length,
-      itemBuilder: (context, index) => _buildChildTile(filtered[index]),
+      itemBuilder: (context, index) => _buildChildTile(filtered[index], activeChildId),
     );
   }
 
@@ -327,11 +354,17 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildList(active, 'Chưa có hồ sơ trẻ nào đang quản lý. Bấm "+" để thêm trẻ.'),
-                      _buildList(archived, 'Chưa có hồ sơ nào được lưu trữ.'),
-                    ],
+                  child: FutureBuilder<String?>(
+                    future: _activeChildIdFuture,
+                    builder: (context, activeSnapshot) {
+                      final activeChildId = activeSnapshot.data;
+                      return TabBarView(
+                        children: [
+                          _buildList(active, 'Chưa có hồ sơ trẻ nào đang quản lý. Bấm "+" để thêm trẻ.', activeChildId),
+                          _buildList(archived, 'Chưa có hồ sơ nào được lưu trữ.', activeChildId),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],

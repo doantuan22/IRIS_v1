@@ -43,6 +43,7 @@ class _HistoryPageState extends State<HistoryPage> {
         'danh_gia' => Icons.checklist_outlined,
         'video' => Icons.videocam_outlined,
         'ho_so' => Icons.person_outline,
+        'tong_quan' => Icons.auto_awesome_outlined,
         _ => Icons.event_note_outlined,
       };
 
@@ -51,6 +52,7 @@ class _HistoryPageState extends State<HistoryPage> {
         'danh_gia' => 'Đánh giá',
         'video' => 'Video',
         'ho_so' => 'Hồ sơ',
+        'tong_quan' => 'Chân dung toàn cảnh',
         _ => eventType,
       };
 

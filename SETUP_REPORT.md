@@ -750,3 +750,512 @@ Mục tiêu: verify đúng kịch bản người dùng thật gặp phải — a
 - Không làm các phần UI khác của app.
 - Không làm đẹp theme/màu sắc ngoài đúng 2 trường mới.
 - Không commit git.
+
+## 16. Bước 6, phần 2 — "So sánh với trẻ cùng độ tuổi" (2026-08-13)
+
+Phạm vi: hoàn thiện Phần 2/5 của Bước 6 — đọc thật `expert_knowledge_chunks`, thêm cột `phan_loai`, 2 màn "So sánh nhanh" + "Chi tiết so sánh", dữ liệu mẫu cho 1 lĩnh vực (Quan hệ xã hội, 48–71 tháng). 3 phần còn lại (Chia sẻ phụ huynh, Bác sĩ, Chân dung) vẫn placeholder, không nằm trong phạm vi lần này.
+
+### Nhiệm vụ 1 — Migration: thêm cột `phan_loai`
+
+[expert_knowledge_chunks_table.dart](lib/data/local/tables/expert_knowledge_chunks_table.dart) — thêm `phan_loai TEXT` (chỉ có ý nghĩa khi `content_type='so_sanh'`: `'thuong_gap'`/`'can_quan_sat'`/`NULL`). [database.dart](lib/data/local/database.dart) — `version: 2 → 3`, thêm nhánh `if (oldVersion < 3) ALTER TABLE expert_knowledge_chunks ADD COLUMN phan_loai TEXT` trong `onUpgrade` (giữ nguyên nhánh `oldVersion < 2` của migration `children` trước đó — cả 2 nhánh cùng chạy đúng khi nâng cấp thẳng từ version 1).
+
+**Phát hiện + sửa trong lúc chạy test** (không phải bug thật, là lỗi ở fixture test): `test/child_migration_test.dart` (viết ở mục 15) tạo database "v1" giả chỉ có bảng `children`, không có `expert_knowledge_chunks` — khi thêm migration mới, `ALTER TABLE expert_knowledge_chunks ADD COLUMN` báo lỗi "no such table" vì fixture thiếu bảng. Database v1 THẬT luôn có đủ 8 bảng (tạo cùng lúc trong `onCreate` gốc), nên đây là chỗ fixture mô phỏng chưa đủ sát thực tế, không phải lỗi migration. Đã sửa bằng cách thêm `CREATE TABLE expert_knowledge_chunks` (đúng schema v1, chưa có `phan_loai`) vào `onCreate` của fixture — không sửa gì ở code migration thật.
+
+### Nhiệm vụ 2 — Model + Repository
+
+[expert_knowledge_chunk.dart](lib/domain/models/expert_knowledge_chunk.dart) — thêm `phanLoai` (`String?`). [expert_knowledge_repository.dart](lib/data/repositories/expert_knowledge_repository.dart) — `add()`/`_toRow()`/`_fromRow()` xử lý `phan_loai`; `query()` không cần sửa (đã tổng quát theo `linhVuc`/`ageInMonths`/`contentType`, giờ mang theo đúng `phanLoai` qua `_fromRow()`).
+
+### Nhiệm vụ 3 — 2 đường ingest
+
+Cả 2 nơi ghi vào `expert_knowledge_chunks` đều cập nhật để đọc `phan_loai` từ JSON: nút "Debug: Nạp dữ liệu tham khảo" ([profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart)`._ingestExpertData()`) và [scripts/ingest_expert_data.dart](scripts/ingest_expert_data.dart)`.ingestEntries()` (dùng cho test desktop, xem `test/ingest_expert_data_test.dart`).
+
+### Nhiệm vụ 4 — Dữ liệu mẫu
+
+[expert_content.json](assets/reference/expert_content.json) — thêm 6 entry mới, `content_type='so_sanh'`, `linh_vuc='quan_he_xa_hoi'`, `do_tuoi_thang_min/max=48/71`: 3 entry `phan_loai='thuong_gap'` + 3 entry `phan_loai='can_quan_sat'`. 6 entry cũ giữ nguyên không đổi (kể cả 4 entry `[Placeholder minh hoạ]`).
+
+### Nhiệm vụ 5 — 2 màn UI
+
+- [comparison_video_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_video_page.dart) — viết lại từ `StatelessWidget` placeholder thành `StatefulWidget` "So sánh nhanh": `FutureBuilder` gọi `ExpertKnowledgeRepository.query(linhVuc:, ageInMonths: childAgeInMonths(child), contentType: 'so_sanh')`, tách theo `phanLoai` thành 2 khối ("Biểu hiện thường gặp" icon ✓ xanh / "Cần quan sát thêm" icon ⚠ cam), tiêu đề "So sánh nhanh (${formatAgeLabel(child)})", ghi chú cuối trang, nút "Xem chi tiết so sánh" (chỉ hiện khi có dữ liệu) truyền thẳng danh sách `chunks` đã tải sang màn chi tiết (không query lại). Trạng thái rỗng hiện đúng thông báo, không hiện 2 khối trống. Giữ nguyên hành vi điều hướng cũ: nút "Tiếp theo" vẫn `pushReplacement` sang `ParentInputPage` (Phần 3/5), không phá luồng đã có.
+- [comparison_detail_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_detail_page.dart) *(mới)* — "Chi tiết so sánh": bảng `Table` 3 cột (Tiêu chí | Thường gặp | Cần quan sát), mỗi dòng là 1 chunk, icon ✓ đúng cột theo `phanLoai`, cuộn ngang cho màn hình hẹp, khung ghi chú cuối trang. Nhận `chunks` qua constructor (không tự query).
+
+### Nhiệm vụ 6 — Test
+
+- `test/repositories_test.dart` — thêm 1 test round-trip `phan_loai` (lưu 2 chunk `so_sanh` có phân loại + 1 chunk `chan_dung` không phân loại, đọc lại đúng, `null` khi không truyền).
+- `test/expert_knowledge_migration_test.dart` *(mới)* — cùng kỹ thuật đã dùng ở mục 15: dựng database THẬT ở schema version 2 (chưa có `phan_loai`) có sẵn 1 chunk tham khảo, mở lại bằng `AppDatabase` thật (version 3), xác nhận chunk cũ còn nguyên (`phan_loai = null`), chunk ingest mới sau migration dùng đúng cột mới, không crash.
+- `test/ingest_expert_data_test.dart` — bổ sung assertion `phan_loai` cho entry có truyền và entry không truyền (giữ nguyên 2 test case đã có).
+
+### Nhiệm vụ 7 — Kiểm chứng tổng hợp (tự động)
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **60/60 PASS** (58 cũ + 2 mới: round-trip `phan_loai`, migration version 2→3). Không có FAIL nào (sau khi sửa fixture ở Nhiệm vụ 1).
+
+### Nhiệm vụ 8 — Verify tay trên thiết bị thật (bắt buộc cho cả 2 trạng thái)
+
+Build `flutter build apk --debug --dart-define-from-file=dart_define.json` (cần API key NVIDIA thật để nút ingest gọi embedding thật) → `adb install -r` lên `emulator-5554` (giữ nguyên 2 hồ sơ có sẵn từ phiên verify migration mục 15: `Be_Migration_Test` 5 tuổi/60 tháng, `Be_Sau_Migration` 4 tuổi/48 tháng — cả 2 đều nằm trong dải 48–71 tháng đã nạp dữ liệu mẫu).
+
+**Nạp dữ liệu tham khảo thật**: mở hồ sơ `Be_Migration_Test` → "Debug: Nạp dữ liệu tham khảo" → chờ NVIDIA embed xong toàn bộ 13 entry trong `expert_content.json`. Pull database thật (base64 qua `run-as` + `certutil -decode`, cùng kỹ thuật đã dùng ở mục 14-15) → query xác nhận: `user_version=3`, cột `phan_loai` đã có, `content_type='so_sanh'` có đúng 8 dòng (2 cũ + 6 mới), đúng 6 dòng `linh_vuc='quan_he_xa_hoi'` với `phan_loai` khớp JSON (3 `thuong_gap` + 3 `can_quan_sat`), `do_tuoi_thang_min/max=48/71`, mỗi dòng có embedding thật (4096 byte = 1024 float32, đúng chiều model `nvidia/nv-embedqa-e5-v5`).
+
+**Kịch bản CÓ dữ liệu** — `Be_Migration_Test` (5 tuổi) → Đánh giá 9 lĩnh vực → Quan hệ xã hội → Mô tả → Tiếp theo:
+- Màn "So sánh nhanh": tiêu đề "Quan hệ xã hội — So sánh nhanh", heading "So sánh nhanh (5 tuổi)", khối "Biểu hiện thường gặp" hiện đúng 3 câu (icon ✓ xanh), khối "Cần quan sát thêm" hiện đúng 3 câu (icon ⚠ cam), ghi chú "Thông tin này chỉ mang tính tham khảo.", nút "Xem chi tiết so sánh" — khớp 100% ảnh chụp màn hình với dữ liệu đã ingest.
+- Bấm "Xem chi tiết so sánh" → bảng 3 cột đúng: 3 dòng đầu có dấu ✓ ở cột "Thường gặp" (cột "Cần quan sát" trống), 3 dòng sau có dấu ✓ ở cột "Cần quan sát" (cột "Thường gặp" trống) — xác nhận qua ảnh chụp cả 2 vị trí cuộn ngang. Khung ghi chú "Thông tin này chỉ giúp đối chiếu với trẻ cùng độ tuổi, không dùng để tự chẩn đoán." hiện đúng.
+
+**Kịch bản CHƯA có dữ liệu** — cùng `Be_Migration_Test`, đổi sang lĩnh vực "Cảm xúc" (không có entry `so_sanh` nào cho lĩnh vực này ở độ tuổi 48–71 tháng): màn "So sánh nhanh" hiện đúng "Chưa có dữ liệu so sánh cho lĩnh vực này ở độ tuổi hiện tại." — không hiện 2 khối rỗng, không hiện nút "Xem chi tiết so sánh" (đúng thiết kế — chỉ hiện khi có dữ liệu), không lỗi/vỡ giao diện. Bấm "Tiếp theo" vẫn điều hướng đúng sang Phần 3/5 (`ParentInputPage`, còn placeholder — đúng phạm vi, không đụng tới).
+
+**Kiểm tra không crash**: `adb logcat -d` lọc `FATAL EXCEPTION`/`iris_app.*Exception` — không có kết quả nào trong suốt phiên verify (ingest + cả 2 kịch bản).
+
+**Không phát hiện bug thật nào ở code UI/repository trong lúc verify** — chỉ có 1 vấn đề ở fixture test (đã ghi ở Nhiệm vụ 1), không phải bug ở code app.
+
+### Không làm / ngoài phạm vi
+
+- Không soạn nội dung tham khảo thật đầy đủ cho các lĩnh vực khác — 6 entry `[Placeholder minh hoạ]` cũ giữ nguyên.
+- Không làm 3 phần còn lại của Bước 6 (Chia sẻ phụ huynh, Bác sĩ, Chân dung) — vẫn đúng placeholder cũ, đã xác nhận luồng điều hướng qua các phần đó không bị phá.
+- Không đổi cột nào khác trong `expert_knowledge_chunks`.
+- Không làm đẹp theme/màu sắc ngoài đúng phạm vi phần "So sánh".
+- Không commit git.
+
+## 17. Bước 6, phần 3 — "Chia sẻ từ phụ huynh" (2026-08-13)
+
+Phạm vi: hoàn thiện Phần 3/5 của Bước 6 — thêm cột `nhom_tre`/`boi_canh`, mở rộng `query()`, 2 màn "Góc nhìn từ phụ huynh" (tab theo nhóm trẻ) + "Kinh nghiệm theo tình huống" (tab theo bối cảnh), dữ liệu mẫu cùng lĩnh vực/độ tuổi đã dùng ở Phần 2 (Quan hệ xã hội, 48–71 tháng). Đọc lại code Phần 2 trước khi làm (`ComparisonVideoPage`/`ComparisonDetailPage`/migration `phan_loai`) để tái dùng đúng pattern: FutureBuilder tải 1 lần → lọc theo trường phân loại ở phía Dart → truyền list đã tải sang màn con (không query lại) → trạng thái rỗng rõ ràng. Phần Bác sĩ/Chân dung vẫn placeholder, không đụng tới — đã xác nhận HEAD lúc bắt đầu là `7e302bd` (đã gộp mục 14+15), mục 16 vẫn ở working tree, đúng như `git status` cho thấy trước khi bắt đầu.
+
+### Nhiệm vụ 1 — Migration: thêm cột `nhom_tre`/`boi_canh`
+
+[expert_knowledge_chunks_table.dart](lib/data/local/tables/expert_knowledge_chunks_table.dart) — thêm `nhom_tre TEXT` (`'binh_thuong'`/`'asd'`/`NULL`) và `boi_canh TEXT` (`'o_nha'`/`'o_truong'`/`'noi_cong_cong'`/`NULL`), chỉ có ý nghĩa khi `content_type='chia_se_phu_huynh'`. [database.dart](lib/data/local/database.dart) — `version: 3 → 4`, thêm nhánh `if (oldVersion < 4)` ALTER cả 2 cột trong `onUpgrade` (giữ nguyên 2 nhánh `< 2`/`< 3` trước đó — cả 3 nhánh cùng chạy đúng khi nâng cấp thẳng từ version 1). Không cần sửa 2 fixture test migration trước (`child_migration_test.dart`, `expert_knowledge_migration_test.dart`) — bảng `expert_knowledge_chunks` trong cả 2 fixture đã tồn tại từ trước, `ALTER TABLE ADD COLUMN` chỉ thêm cột vào bảng đã có, không cần bảng phải "biết trước" sẽ có thêm migration sau này. Đã chạy lại `flutter test` xác nhận cả 2 test cũ vẫn PASS, không hồi quy.
+
+### Nhiệm vụ 2 — Model + Repository
+
+[expert_knowledge_chunk.dart](lib/domain/models/expert_knowledge_chunk.dart) — thêm `nhomTre`/`boiCanh` (`String?`). [expert_knowledge_repository.dart](lib/data/repositories/expert_knowledge_repository.dart) — `add()`/`_toRow()`/`_fromRow()` xử lý 2 cột mới; `query()` mở rộng thêm 2 tham số optional `nhomTre`/`boiCanh` (bỏ qua nếu null) — dùng khi cần lọc chính xác 1 giá trị (có test riêng xác nhận), còn 2 màn UI thực tế tải 1 lần theo `contentType='chia_se_phu_huynh'` rồi lọc theo tab ở phía Dart, giống hệt cách `phanLoai` đã dùng ở "So sánh".
+
+### Nhiệm vụ 3 — 2 đường ingest
+
+Cả 2 nơi ghi vào `expert_knowledge_chunks` (nút "Debug: Nạp dữ liệu tham khảo" trong [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart) và [scripts/ingest_expert_data.dart](scripts/ingest_expert_data.dart)) cập nhật đọc thêm `nhom_tre`/`boi_canh` từ JSON.
+
+### Nhiệm vụ 4 — Dữ liệu mẫu
+
+[expert_content.json](assets/reference/expert_content.json) — thêm 6 entry mới, `content_type='chia_se_phu_huynh'`, `linh_vuc='quan_he_xa_hoi'`, `do_tuoi_thang_min/max=48/71`, mỗi entry có cả `nhom_tre` VÀ `boi_canh` (thực tế 1 câu chia sẻ luôn thuộc 1 nhóm trẻ + 1 bối cảnh cùng lúc): 3 entry `binh_thuong` + 3 entry `asd` (≥2 mỗi nhóm), phân bố đều 2 entry mỗi bối cảnh (`o_nha`/`o_truong`/`noi_cong_cong`, ≥2 mỗi bối cảnh) — đúng yêu cầu tối thiểu ở cả 2 trục cùng lúc mà không cần nhân đôi số entry. Mỗi entry có `nguon_tai_lieu` trích dẫn (VD "Mẹ bé 5 tuổi", "Giáo viên mầm non").
+
+### Nhiệm vụ 5 — 2 màn UI
+
+- [parent_input_page.dart](lib/features/assessment/nine_domains/parent_input/parent_input_page.dart) — viết lại từ `StatelessWidget` placeholder thành `StatefulWidget` "Góc nhìn từ phụ huynh": `FutureBuilder` gọi `query(linhVuc:, ageInMonths:, contentType:'chia_se_phu_huynh')`, `DefaultTabController` 2 tab ("Trẻ phát triển bình thường"/"Trẻ có dấu hiệu ASD") lọc theo `nhomTre`, mỗi tab là danh sách quote card (nội dung in nghiêng trong ngoặc kép + trích dẫn `— ${nguonTaiLieu}` căn phải nếu có). Trạng thái rỗng **riêng cho từng tab** (đúng yêu cầu 4.3 — không phải 1 thông báo chung). Nút "Xem kinh nghiệm theo tình huống" (chỉ hiện khi có ít nhất 1 chunk) truyền thẳng `chunks` đã tải sang màn con. Giữ nguyên hành vi điều hướng cũ: "Tiếp theo" vẫn `pushReplacement` sang `ExpertInputPage` (Phần 4/5, còn placeholder) — đúng thứ tự 5 phần, không đổi.
+- [parent_context_page.dart](lib/features/assessment/nine_domains/parent_input/parent_context_page.dart) *(mới)* — "Kinh nghiệm theo tình huống": `StatelessWidget` nhận `chunks` qua constructor (không tự query), `DefaultTabController` 3 tab ("Ở nhà"/"Ở trường"/"Nơi công cộng") lọc theo `boiCanh`, khối tóm tắt tĩnh ở đầu trang ("Tổng hợp góc nhìn thực tế phụ huynh chia sẻ theo từng bối cảnh khác nhau...") theo đúng tinh thần 4.4 (không bắt buộc khớp pixel). Trạng thái rỗng riêng cho từng tab.
+
+### Nhiệm vụ 6 — Test
+
+- `test/repositories_test.dart` — thêm 1 test round-trip `nhom_tre`/`boi_canh` (lưu 2 chunk `chia_se_phu_huynh` khác nhóm/bối cảnh + 1 chunk `so_sanh` không có 2 trường này, xác nhận đọc lại đúng, `null` khi không truyền, và `query()` lọc đúng theo từng tham số `nhomTre`/`boiCanh` riêng lẻ).
+- `test/expert_knowledge_context_migration_test.dart` *(mới)* — cùng kỹ thuật đã dùng ở mục 15/16: dựng database THẬT ở schema version 3 (chưa có `nhom_tre`/`boi_canh`) có sẵn 1 chunk `chia_se_phu_huynh`, mở lại bằng `AppDatabase` thật (version 4), xác nhận chunk cũ còn nguyên (`nhom_tre`/`boi_canh = null`), chunk ingest mới sau migration dùng đúng 2 cột mới, không crash.
+
+### Nhiệm vụ 7 — Kiểm chứng tổng hợp (tự động)
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **62/62 PASS** (60 cũ + 2 mới: round-trip `nhom_tre`/`boi_canh`, migration version 3→4). Không có FAIL nào, không cần sửa fixture nào lần này (khác mục 16).
+
+### Nhiệm vụ 8 — Verify tay trên thiết bị thật (bắt buộc cho cả 2 màn, cả 2 trạng thái)
+
+Build `flutter build apk --debug --dart-define-from-file=dart_define.json` → `adb install -r` lên `emulator-5554` (giữ nguyên 2 hồ sơ có sẵn từ các phiên verify trước: `Be_Migration_Test` 5 tuổi/60 tháng, `Be_Sau_Migration` 4 tuổi/48 tháng).
+
+**Nạp dữ liệu tham khảo thật**: mở hồ sơ `Be_Migration_Test` → "Debug: Nạp dữ liệu tham khảo" → dialog cảnh báo đã có 12 chunk từ phiên trước → "Vẫn nạp" (chấp nhận 1 vài entry cũ (`so_sanh`) bị nhân đôi hiển thị do ingest lại — chỉ ảnh hưởng UI phần "So sánh" đã verify PASS ở mục 16, không ảnh hưởng phần "Chia sẻ phụ huynh" đang verify vì 6 entry mới của phần này chưa từng tồn tại trước đó, không bị trùng). Pull database thật (base64 qua `run-as` + `certutil -decode`) → query xác nhận: `user_version=4`, cột `nhom_tre`/`boi_canh` đã có, đúng 6 dòng `linh_vuc='quan_he_xa_hoi'` + `content_type='chia_se_phu_huynh'` với `nhom_tre`/`boi_canh`/`nguon_tai_lieu` khớp chính xác JSON (3 `binh_thuong` + 3 `asd`, 2 mỗi bối cảnh).
+
+**Kịch bản CÓ dữ liệu** — `Be_Migration_Test` (5 tuổi) → Quan hệ xã hội → Mô tả → So sánh → Tiếp theo:
+- Màn "Góc nhìn từ phụ huynh": tiêu đề "Góc nhìn từ phụ huynh (5 tuổi)", tab "Trẻ phát triển bình thường" hiện đúng 3 quote card (không trùng lặp) kèm trích dẫn "— Mẹ bé 5 tuổi"/"— Bố bé 6 tuổi"/"— Mẹ bé 4 tuổi"; tab "Trẻ có dấu hiệu ASD" hiện đúng 3 quote card kèm trích dẫn tương ứng — khớp 100% ảnh chụp màn hình với dữ liệu đã ingest.
+- Bấm "Xem kinh nghiệm theo tình huống" → màn "Kinh nghiệm theo tình huống (5 tuổi)" + khối tóm tắt, 3 tab "Ở nhà"/"Ở trường"/"Nơi công cộng" đều hiện đúng 2 chia sẻ mỗi tab (1 bình thường + 1 ASD), đúng nội dung + trích dẫn — xác nhận qua ảnh chụp cả 3 tab.
+
+**Kịch bản CHƯA có dữ liệu** — cùng `Be_Migration_Test`, đổi sang lĩnh vực "Cảm xúc" (không có entry `chia_se_phu_huynh` nào ở độ tuổi 48–71 tháng): cả 2 tab của "Góc nhìn từ phụ huynh" đều hiện đúng "Chưa có chia sẻ nào từ nhóm phụ huynh này cho lĩnh vực + độ tuổi hiện tại." (thông báo **riêng từng tab**, đúng yêu cầu), không hiện nút "Xem kinh nghiệm theo tình huống", không lỗi/vỡ giao diện. Bấm "Tiếp theo" điều hướng đúng sang "Cảm xúc — Thông tin từ bác sĩ" (Phần 4/5, còn placeholder — đúng thứ tự 5 phần, không đụng tới).
+
+**Kiểm tra không crash**: `adb logcat -d` lọc `FATAL EXCEPTION`/`iris_app.*Exception` — không có kết quả nào trong suốt phiên verify (ingest + cả 2 màn + cả 2 trạng thái).
+
+**Không phát hiện bug thật nào trong lúc verify** — không cần sửa gì ở code app.
+
+### Không làm / ngoài phạm vi
+
+- Không soạn nội dung tham khảo thật đầy đủ cho các lĩnh vực khác.
+- Không làm phần Bác sĩ/Chân dung — vẫn placeholder cũ, đã xác nhận luồng điều hướng qua phần đó không bị phá.
+- Không đổi cột nào khác trong `expert_knowledge_chunks`.
+- Không commit git.
+
+## 18. Bước 6, phần 4 — "Thông tin từ bác sĩ" (2026-08-13)
+
+Phạm vi: hoàn thiện Phần 4/5 của Bước 6 — dùng lại cột `phan_loai` sẵn có (không migration) với bộ giá trị mới cho `content_type='bac_si'`, 2 màn tổng quan + "Giải thích chuyên môn", dữ liệu mẫu minh hoạ (không bịa danh tính bác sĩ thật). Đọc lại code Phần 2/3 trước khi làm (`ComparisonVideoPage`/`ParentInputPage`, cách dùng `phan_loai`/`ExpertKnowledgeRepository.query()`) để tái dùng đúng pattern. HEAD lúc bắt đầu vẫn `7e302bd`, mục 16+17 ở working tree — đúng như `git status` cho thấy trước khi bắt đầu.
+
+### Nhiệm vụ 1 — Xác nhận cột `phan_loai` đủ dùng, không cần migration
+
+Đọc trực tiếp [expert_knowledge_chunks_table.dart](lib/data/local/tables/expert_knowledge_chunks_table.dart): `phan_loai TEXT` — không có `CHECK` constraint, không ràng buộc enum ở tầng DB. Xác nhận **không cần migration mới** — chỉ cần dùng đúng bộ giá trị mới (`'moc_phat_trien'`/`'dau_hieu_luu_y'`/`'giai_thich'`) khi tạo dữ liệu `content_type='bac_si'`, với ý nghĩa hoàn toàn tách biệt khỏi bộ giá trị `'thuong_gap'`/`'can_quan_sat'` đã dùng cho `content_type='so_sanh'` — không xung đột vì luôn lọc kèm `content_type` trước khi đọc `phan_loai`. Viết 1 test repository (Nhiệm vụ 3) xác nhận thay vì chỉ đọc code suông.
+
+### Nhiệm vụ 2 — Dữ liệu mẫu
+
+[expert_content.json](assets/reference/expert_content.json) — thêm 6 entry mới, `content_type='bac_si'`, `linh_vuc='quan_he_xa_hoi'`, `do_tuoi_thang_min/max=48/71`: 2 entry `moc_phat_trien` + 2 entry `dau_hieu_luu_y` + 2 entry `giai_thich`. Mỗi entry có `nguon_tai_lieu: "Góc nhìn chuyên khoa Tâm thần Nhi (minh hoạ)"` — chỉ nêu VAI TRÒ/CHUYÊN KHOA minh hoạ, không gắn tên người cụ thể, đúng yêu cầu không bịa danh tính bác sĩ thật. Nội dung viết theo văn phong hedge nhất quán với phần còn lại của file (VD "thường", "một số dấu hiệu nên cân nhắc", "khi cần thiết") — không trích dẫn số liệu/nghiên cứu cụ thể, không nêu tiêu chí chẩn đoán chính thức nào (VD DSM-5) mà chỉ diễn giải chung.
+
+### Nhiệm vụ 3 — 2 màn UI
+
+- [expert_input_page.dart](lib/features/assessment/nine_domains/expert_input/expert_input_page.dart) — viết lại từ `StatelessWidget` placeholder thành `StatefulWidget` "Thông tin từ bác sĩ": `FutureBuilder` gọi `query(linhVuc:, ageInMonths:, contentType:'bac_si')`. Card đầu trang minh hoạ vai trò ("Góc nhìn chuyên khoa Tâm thần Nhi (minh hoạ)" + dòng chú thích rõ "không phải ý kiến trực tiếp từ một bác sĩ cụ thể") **luôn hiển thị bất kể có dữ liệu hay không** — đây là phần tĩnh, không phụ thuộc dữ liệu. 3 mục điều hướng ("Mốc phát triển"/"Dấu hiệu cần lưu ý"/"Giải thích chuyên môn", chỉ hiện khi `chunks` không rỗng) mở [expert_detail_page.dart](lib/features/assessment/nine_domains/expert_input/expert_detail_page.dart) kèm tham số `initialSection` tương ứng, truyền thẳng `chunks` đã tải (không query lại). Giữ nguyên hành vi điều hướng cũ: "Tiếp theo" vẫn `pushReplacement` sang `SummaryPortraitPage` (Phần 5/5, còn placeholder).
+- [expert_detail_page.dart](lib/features/assessment/nine_domains/expert_input/expert_detail_page.dart) *(mới)* — "Giải thích chuyên môn": `StatefulWidget` nhận `chunks` qua constructor, tách 3 nhóm theo `phanLoai`, mỗi nhóm dùng `GlobalKey` riêng; nếu có `initialSection`, `WidgetsBinding.instance.addPostFrameCallback` gọi `Scrollable.ensureVisible()` cuộn thẳng tới đúng nhóm ngay sau khi build xong — đã verify tay hoạt động đúng (xem Nhiệm vụ 5). Mỗi nhóm chỉ hiện nếu `isNotEmpty` — **ẩn hẳn nhóm rỗng thay vì hiện tiêu đề trống**, đúng yêu cầu 4.3. Khung ghi chú cuối trang đúng nguyên văn: "Thông tin mang tính tham khảo, không thay thế khám và đánh giá chuyên sâu."
+
+### Nhiệm vụ 4 — Test
+
+`test/repositories_test.dart` — thêm 1 test xác nhận cột `phan_loai` (TEXT tự do) dùng đúng cho bộ giá trị mới của `content_type='bac_si'` (`moc_phat_trien`/`dau_hieu_luu_y`/`giai_thich`) mà không cần migration — lưu 3 chunk khác nhóm, đọc lại đúng qua `query(contentType:'bac_si')`.
+
+### Nhiệm vụ 5 — Kiểm chứng tổng hợp (tự động)
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **63/63 PASS** (62 cũ + 1 mới). Không có FAIL nào, không cần migration nên không có test migration mới ở mục này.
+
+### Nhiệm vụ 6 — Verify tay trên thiết bị thật (bắt buộc cho cả 2 màn, cả 2 trạng thái)
+
+Build `flutter build apk --debug --dart-define-from-file=dart_define.json` → `adb install -r` lên `emulator-5554` (giữ nguyên 2 hồ sơ có sẵn). Nạp dữ liệu tham khảo thật qua "Debug: Nạp dữ liệu tham khảo" ở hồ sơ `Be_Migration_Test` (5 tuổi/60 tháng). Pull database thật xác nhận đúng 6 dòng `linh_vuc='quan_he_xa_hoi'` + `content_type='bac_si'` với `phan_loai`/`nguon_tai_lieu` khớp chính xác JSON (2 mỗi nhóm), tách biệt hoàn toàn với 3 dòng `bac_si` cũ (`[Placeholder minh hoạ]`, độ tuổi 12-24 tháng, không match tuổi 60, `phan_loai = null`).
+
+**Kịch bản CÓ dữ liệu** — `Be_Migration_Test` → Quan hệ xã hội → Mô tả → So sánh → Chia sẻ phụ huynh → Tiếp theo:
+- Màn tổng quan "Thông tin từ bác sĩ (5 tuổi)": card minh hoạ vai trò đúng nội dung, 3 mục điều hướng hiện đủ — khớp ảnh chụp màn hình.
+- Bấm "Mốc phát triển" → màn "Giải thích chuyên môn" **tự cuộn thẳng tới đúng section "Mốc phát triển"** (xác nhận qua ảnh chụp: tiêu đề "Mốc phát triển" nằm ngay đầu viewport dù trang có nhiều nội dung phía trên) — xác nhận `Scrollable.ensureVisible()` hoạt động đúng trên thiết bị thật, không chỉ đúng về mặt logic. Cuộn tiếp xuống cuối trang xác nhận đủ cả 3 nhóm ("Mốc phát triển"/"Dấu hiệu cần lưu ý"/"Giải thích chuyên môn") đúng nội dung + trích dẫn "— Góc nhìn chuyên khoa Tâm thần Nhi (minh hoạ)", và dòng miễn trừ trách nhiệm đúng nguyên văn "Thông tin mang tính tham khảo, không thay thế khám và đánh giá chuyên sâu." ở cuối trang.
+
+**Kịch bản CHƯA có dữ liệu** — cùng `Be_Migration_Test`, đổi sang lĩnh vực "Cảm xúc" (không có entry `bac_si` nào ở độ tuổi 48–71 tháng): card minh hoạ vai trò **vẫn hiển thị** (đúng thiết kế — phần tĩnh, không phụ thuộc dữ liệu), thông báo "Chưa có dữ liệu từ bác sĩ cho lĩnh vực này ở độ tuổi hiện tại." hiện đúng, 3 mục điều hướng tự ẩn hoàn toàn (không có mục nào dẫn tới trang rỗng vô nghĩa), không lỗi/vỡ giao diện. Bấm "Tiếp theo" điều hướng đúng sang "Cảm xúc — Chân dung biểu hiện" (Phần 5/5, còn placeholder — đúng thứ tự 5 phần, không đụng tới).
+
+**Kiểm tra không crash**: `adb logcat -d` lọc `FATAL EXCEPTION`/`iris_app.*Exception` — không có kết quả nào trong suốt phiên verify.
+
+**Không phát hiện bug thật nào trong lúc verify** — không cần sửa gì ở code app.
+
+### Không làm / ngoài phạm vi
+
+- Không làm phần Chân dung.
+- Không soạn nội dung thật đầy đủ cho các lĩnh vực khác.
+- Không bịa danh tính bác sĩ thật hay thông tin y khoa cụ thể ngoài dữ liệu mẫu minh hoạ đã ghi rõ.
+- Không commit git.
+
+## 19. Bước 6, phần 5 — "Chân dung biểu hiện" (2026-08-13) — HOÀN THÀNH CẢ 5 PHẦN BƯỚC 6
+
+Phạm vi: hoàn thiện Phần 5/5 (cuối cùng) của Bước 6 — dùng lại `phan_loai` với bộ giá trị mới cho `content_type='chan_dung'`, 2 màn tổng quan + chân dung chi tiết dạng **lưới thẻ màu** (đơn giản hoá chủ động từ mindmap toả tròn gốc), nút kết thúc chuỗi 5 phần. Đọc lại code Phần 2-4 trước khi làm để tái dùng đúng pattern. HEAD lúc bắt đầu vẫn `7e302bd`, mục 16+17+18 ở working tree — đúng như `git status` cho thấy trước khi bắt đầu.
+
+### Nhiệm vụ 1 — Xác nhận cột `phan_loai` đủ dùng
+
+Giống lý do đã xác nhận ở mục 18 (Phần 4): `phan_loai TEXT` không có `CHECK` constraint, dùng lại đúng cho bộ giá trị mới của `content_type='chan_dung'`: `'diem_manh'`/`'khac_biet'`/`'can_ho_tro'`/`'muc_do_bieu_hien'`, không xung đột với 2 bộ giá trị đã dùng ở `so_sanh`/`bac_si` vì luôn lọc kèm `content_type`. Không cần migration mới. Có test repository xác nhận (Nhiệm vụ 4).
+
+### Nhiệm vụ 2 — Quyết định đơn giản hoá bố cục (ghi rõ theo yêu cầu 4.4/báo cáo)
+
+Bố cục gốc của "Chân dung biểu hiện" là sơ đồ mindmap toả tròn quanh 1 hình trung tâm — phần phức tạp nhất trong 5 phần. Theo đúng chỉ định của prompt, đã **chủ động đơn giản hoá thành lưới thẻ (`GridView`, 2 cột) có màu viền/nhãn theo phân loại** (xanh lá = điểm mạnh, cam = khác biệt, xanh dương = cần hỗ trợ) thay vì dựng đúng sơ đồ toả tròn — giữ nguyên toàn bộ thông tin và ý nghĩa phân loại, chỉ khác cách trình bày trực quan. Không có gì cần "xin phép thêm" vì đây đã là chỉ định rõ ràng trong prompt, không phải tự ý đổi phạm vi.
+
+### Nhiệm vụ 3 — 2 màn UI
+
+- [summary_portrait_page.dart](lib/features/assessment/nine_domains/summary_portrait/summary_portrait_page.dart) — viết lại từ `StatelessWidget` placeholder thành `StatefulWidget` "Chân dung biểu hiện": `FutureBuilder` gọi `query(linhVuc:, ageInMonths:, contentType:'chan_dung')`. "Mức độ biểu hiện" hiện dạng `Chip` nếu có đúng 1 chunk `phan_loai='muc_do_bieu_hien'`, **ẩn hẳn khối này nếu không có** (không hiện tiêu đề trống — đúng yêu cầu 4.2). "Điểm nổi bật" (`diem_manh`, icon sao xanh lá) và "Khác biệt so với trẻ cùng tuổi" (`khac_biet`, icon cam) — mỗi khối tự ẩn nếu rỗng, cùng pattern `_PortraitSection` đã dùng ở Phần 2 (`_ComparisonSection`). Nút "Xem chân dung chi tiết" chỉ hiện khi có ít nhất 1 chunk thuộc `diem_manh`/`khac_biet`/`can_ho_tro`, truyền thẳng `chunks` đã tải sang màn chi tiết.
+- [summary_detail_page.dart](lib/features/assessment/nine_domains/summary_portrait/summary_detail_page.dart) *(mới)* — "Chân dung biểu hiện" chi tiết: `StatelessWidget` nhận `chunks` qua constructor (không tự query), lọc đúng 3 loại `diem_manh`/`khac_biet`/`can_ho_tro` (bỏ qua `muc_do_bieu_hien` — chunk đó chỉ hiện ở màn tổng quan dạng badge, không phải 1 thẻ trong lưới). Dòng tóm tắt đầu trang đúng tinh thần yêu cầu 4.3. `GridView.builder` 2 cột, mỗi thẻ viền màu theo phân loại + nhãn màu (`_labels`) + nội dung chunk. Khối chú thích màu (`_LegendRow` ×3) cuối trang giải thích đúng 3 màu.
+
+### Nhiệm vụ 4 — Điều hướng kết thúc chuỗi 5 phần
+
+Đọc lại code placeholder cũ của `SummaryPortraitPage` trước khi sửa — phát hiện nút "Hoàn tất — Về danh sách lĩnh vực" gọi `Navigator.of(context).pop()` **đã có sẵn từ Giai đoạn 3** (không phải "Tiếp theo" như 4 phần trước), kèm comment giải thích đúng lý do: Phần 2-5 đều dùng `pushReplacement` nối tiếp, nên ngăn xếp điều hướng tại `SummaryPortraitPage` chỉ có đúng 1 route nằm trên `DomainListPage` — 1 lần `pop()` là đủ quay đúng về màn danh sách 9 lĩnh vực. Đã **giữ nguyên quyết định điều hướng này** (không đổi thành route khác) khi viết lại nội dung thật cho trang, chỉ thêm phần hiển thị dữ liệu phía trên nút. Đã verify tay xác nhận `pop()` quay đúng về `DomainListPage` (Nhiệm vụ 6), không lỗi.
+
+### Nhiệm vụ 5 — Dữ liệu mẫu
+
+[expert_content.json](assets/reference/expert_content.json) — thêm 7 entry mới, `content_type='chan_dung'`, `linh_vuc='quan_he_xa_hoi'`, `do_tuoi_thang_min/max=48/71`: 2 entry `diem_manh` + 2 entry `khac_biet` + 2 entry `can_ho_tro` + 1 entry `muc_do_bieu_hien` (nội dung `"Thường xuyên"`, đúng ví dụ trong prompt).
+
+### Nhiệm vụ 6 — Test
+
+`test/repositories_test.dart` — thêm 1 test xác nhận cột `phan_loai` dùng đúng cho bộ giá trị mới của `content_type='chan_dung'` (`diem_manh`/`khac_biet`/`can_ho_tro`/`muc_do_bieu_hien`) — lưu 4 chunk khác nhóm, đọc lại đúng qua `query(contentType:'chan_dung')`.
+
+### Nhiệm vụ 7 — Kiểm chứng tổng hợp (tự động)
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **64/64 PASS** (63 cũ + 1 mới). Không cần migration nên không có test migration mới ở mục này (giống mục 18).
+
+### Nhiệm vụ 8 — Verify tay trên thiết bị thật (bắt buộc cho cả 2 màn, cả 2 trạng thái, cả điều hướng "Hoàn tất")
+
+Build `flutter build apk --debug --dart-define-from-file=dart_define.json` → `adb install -r` lên `emulator-5554`. Nạp dữ liệu tham khảo thật qua "Debug: Nạp dữ liệu tham khảo" ở hồ sơ `Be_Migration_Test` (5 tuổi/60 tháng). Pull database thật xác nhận đúng 7 dòng `linh_vuc='quan_he_xa_hoi'` + `content_type='chan_dung'` khớp chính xác JSON (2 mỗi loại + 1 `muc_do_bieu_hien` nội dung "Thường xuyên").
+
+**Kịch bản CÓ dữ liệu** — `Be_Migration_Test` → Quan hệ xã hội → đi hết Mô tả → So sánh → Chia sẻ phụ huynh → Bác sĩ → tới "Chân dung biểu hiện":
+- Màn tổng quan: badge "Mức độ biểu hiện: Thường xuyên", "Điểm nổi bật" đúng 2 mục (icon sao xanh lá), "Khác biệt so với trẻ cùng tuổi" đúng 2 mục (icon cam), nút "Xem chân dung chi tiết", nút "Hoàn tất — Về danh sách lĩnh vực" — khớp 100% ảnh chụp màn hình.
+- Bấm "Xem chân dung chi tiết" → lưới thẻ 2 cột đúng 6 thẻ: 2 thẻ viền/nhãn xanh lá "Điểm mạnh", 2 thẻ cam "Khác biệt", 2 thẻ xanh dương "Cần hỗ trợ" — đúng nội dung từng thẻ, đúng màu theo phân loại. Cuộn xuống xác nhận khối "Chú thích màu" cuối trang đúng đủ 3 dòng giải thích màu.
+
+**Kịch bản CHƯA có dữ liệu** — cùng `Be_Migration_Test`, đổi sang lĩnh vực "Cảm xúc" (không có entry `chan_dung` nào ở độ tuổi 48–71 tháng): không hiện "Mức độ biểu hiện", không hiện "Điểm nổi bật"/"Khác biệt", không hiện nút "Xem chân dung chi tiết" — chỉ hiện đúng thông báo "Chưa có dữ liệu chân dung cho lĩnh vực này ở độ tuổi hiện tại." + nút "Hoàn tất", không lỗi/vỡ giao diện.
+
+**Verify điều hướng "Hoàn tất"**: bấm "Hoàn tất — Về danh sách lĩnh vực" ở trạng thái rỗng → xác nhận quay đúng về "Đánh giá 9 lĩnh vực — Be_Migration_Test" (`DomainListPage`), không lỗi, không crash — đúng lựa chọn điều hướng đã ghi ở Nhiệm vụ 4.
+
+**Kiểm tra không crash**: `adb logcat -d` lọc `FATAL EXCEPTION`/`iris_app.*Exception` — không có kết quả nào trong suốt phiên verify (ingest + cả 2 màn + cả 2 trạng thái + điều hướng Hoàn tất).
+
+**Không phát hiện bug thật nào trong lúc verify** — không cần sửa gì ở code app.
+
+### Tổng kết — Bước 6 (5 phần) đã hoàn thành đầy đủ
+
+Cả 5 phần của Bước 6 (đánh giá chi tiết 1 lĩnh vực) nay đều chạy thật, đọc dữ liệu thật từ `expert_knowledge_chunks`, có test tự động, và có bằng chứng verify thiết bị thật:
+
+| Phần | Tên | Trạng thái |
+|---|---|---|
+| 1/5 | Mô tả biểu hiện | Đã xong từ trước (Giai đoạn 3, không thuộc loạt prompt này) |
+| 2/5 | So sánh với trẻ cùng độ tuổi | Đã xong — mục 16 |
+| 3/5 | Chia sẻ từ phụ huynh | Đã xong — mục 17 |
+| 4/5 | Thông tin từ bác sĩ | Đã xong — mục 18 |
+| 5/5 | Chân dung biểu hiện | Đã xong — mục 19 (mục này) |
+
+Toàn bộ 4 phần (2-5) dùng chung 1 hạ tầng nhất quán: cột `phan_loai` (TEXT tự do, tái sử dụng ý nghĩa khác nhau theo từng `content_type`, không cần migration riêng cho mỗi phần trừ lần đầu ở mục 16), `ExpertKnowledgeRepository.query()` (mở rộng 1 lần ở mục 17 cho `nhomTre`/`boiCanh`, dùng lại nguyên vẹn cho các phần sau), pattern tải dữ liệu 1 lần ở màn tổng quan rồi truyền xuống màn chi tiết (không query lại), và xử lý trạng thái rỗng nhất quán (ẩn khối/nút thay vì hiện trống). Dữ liệu mẫu đầy đủ cho 1 lĩnh vực (Quan hệ xã hội, 48–71 tháng) đủ để verify toàn bộ chuỗi 5 phần liền mạch từ đầu tới cuối — đã verify tay đi hết chuỗi trong phiên này (Nhiệm vụ 8). Nội dung thật đầy đủ cho 8 lĩnh vực còn lại vẫn là việc riêng, chưa làm — đúng phạm vi đã thống nhất xuyên suốt cả 4 prompt.
+
+### Không làm / ngoài phạm vi
+
+- Không dựng lại đúng sơ đồ mindmap toả tròn nguyên bản — đã chủ động đơn giản hoá thành lưới thẻ theo đúng chỉ định.
+- Không soạn nội dung thật đầy đủ cho các lĩnh vực khác.
+- Không đổi luồng của 4 phần trước.
+- Không commit git.
+
+## 20. Tái cấu trúc bố cục UI, Phần 1/4 — Bước 1–5 (2026-08-13)
+
+Phạm vi: đúng như prompt "Tái cấu trúc bố cục UI, Phần 1/4" — chỉ **sắp xếp lại bố cục hiển thị** cho luồng Bước 1–5 (mở app → tạo hồ sơ → sàng lọc → tổng hợp & đề xuất → màn 9 lĩnh vực), dùng widget Material mặc định, **không** làm đẹp theme/màu/font, **không** đổi logic nghiệp vụ, **không** đổi schema database, **không** đụng Bước 6 trở đi (giữ nguyên toàn bộ 5 phần đã hoàn thành ở mục 16–19). Đọc lại code thật của từng màn trước khi sửa — phần lớn logic/dữ liệu đã có sẵn, chỉ cần sắp lại bố cục.
+
+### Nhiệm vụ 1 — Bước 1: Trang chủ mới + thanh điều hướng dưới
+
+- [lib/features/home/home_page.dart](lib/features/home/home_page.dart) *(mới)* — `HomePage` thay `ChildListPage` làm `home:` của `MaterialApp` ([lib/app.dart](lib/app.dart)). `Scaffold` ngoài cùng chỉ có `body: IndexedStack` + `bottomNavigationBar: NavigationBar` (Material 3, 5 mục đúng thứ tự: Trang chủ/Hồ sơ/Hỏi đáp/Thông báo/Tài khoản) — mỗi tab tự có `Scaffold`+`AppBar` riêng (nested Scaffold, không dựng Navigator lồng riêng cho từng tab — điều hướng sâu hơn vẫn dùng chung 1 Navigator gốc, đủ cho đợt "chỉ đúng cấu trúc" này).
+- Tab "Trang chủ" (`_HomeTabContent`): dòng chào "Xin chào!" + icon, 5 `ListTile` lớn (icon + tiêu đề + mô tả phụ) đúng thứ tự đề bài: Tạo hồ sơ trẻ mới → `CreateProfilePage`; Chọn hồ sơ trẻ đã có → `ChildListPage`; Lịch sử / Tiếp tục đánh giá / Hỏi đáp AI → qua `SelectChildPage` (mục mới, xem dưới) rồi vào đúng `HistoryPage`/`DomainListPage`/`AiChatPage`.
+- Tab "Hồ sơ": tái dùng nguyên `ChildListPage` không đổi gì.
+- Tab "Hỏi đáp" (`_AiChatTab`) — **quyết định tự chọn** (đề bài yêu cầu tự quyết + ghi rõ lý do): kiến trúc hiện tại không có khái niệm "hồ sơ đang xem"/"hồ sơ hoạt động gần nhất" ở cấp toàn app (không dùng state management chung, mọi trang nhận `Child` qua constructor). Diễn giải "đúng 1 hồ sơ đang hoạt động" = `ChildRepository.getAll()` (mặc định `includeArchived: false`) trả về đúng 1 phần tử → vào thẳng `AiChatPage` của hồ sơ đó; 0 hoặc ≥2 hồ sơ → hiện `SelectChildPage`. Đã verify tay cả 2 nhánh (mục Nhiệm vụ 5).
+- Tab "Thông báo"/"Tài khoản": 2 `Scaffold` placeholder tĩnh `Center(child: Text('Chưa có nội dung'))`, đúng yêu cầu "chưa có chức năng thật".
+- [lib/features/child_profile/select_child_page.dart](lib/features/child_profile/select_child_page.dart) *(mới)* — `SelectChildPage({title, destinationBuilder})` dùng chung cho mọi lối vào cần chọn hồ sơ trước (3 mục Trang chủ + tab Hỏi đáp khi ≥2/0 hồ sơ): danh sách hồ sơ (cùng pattern `FutureBuilder`/lỗi/rỗng như `ChildListPage`), tap vào 1 hồ sơ → `Navigator.push(destinationBuilder(child))`. Trạng thái rỗng có nút "Tạo hồ sơ trẻ mới" luôn sẵn thay vì màn cụt.
+
+### Nhiệm vụ 2 — Bước 2: Tạo hồ sơ + màn tóm tắt
+
+- [lib/features/child_profile/create_profile/create_profile_page.dart](lib/features/child_profile/create_profile/create_profile_page.dart): trường "Giới tính" đổi từ `DropdownButtonFormField` sang `SegmentedButton<String>` 3 lựa chọn Nam/Nữ/Khác (`emptySelectionAllowed: true` — vẫn optional như trước, không ép chọn). Thứ tự trường giữ nguyên (đã đúng thứ tự đề bài từ trước: tên → tuổi/ngày sinh → giới tính → người đánh giá → vai trò), không cần sắp lại.
+- Sau khi lưu thành công: thay `Navigator.pop(true)` bằng `Navigator.pushReplacement(CreateProfileSummaryPage(child: created), result: true)` — `result: true` báo ngay cho màn gọi (VD `ChildListPage`) làm mới danh sách trong nền, trong khi người dùng vẫn đang xem màn tóm tắt (không cần đợi họ back hết ngăn xếp). `pushReplacement` (không phải `push`) để người dùng không back lại được form đã nộp (tránh tạo trùng hồ sơ).
+- [lib/features/child_profile/create_profile/create_profile_summary_page.dart](lib/features/child_profile/create_profile/create_profile_summary_page.dart) *(mới)* — hiện đủ tên/mã hồ sơ/ngày sinh/độ tuổi/giới tính/người đánh giá/vai trò + dòng xác nhận "Tạo hồ sơ thành công!" + nút "Xem hồ sơ" → `ProfileDetailPage`.
+
+### Nhiệm vụ 3 — Bước 3: Luồng sàng lọc
+
+- [lib/features/screening/screening_tool_confirm_page.dart](lib/features/screening/screening_tool_confirm_page.dart) *(mới)* — chèn giữa `ScreeningIntroPage` (bấm "Có") và `ScreeningQuestionnairePage`: hiện tên bộ câu hỏi đã chọn theo tuổi (`selectScreeningQuestionSet`) + số câu hỏi, nút "Bắt đầu" mới thật sự vào bảng câu hỏi — đúng yêu cầu "không tự động nhảy thẳng vào câu hỏi ngay khi chọn Có". `ScreeningIntroPage` chỉ đổi đúng 1 dòng (đích của nút "Có").
+- [lib/features/screening/screening_questionnaire_page.dart](lib/features/screening/screening_questionnaire_page.dart) — thêm dòng "Câu hỏi đã trả lời: x/tổng" + `LinearProgressIndicator` cập nhật động theo `_answers.length`, không đổi logic tính điểm/lưu.
+- [lib/features/screening/screening_result_page.dart](lib/features/screening/screening_result_page.dart) — thêm vòng tròn điểm số (`CircularProgressIndicator` tuỳ biến trong `Stack`, tâm hiện "x/y") + nhãn mức độ bằng chữ, **cộng thêm** vào (không thay thế) khối "Điểm: $score" + `resultSummary` cũ. Nhãn mức độ **tái dùng nguyên văn cụm "dấu hiệu cần chú ý"** đã có sẵn trong `resultSummary` (`screening_questionnaire_page.dart`) thay vì tự đặt ra thang "nguy cơ thấp/cao" mới — quyết định có chủ đích để không thêm ngôn ngữ mang tính chẩn đoán ngoài logic đã duyệt, giữ đúng tinh thần "không phải kết luận chẩn đoán" đã nhấn mạnh trong toàn bộ luồng sàng lọc. `body` đổi từ `Padding` sang `SingleChildScrollView` (bắt buộc — nội dung giờ dài hơn viewport mặc định của các màn nhỏ, tránh tràn `RenderFlex`, cũng đúng yêu cầu "chuẩn mobile, cuộn dọc").
+
+### Nhiệm vụ 4 — Bước 4 & Bước 5
+
+- [lib/features/screening/assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart) — tách nội dung cũ (vốn đã là 1 cột dọc) thành 4 khối `Card` rõ ràng: thông tin trẻ (tên/tuổi) → khối "Sàng lọc" (đã/chưa sàng lọc + điểm gần nhất + **thêm** công cụ/ngày thực hiện từ `Screening.toolName`/`performedAt` vốn có sẵn nhưng trước đây không hiện + người đánh giá) → khối "Đánh giá 9 lĩnh vực" (x/9) → khối "Đề xuất hướng đánh giá" → nút. `Column` → `ListView` để cuộn được khi nội dung dài. Không đổi `_buildSuggestion()` (logic đề xuất).
+- [lib/features/assessment/domain_list_page.dart](lib/features/assessment/domain_list_page.dart) — `ListView.builder` → `GridView.builder` 2 cột (`SliverGridDelegateWithFixedCrossAxisCount`, `childAspectRatio: 1.1`), mỗi thẻ: icon Material riêng theo lĩnh vực (map `_domainIcons`, tô xanh lá nếu đã có mô tả) + tên + trạng thái. Thêm dòng "Tiến độ: x/9 lĩnh vực" + `LinearProgressIndicator` tổng ở đầu trang. Giữ nguyên đúng thứ tự 9 lĩnh vực + tên "Ứng xử" ở vị trí #7 (không đổi `nine_domains.dart`).
+
+### Nhiệm vụ 5 — Kiểm chứng
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **64/64 PASS** — cập nhật [test/screening_flow_test.dart](test/screening_flow_test.dart) cho khớp luồng mới (không đổi số lượng test, chỉ đổi bước điều hướng bên trong 1 test end-to-end):
+  - Sau "Lưu hồ sơ" giờ kiểm tra màn tóm tắt (`'Tạo hồ sơ thành công!'`) rồi bấm "Xem hồ sơ" thay vì tap thẳng tên trong danh sách.
+  - Thêm bước xác nhận màn `ScreeningToolConfirmPage` (`'Công cụ sẽ sử dụng: ...'`) + bấm "Bắt đầu" trước khi vào bảng câu hỏi; số lần `pageBack()` để quay lại hồ sơ ở nhánh "Có" tăng từ 2 lên 3 (thêm 1 route `ScreeningToolConfirmPage` trong ngăn xếp).
+  - `ensureVisible` (yêu cầu widget đã build sẵn) đổi sang `scrollUntilVisible` (tự cuộn dần, build thêm item khi cần) ở 3 chỗ — form tạo hồ sơ dài hơn trước (thêm `SegmentedButton`), màn kết quả giờ cuộn được, Bước 4 giờ nhiều `Card` hơn. Khi truyền `scrollable:` cho `scrollUntilVisible` trên trang có nhiều `TextFormField`, dùng `find.byType(Scrollable).first` (không phải `find.byType(Scrollable)` trần) vì mỗi `TextFormField` tự có 1 `Scrollable` nội bộ (cuộn text), gây lỗi "Too many elements" nếu không giới hạn.
+- **Verify tay trên `emulator-5554`** (build debug thật, không phải widget test) qua `adb`/`uiautomator dump` (lấy toạ độ chính xác từ `bounds` thay vì đoán theo ảnh chụp — đáng tin cậy hơn hẳn cách đoán tỉ lệ ảnh chụp màn hình đã dùng ở các giai đoạn trước, tránh tap nhầm liên tiếp): đi hết luồng thật — mở app → Trang chủ mới (5 menu + bottom nav) → "Tạo hồ sơ trẻ mới" → điền form (tên, tuổi=4, giới tính=Nam qua nút chọn) → "Lưu hồ sơ" → màn tóm tắt đúng đủ 7 trường → "Xem hồ sơ" → `ProfileDetailPage` → "Sàng lọc" → "Có" → màn "Xác nhận công cụ sàng lọc" đúng (Bộ B, 6 câu hỏi) → "Bắt đầu" → bảng câu hỏi với tiến độ "x/6" cập nhật đúng theo từng câu trả lời → "Hoàn thành" → màn kết quả có vòng tròn điểm số "0/6" + nhãn "Không ghi nhận dấu hiệu cần chú ý" + disclaimer → "Tiếp tục" → Bước 4 đủ 4 khối đúng dữ liệu thật (công cụ, ngày giờ thật, 0/9 lĩnh vực) → "Bắt đầu đánh giá" → Bước 5 lưới 2 cột đúng 9 thẻ, đúng icon/tên/thứ tự, "Ứng xử" đúng vị trí #7, tiến độ "0/9 lĩnh vực". Test riêng cả 5 tab của bottom nav (Trang chủ/Hồ sơ/Hỏi đáp/Thông báo/Tài khoản) — tab "Hỏi đáp" với 3 hồ sơ có sẵn trên máy đúng như kỳ vọng hiện `SelectChildPage` (không phải đúng 1 hồ sơ). `adb logcat -d | grep FATAL EXCEPTION`: **không có kết quả** trong suốt phiên verify.
+
+### Không làm / ngoài phạm vi (đúng theo đề bài)
+
+- Không làm đẹp theme/màu sắc/font/animation.
+- Không đổi logic tính điểm sàng lọc, cách xác định trạng thái, cách query dữ liệu.
+- Không đổi schema database.
+- Không đụng Bước 6 trở đi (giữ nguyên mục 16–19).
+- Không dựng bố cục nhiều cột kiểu desktop cho bất kỳ màn nào trong phạm vi Bước 1–5.
+- Không commit git.
+
+## 21. Tái cấu trúc bố cục UI, Phần 2/4 — Bước 6 (5 phần trong 1 lĩnh vực) (2026-08-14)
+
+Phạm vi: đối chiếu + chỉnh bố cục hiển thị của cả 5 phần đã chạy chức năng thật từ trước (phần 1 từ Giai đoạn 3, phần 2–5 từ mục 16–19) theo đúng cấu trúc thiết kế gốc mô tả trong prompt — **không viết lại logic lưu/đọc dữ liệu**, đặc biệt phần 1 (mô tả biểu hiện, có gọi embedding + lưu `assessments`/`profile_chunks`). Đọc lại đủ 9 file thật trước khi sửa: `description_page.dart`, `comparison_video_page.dart`/`comparison_detail_page.dart`, `parent_input_page.dart`/`parent_context_page.dart`, `expert_input_page.dart`/`expert_detail_page.dart`, `summary_portrait_page.dart`/`summary_detail_page.dart`.
+
+### Nhiệm vụ 1 — Chỉ báo "Phần x/5" dùng chung
+
+[lib/features/assessment/nine_domains/part_step_indicator.dart](lib/features/assessment/nine_domains/part_step_indicator.dart) *(mới)* — `PartStepIndicator({step})`, 1 dòng `Text('Phần $step/5')` màu hint, đặt làm item đầu tiên trong `ListView`/`Column` của **5 màn tổng quan** (description/comparison_video/parent_input/expert_input/summary_portrait). Không gắn vào các màn "chi tiết" drill-down (`comparison_detail`, `parent_context`, `expert_detail`, `summary_detail`) vì các màn đó không nằm trong chuỗi điều hướng tuần tự 1→2→3→4→5 — quyết định diễn giải phạm vi "cả 5 màn" trong đề bài là 5 màn tổng quan, không phải toàn bộ 9 file.
+
+### Nhiệm vụ 2 — Phần 1: Mô tả biểu hiện (đối chiếu kỹ nhất, không đụng logic lưu)
+
+[description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart) — chỉ sửa `build()` + thêm 1 hàm điều phối mới, **không sửa bất kỳ dòng nào trong `_save()`/`_embedAndSaveChunk()`/`_retryEmbedding()`**:
+- Thêm `_domainIntroTextTemp` — map 9 lĩnh vực → 1 câu định nghĩa ngắn, gắn nhãn rõ trong comment code là **text tạm**, chưa phải nội dung đã chuẩn hoá chính thức (đúng yêu cầu 4.1 "nếu chưa có nội dung này... tạm hardcode, ghi rõ đây là text tạm").
+- Thêm câu hỏi hướng dẫn "Bạn quan sát thấy bé có biểu hiện gì trong [lĩnh vực]?" ngay trên ô nhập.
+- Ô nhập tăng `maxLines: 4 → 6` (to hơn) + `suffixIcon` icon mic (`Icons.mic_none_outlined`, `onPressed: null`) — **cố ý vô hiệu hoá**, không giả vờ có chức năng ghi âm thật. Ghi rõ trong comment code: chưa có logic ghi âm thật.
+- Thêm bộ đếm ký tự (`'${_contentController.text.length} ký tự'`, cập nhật qua `onChanged: (_) => setState(() {})` — cách đơn giản nhất, không dùng `ValueListenableBuilder` vì `setState` đã đủ, tránh phức tạp hoá).
+- Thêm `Card` "Ghi nhận đơn giản" (nội dung đúng nguyên văn đề bài) — đặt dưới bộ đếm ký tự, trên 2 nút (quyết định thứ tự: đề bài liệt kê card sau cùng nhưng không bắt buộc vị trí tuyệt đối cuối trang; đặt ngay trên nút hành động để người dùng đọc lời trấn an trước khi bấm lưu, giữ 2 nút hành động chính luôn ở vị trí quen thuộc gần đáy — ghi rõ quyết định này theo đúng yêu cầu báo cáo).
+- Gộp nút "Lưu" (cũ) + "Tiếp theo" (cũ, tách biệt ở cuối trang) thành 2 nút cạnh nhau ngay dưới card: **"Lưu nháp"** (`OutlinedButton`, gọi thẳng `_save()` — hành vi y hệt nút "Lưu" cũ, chỉ đổi nhãn) và **"Lưu & tiếp tục"** (`FilledButton`, gọi hàm mới `_saveAndContinue()` = `await _save(); if (mounted) _goNext();` — chỉ nối 2 hàm đã có sẵn, không viết logic lưu mới). Xoá nút "Tiếp theo" đứng riêng ở cuối trang (đã gộp chức năng vào "Lưu & tiếp tục").
+- Khối "Mô tả đã lưu" (danh sách mô tả cũ) giữ nguyên logic, chỉ dời xuống dưới cùng.
+
+### Nhiệm vụ 3 — Phần 2: So sánh với trẻ cùng độ tuổi
+
+Đối chiếu [comparison_video_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_video_page.dart) — thứ tự đã **đúng sẵn** với đề bài: tiêu đề có dải tuổi → "Biểu hiện thường gặp" → "Cần quan sát thêm" → ghi chú tham khảo → nút chi tiết. [comparison_detail_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_detail_page.dart) — bảng đã đúng thứ tự cột Tiêu chí|Thường gặp|Cần quan sát + khung ghi chú "không dùng để tự chẩn đoán" ở cuối. Cả 2 file **không cần sửa bố cục**, chỉ thêm `PartStepIndicator(step: 2)` vào đầu `comparison_video_page.dart` (màn tổng quan).
+
+### Nhiệm vụ 4 — Phần 3: Chia sẻ từ phụ huynh
+
+[parent_input_page.dart](lib/features/assessment/nine_domains/parent_input/parent_input_page.dart):
+- Sửa đúng nhãn 2 tab theo đề bài: `'Trẻ phát triển bình thường'/'Trẻ có dấu hiệu ASD'` → **`'Phụ huynh trẻ phát triển bình thường'/'Phụ huynh trẻ ASD'`** (trước đó lệch nhãn).
+- Tab "Ở nhà"/"Ở trường"/"Nơi công cộng" ở [parent_context_page.dart](lib/features/assessment/nine_domains/parent_input/parent_context_page.dart) đã đúng nhãn sẵn, không đổi.
+- Quote card (`_QuoteList`): trước đây nội dung chính in nghiêng + trích dẫn nguồn cỡ nhỏ thường — đổi thành nội dung chính hiển thị bình thường (bỏ in nghiêng + dấu ngoặc kép), trích dẫn nguồn giữ ở cuối card, **tô đậm khác biệt bằng in nghiêng + màu hint** (đúng ví dụ đề bài "in nghiêng hoặc cỡ chữ nhỏ hơn" — dùng cả 2 để rõ ràng hơn). Áp dụng cùng kiểu cho `_ContextList` ở `parent_context_page.dart` để nhất quán xuyên suốt Phần 3 (đề bài nói "mỗi quote card" chung, không tách riêng theo màn).
+- Thêm `PartStepIndicator(step: 3)` vào đầu `Column` (trang này không dùng `ListView`, chèn vào `Padding` đầu tiên).
+
+### Nhiệm vụ 5 — Phần 4: Thông tin từ bác sĩ
+
+Đối chiếu [expert_input_page.dart](lib/features/assessment/nine_domains/expert_input/expert_input_page.dart) — khối minh hoạ vai trò chuyên môn đầu trang → 3 mục điều hướng (Mốc phát triển/Dấu hiệu cần lưu ý/Giải thích chuyên môn) đã **đúng sẵn** thứ tự đề bài. [expert_detail_page.dart](lib/features/assessment/nine_domains/expert_input/expert_detail_page.dart) — đúng 3 nhóm theo thứ tự Mốc phát triển → Dấu hiệu cần lưu ý → Giải thích chuyên môn → dòng miễn trừ trách nhiệm cuối trang, **đúng sẵn**. Không sửa bố cục, chỉ thêm `PartStepIndicator(step: 4)` vào `expert_input_page.dart`.
+
+### Nhiệm vụ 6 — Phần 5: Chân dung biểu hiện
+
+[summary_portrait_page.dart](lib/features/assessment/nine_domains/summary_portrait/summary_portrait_page.dart) — **phát hiện lệch thứ tự**: bản cũ hiện "Mức độ biểu hiện" (badge) TRƯỚC "Điểm nổi bật"/"Khác biệt so với trẻ cùng tuổi". Đã sắp lại đúng thứ tự đề bài: Điểm nổi bật → Khác biệt so với trẻ cùng tuổi → Mức độ biểu hiện (badge) → nút "Xem chân dung chi tiết" → nút "Hoàn tất" — chỉ di chuyển khối widget trong danh sách `children`, không đổi điều kiện hiển thị (`mucDoBieuHien != null`, `hasGridData`) hay cách tải dữ liệu. **Giữ nguyên hoàn toàn quyết định lưới thẻ đã chốt trước đó** — không dựng lại mindmap toả tròn, `summary_detail_page.dart` không đổi gì (đã đúng thứ tự tóm tắt → lưới thẻ → chú thích màu từ mục 19). Thêm `PartStepIndicator(step: 5)`.
+
+### Nhiệm vụ 7 — Kiểm chứng
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **64/64 PASS** — không có test nào tham chiếu tới các chuỗi/nhãn đã đổi (`Trẻ phát triển bình thường`, `Lưu`, `Tiếp theo`, `Mô tả biểu hiện quan sát được`...), xác nhận bằng grep toàn bộ `test/` trước khi sửa — không cần cập nhật file test nào ở phần này.
+- **Verify tay trên `emulator-5554`** (build debug thật) — dùng hồ sơ có sẵn dữ liệu mẫu đầy đủ `Be_Migration_Test` (5 tuổi), lĩnh vực "Quan hệ xã hội" (đã ingest 7 entry `chan_dung` + có sẵn dữ liệu `so_sanh`/`chia_se_phu_huynh`/`bac_si` từ các phiên trước — xem mục 16–19):
+  - **Phần 1**: đúng đủ cấu trúc — "Phần 1/5", câu định nghĩa, câu hỏi hướng dẫn, ô nhập lớn + icon mic (đúng vị trí, không tương tác được — xác nhận qua ảnh chụp, không có hiệu ứng khi bấm), bộ đếm ký tự cập nhật đúng theo từng ký tự gõ ("0 ký tự" → "29 ký tự"), card "Ghi nhận đơn giản", 2 nút "Lưu nháp"/"Lưu & tiếp tục".
+  - **Verify riêng logic lưu KHÔNG bị ảnh hưởng** (bắt buộc theo đề bài): nhập mô tả thật "Be coi mo ban va vay tay chao", bấm "Lưu nháp" → mô tả xuất hiện đúng trong "Mô tả đã lưu" ngay trên UI kèm timestamp. Đối chiếu trực tiếp qua database thật trên thiết bị (`adb exec-out run-as com.iris.app.iris_app cat .../iris.db`, đọc bằng `sqlite3` qua Python): bảng `assessments` có đúng 1 dòng mới `linh_vuc='quan_he_xa_hoi'`, `content_type='mo_ta'`, `content='Be coi mo ban va vay tay chao'`, `created_at` khớp đúng thời điểm bấm lưu — **xác nhận logic lưu nguyên vẹn 100% sau khi chỉnh bố cục**. (Bước embed AI báo lỗi trong lần build này vì không dùng `--dart-define-from-file` — đúng hành vi fallback đã có từ trước, không phải lỗi mới, nút "Thử lại xử lý cho AI" hiện đúng.)
+  - **Phần 2–5**: đi hết chuỗi thật qua "Lưu & tiếp tục" → "Tiếp theo" ×3 → "Hoàn tất", xác nhận đúng "Phần 2/5"–"Phần 5/5" hiện đúng vị trí trên từng màn, đúng thứ tự "Biểu hiện thường gặp"→"Cần quan sát thêm" (Phần 2), đúng nhãn tab mới "Phụ huynh trẻ phát triển bình thường"/"Phụ huynh trẻ ASD" + quote card đúng kiểu mới (Phần 3), đúng 3 mục điều hướng (Phần 4), đúng thứ tự Điểm nổi bật→Khác biệt→Mức độ biểu hiện mới (Phần 5) — khớp 100% ảnh chụp màn hình đối chiếu với mô tả đề bài.
+  - "Hoàn tất" quay đúng về `DomainListPage`, lĩnh vực "Quan hệ xã hội" cập nhật đúng "Đã có mô tả", tiến độ "1/9 lĩnh vực".
+  - `adb logcat -d | grep FATAL EXCEPTION`: **không có kết quả** trong suốt phiên verify.
+
+### Không làm / ngoài phạm vi (đúng theo đề bài)
+
+- Không đổi logic lưu/đọc dữ liệu ở bất kỳ phần nào trong 5 phần — đã verify riêng bằng database thật cho Phần 1.
+- Không dựng lại mindmap toả tròn cho Phần 5.
+- Không làm đẹp theme/màu sắc.
+- Không đổi luồng điều hướng giữa 5 phần (vẫn `pushReplacement` nối tiếp 1→2→3→4→5, `pop()` đơn ở "Hoàn tất").
+- Không commit git.
+
+## 22. Tái cấu trúc bố cục UI, Phần 3/4 — Bước 7–12 (2026-08-14)
+
+Phạm vi: thêm màn "Đã lưu kết quả" (Bước 7) và banner "Tiếp tục đánh giá" (Bước 8) — 2 phần trước đây chỉ dùng SnackBar/điều hướng ngầm, chưa có màn hình riêng; đối chiếu nhanh Bước 9 (Lịch sử) và Bước 11–12 (Hỏi đáp AI). Đọc lại code thật của `SummaryPortraitPage`, `DomainListPage`, `HistoryPage`, `AiChatPage` trước khi sửa — không đổi logic 3 trạng thái AI/guardrail, không đổi logic lưu dữ liệu ở bất kỳ đâu.
+
+### Nhiệm vụ 1 — Bước 7: Màn "Đã lưu kết quả"
+
+[lib/features/assessment/nine_domains/saved_result_page.dart](lib/features/assessment/nine_domains/saved_result_page.dart) *(mới)* — `SavedResultPage`:
+- Icon + "Lưu thành công!" + tên lĩnh vực.
+- Bảng thông tin: "Ngày đánh giá" = thời điểm hoàn tất Bước 7 (`DateTime.now()` chụp lúc mở trang) — **quyết định**: không lấy theo ngày tạo bản ghi mô tả gần nhất vì Phần 1 có thể bị bỏ qua (bấm "Lưu & tiếp tục" khi ô nhập trống vẫn cho qua), nên dùng thời điểm hoàn tất chuỗi 5 phần làm mốc luôn có giá trị. "Người thực hiện" = `child.nguoiDanhGia` hoặc "Chưa cập nhật". "Trạng thái" = "Đã lưu thành công" (tĩnh, đúng ý nghĩa của việc đã tới được màn này).
+- Checklist "Nội dung đã được lưu" — truy vấn dữ liệu THẬT: `AssessmentRepository.getForChild(linhVuc:)` lọc `content_type='mo_ta'` cho "Mô tả của người dùng"; `ExpertKnowledgeRepository.query()` với `contentType` lần lượt `'so_sanh'`/`'chia_se_phu_huynh'`/`'bac_si'` (đúng lĩnh vực + tuổi trẻ) cho 3 mục còn lại. Mục nào không có dữ liệu → icon `remove_circle_outline` xám + chữ "Không có dữ liệu", **không** đánh dấu ✓ giả — đã verify thật bằng 2 kịch bản khác nhau (xem Nhiệm vụ 3).
+- Dòng miễn trừ trách nhiệm đúng nguyên văn đề bài.
+- 2 nút: "Xem kết quả" → `push` `DescriptionPage` (Phần 1) của đúng lĩnh vực — trang này vốn đã hiện danh sách "Mô tả đã lưu" nên tự nhiên đóng vai trò "xem lại", không cần chế độ riêng. "Quay về tổng quan" → `pop()`.
+- [summary_portrait_page.dart](lib/features/assessment/nine_domains/summary_portrait/summary_portrait_page.dart) — nút "Hoàn tất" đổi từ `pop()` thẳng sang `pushReplacement` tới `SavedResultPage` — **giữ nguyên bất biến "chỉ 1 route trên `DomainListPage`"** đã ghi trong comment gốc (Phần 2-5 đều `pushReplacement` nối tiếp), nên `SavedResultPage` chỉ cần đúng 1 `pop()` để quay về danh sách 9 lĩnh vực — không cần pop nhiều lần hay sửa gì ở phía `DomainListPage`.
+
+### Nhiệm vụ 2 — Bước 8: Banner "Tiếp tục đánh giá" ở `DomainListPage`
+
+[lib/features/assessment/domain_list_page.dart](lib/features/assessment/domain_list_page.dart):
+- **Quyết định logic gợi ý** (đề bài yêu cầu tự chọn + ghi rõ lý do): kiến trúc hiện tại chỉ theo dõi 1 trạng thái nhị phân mỗi lĩnh vực — đã có bản ghi `assessments` (content_type='mo_ta') hay chưa, dùng chung với badge "Đã có mô tả"/"Chưa có mô tả" đã có trên từng thẻ — không có khái niệm "đang dở" (VD đã qua Phần 1-3 nhưng chưa tới Phần 5) tách biệt trong dữ liệu. Vì vậy gợi ý = **lĩnh vực CHƯA có mô tả đầu tiên theo đúng thứ tự 9 lĩnh vực** trong `nineDomains` — logic đơn giản nhất khớp đúng dữ liệu đang có, không suy diễn thêm trạng thái không tồn tại.
+- Card "Gợi ý: tiếp tục lĩnh vực "..."" + nút "Tiếp tục ngay" → `push` thẳng `DescriptionPage` (Phần 1) của lĩnh vực đó, `_reload()` sau khi quay về. Tách thành widget riêng `_NextDomainCard` (nhận `domain` non-nullable) để tránh lỗi phân tích tĩnh "unchecked_use_of_nullable_value" khi truy cập biến local `nextDomain` (nullable) bên trong closure `async` của `onPressed` — biến local không được Dart promote non-null xuyên qua closure dù đã kiểm tra `!= null` ở ngoài.
+- Nếu đủ 9/9: ẩn hẳn card, thay bằng 1 dòng chúc mừng "Bạn đã hoàn thành đánh giá cả 9 lĩnh vực!".
+- Dòng ghi chú tĩnh đúng nguyên văn đề bài, luôn hiện (không điều kiện).
+- Đặt ngay dưới thanh tiến độ tổng đã có từ Phần 1/4, trên lưới 9 lĩnh vực — đúng vị trí đề bài yêu cầu.
+
+### Nhiệm vụ 3 — Đối chiếu Bước 9 (Lịch sử)
+
+Đọc lại [history_page.dart](lib/features/history/history_page.dart) — **đã khớp đúng mô tả, không cần sửa**: nhóm sự kiện theo ngày (`_groupByDay`), mỗi ngày liệt kê các sự kiện dạng `Card`+`ListTile` (icon theo loại + mô tả + nhãn loại/giờ), sắp xếp mới nhất trước (`HistoryLogRepository.getForChild` đã `ORDER BY event_date DESC`, nhóm giữ nguyên thứ tự). Verify tay: mở Lịch sử của `Be_Migration_Test`, thấy đúng 1 mục "Đánh giá Quan hệ xã hội — đã nhập mô tả biểu hiện" ngày 14/08/2026, đúng cấu trúc.
+
+### Nhiệm vụ 4 — Đối chiếu Bước 11–12 (Hỏi đáp AI)
+
+Đọc lại [ai_chat_page.dart](lib/features/ai_chat/ai_chat_page.dart) — **đã khớp đúng mô tả, không cần sửa**: khung chat có `ListView` bong bóng hội thoại (câu hỏi bên phải, trả lời bên trái) + ô nhập + nút gửi (`IconButton` icon gửi) ở dưới, dùng `SafeArea`. Câu trả lời AI đã có dấu hiệu phân biệt trạng thái — dòng `'Trạng thái ${conversation.state}'` (`labelSmall`) hiện ngay dưới mỗi câu trả lời, đúng tinh thần "không bắt buộc hiện rõ số trạng thái nếu hiện tại không có" (ở đây đã CÓ sẵn, giữ nguyên). Không phát hiện lệch, không sửa gì.
+
+### Nhiệm vụ 5 — Kiểm chứng
+
+- `flutter analyze`: **0 issues** (đã sửa 1 lỗi `unchecked_use_of_nullable_value` phát sinh khi viết `_NextDomainCard`, xem Nhiệm vụ 2).
+- `flutter test`: **64/64 PASS** — không có test nào bị ảnh hưởng.
+- **Verify tay trên `emulator-5554`** (build debug thật) — dùng hồ sơ `Be_Migration_Test` (đã có sẵn mô tả cho "Quan hệ xã hội" từ trước):
+  - **Trường hợp còn lĩnh vực chưa làm**: `DomainListPage` hiện đúng banner "Gợi ý: tiếp tục lĩnh vực "Hành vi"" (đúng lĩnh vực đầu tiên theo thứ tự chưa có mô tả) + nút "Tiếp tục ngay" → bấm vào đúng thẳng Phần 1 "Hành vi — Mô tả biểu hiện". Lưu 1 mô tả thật ("Be chay nhay nhieu") qua "Lưu & tiếp tục", đi hết Phần 2→3→4→5 (đều đúng "chưa có dữ liệu" vì lĩnh vực "Hành vi" chưa ingest dữ liệu tham khảo), bấm "Hoàn tất" → **`SavedResultPage` hiện đúng**: "Lưu thành công!", tên lĩnh vực "Hành vi", ngày giờ đúng thời điểm thật, checklist đúng ✓ **duy nhất** "Mô tả của người dùng" (vì vừa lưu thật) và "Không có dữ liệu" cho cả 3 mục còn lại (đúng thật vì lĩnh vực này chưa có dữ liệu tham khảo) — xác nhận **không có ✓ giả**. Bấm "Xem kết quả" → đúng Phần 1 hiện lại mô tả vừa lưu. Quay lại, bấm "Quay về tổng quan" → đúng về `DomainListPage`, tiến độ cập nhật "2/9", banner cập nhật đúng gợi ý lĩnh vực tiếp theo "Nhận thức".
+  - **Trường hợp đủ 9/9**: để verify hiệu quả không cần lái tay qua 7 lĩnh vực × 5 phần còn lại, đã nạp thêm dữ liệu mô tả thật cho 7 lĩnh vực còn thiếu **thẳng vào database thật trên thiết bị** (qua `adb exec-out run-as ... cat` để đọc, sửa bằng Python `sqlite3`, rồi `adb shell run-as ... dd conv=notrunc` để ghi đè đúng file `iris.db` tại chỗ — không tạo file mới vì SELinux domain `runas_app` trên bản Android này chặn tạo file mới trong thư mục dữ liệu app dù cùng UID, chỉ cho ghi đè file đã tồn tại) — dữ liệu vẫn là bản ghi `assessments` hợp lệ (không giả lập ở tầng UI), chỉ khác ở chỗ nhập qua script thay vì gõ tay qua 7×5=35 màn hình. Mở lại app thật (force-stop + relaunch), vào đúng `DomainListPage` của `Be_Migration_Test`: **banner ẩn đúng, thay bằng dòng "Bạn đã hoàn thành đánh giá cả 9 lĩnh vực!"**, tiến độ "9/9 lĩnh vực", cả 9 thẻ đều xanh "Đã có mô tả", không lỗi, không crash.
+  - `adb logcat -d | grep FATAL EXCEPTION`: **không có kết quả** trong suốt phiên verify (cả 2 trường hợp).
+
+### Không làm / ngoài phạm vi (đúng theo đề bài)
+
+- Không dựng calendar/lịch chọn ngày đầy đủ cho Bước 8 — dùng banner gợi ý đơn giản (Card + nút), đúng tinh thần "đơn giản hoá chủ động, ưu tiên chức năng trước hình thức".
+- Không đổi logic 3 trạng thái AI/guardrail (Bước 11-12 chỉ đối chiếu, không sửa).
+- Không đổi logic lưu dữ liệu ở bất kỳ đâu (Bước 7 chỉ ĐỌC dữ liệu đã có để hiện checklist).
+- Không đánh dấu ✓ giả cho nội dung tham khảo không có dữ liệu thật ở checklist Bước 7 — verify thật bằng lĩnh vực chưa có dữ liệu.
+- Không làm đẹp theme/màu sắc.
+- Không commit git.
+
+## 23. Tái cấu trúc bố cục UI, Phần 4/4 — Bước 13–14 + Dashboard (2026-08-14) — HOÀN THÀNH TOÀN BỘ 4/4 PHẦN
+
+Phạm vi: xây màn hình "Kết nối chuyên gia/trung tâm" thật (Bước 14) — trọng tâm chính của phần này vì trước đây chỉ có nút debug mô phỏng trong `VideoDetailPage`, chưa có màn hình đề xuất đơn vị/chuyên gia nào; đối chiếu nhanh Bước 13 (quay video) và Dashboard nhiều trẻ. Đây là **phần cuối cùng (4/4)** của đợt tái cấu trúc bố cục UI bắt đầu từ mục 20.
+
+### Nhiệm vụ 1 — Bước 14: Màn "Kết nối chuyên gia/trung tâm"
+
+[lib/features/expert_connect/expert_connect_page.dart](lib/features/expert_connect/expert_connect_page.dart) *(mới)* — `ExpertConnectPage`:
+- **Logic phân loại nhu cầu bằng code thuần, không dùng AI** (`_determineNeedLevel()`) — đơn giản hoá có chủ đích từ 5 trường hợp gốc xuống 3 mức, vì dữ liệu thật hiện có (đã sàng lọc?/số lĩnh vực đã mô tả/đã có video được chuyên gia xem hay chưa qua `status='reviewed'`) không đủ chi tiết để phân biệt rạch ròi hơn:
+  - `!hasScreening && doneDomainCount == 0` → **"Chưa có đủ thông tin"**.
+  - `doneDomainCount >= 5` (quá bán 9 lĩnh vực — **ngưỡng tự chọn**, không có sẵn trong tài liệu gốc) `|| hasReviewedVideo` → **"Đã có kết quả đánh giá đầy đủ hơn"**.
+  - Còn lại (đã sàng lọc và/hoặc đã có một vài mô tả) → **"Có dấu hiệu cần theo dõi"**.
+  - Dùng lại nguyên `ScreeningRepository.hasScreening()`, `AssessmentRepository.getForChild()`, `VideoRepository.getForChild()` đã có sẵn — không viết logic truy vấn mới, chỉ tổng hợp lại thành 1 quyết định if/else.
+- Card banner đầu trang: icon + tiêu đề + 1–2 câu khuyến nghị theo đúng mức đã xác định.
+- "Đơn vị/dịch vụ đề xuất": 6 card tĩnh hardcode trong code (`_providers`, **không tạo bảng database mới**) — 2 trung tâm can thiệp sớm, 2 phòng khám nhi/PTNK, 1 chuyên gia tâm lý-giáo dục, 1 trường mầm non hoà nhập (đủ 4 loại hình đề bài yêu cầu, dư 2 mục cho "Xem thêm"). Mỗi card: tên, mô tả ngắn (loại hình + độ tuổi), rating sao tĩnh, số lượt đánh giá tĩnh, khoảng cách tĩnh — toàn bộ là **dữ liệu minh hoạ đóng gói sẵn trong app**, không gọi API/dịch vụ bên ngoài nào.
+- Nút "Xem thêm gợi ý phù hợp" — chỉ `setState` mở rộng từ 4 lên 6 card tĩnh đã có sẵn trong danh sách, không tải thêm dữ liệu thật.
+- **Dòng ghi chú bắt buộc "Đây là danh sách minh hoạ, chưa phải dữ liệu đơn vị/chuyên gia thật."** — luôn hiện, không điều kiện, đúng yêu cầu "không được bỏ".
+- [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart) — thêm nút "Kết nối chuyên gia/trung tâm" ngay sau "Quay video tình huống" (trước cụm nút debug), điều hướng `push` tới `ExpertConnectPage`.
+
+### Nhiệm vụ 2 — Đối chiếu Bước 13 (Quay video)
+
+Đọc lại 4 màn [video_situation_page.dart](lib/features/video_recording/video_situation_page.dart)/[video_preparation_page.dart](lib/features/video_recording/video_preparation_page.dart)/[video_recording_capture_page.dart](lib/features/video_recording/video_recording_capture_page.dart)/[video_review_page.dart](lib/features/video_recording/video_review_page.dart) — **đã khớp đúng mô tả, không cần sửa**: chọn tình huống (danh sách gợi ý + tự nhập) → chuẩn bị (danh sách tips tĩnh) → quay (`CameraPreview` thật + đồng hồ đang quay + nút quay/dừng) → xem lại & gửi (`VideoPlayer` thật + nút "Gửi cho chuyên gia"). Đúng 4 bước tuần tự, đúng comment "Bước x/4" có sẵn trong từng file. Không phát hiện lệch, không sửa gì.
+
+### Nhiệm vụ 3 — Đối chiếu Dashboard nhiều trẻ
+
+Đọc lại [multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart) — **đã khớp đúng mô tả, không cần sửa**: vẫn đúng bố cục mobile 1 cột (không có bố cục nhiều cột kiểu desktop nào được thêm ở các phần trước, xác nhận lại ở phần này) — 4 card thống kê xếp hàng ngang co giãn (`Expanded` trong 1 `Row`, không phải lưới nhiều cột cố định), ô tìm kiếm + dropdown lọc, danh sách `ListView` 1 cột, menu `PopupMenuButton` (⋮) đúng 3-4 hành động tuỳ trạng thái hồ sơ (Xem/Lịch sử/Lưu trữ hoặc Khôi phục/Xoá), 2 tab Đang quản lý/Đã lưu trữ. Không phát hiện lệch, không sửa gì.
+
+### Nhiệm vụ 4 — Kiểm chứng
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **64/64 PASS** — không có test nào bị ảnh hưởng (màn mới không có test riêng, phù hợp mức độ ưu tiên "đủ chức năng, đã verify tay kỹ" của các trang minh hoạ tĩnh trong đợt tái cấu trúc này).
+- **Verify tay trên `emulator-5554`** (build debug thật):
+  - Hồ sơ `Be_Demo_Layout` (đã sàng lọc từ trước, 0 lĩnh vực có mô tả) → mở "Kết nối chuyên gia/trung tâm": banner đúng **"Có dấu hiệu cần theo dõi"** + khuyến nghị đúng nội dung. 4 card đề xuất hiện đủ, đúng thứ tự loại hình. Bấm "Xem thêm gợi ý phù hợp" → đúng mở rộng thành 6 card, dòng ghi chú minh hoạ vẫn hiện đúng ở cuối.
+  - Tạo mới hồ sơ trắng `Be_Tier1_Test` (chưa sàng lọc, chưa có mô tả nào) → mở "Kết nối chuyên gia/trung tâm": banner đúng **"Chưa có đủ thông tin"** + khuyến nghị đúng nội dung — xác nhận cả 2 trạng thái banner khác nhau đều đúng theo dữ liệu thật.
+  - `adb logcat -d | grep FATAL EXCEPTION`: **không có kết quả** trong suốt phiên verify (cả 2 hồ sơ).
+
+### Không làm / ngoài phạm vi (đúng theo đề bài)
+
+- Không xây kết nối thật tới bất kỳ dịch vụ/API bên ngoài (đặt lịch/gọi điện/bản đồ thật) — toàn bộ 6 đơn vị là dữ liệu tĩnh hardcode.
+- Không tạo bảng database mới cho danh sách đơn vị/chuyên gia — giữ tĩnh trong code (`_providers`).
+- Không bỏ dòng ghi chú "dữ liệu minh hoạ" — luôn hiện, đã verify trên cả 2 trạng thái banner.
+- Không làm đẹp theme/màu sắc.
+- Không commit git.
+
+## 24. Tổng kết đợt tái cấu trúc bố cục UI (4/4 phần — 2026-08-13 đến 2026-08-14)
+
+Cả 4 phần của đợt tái cấu trúc bố cục UI (Bước 1–15 + Dashboard) nay đã hoàn thành đầy đủ, đúng thứ tự/cấu trúc theo thiết kế gốc mô tả qua 4 prompt, giữ nguyên toàn bộ logic nghiệp vụ/dữ liệu đã chạy đúng từ trước, có verify thiết bị thật cho từng phần:
+
+| Phần | Phạm vi | Trạng thái | Mục ghi chú |
+|---|---|---|---|
+| 1/4 | Bước 1–5 (mở app → 9 lĩnh vực) | Đã xong | Mục 20 |
+| 2/4 | Bước 6 (5 phần trong 1 lĩnh vực) | Đã xong | Mục 21 |
+| 3/4 | Bước 7–12 (đã lưu kết quả/tiếp tục đánh giá/lịch sử/hỏi đáp AI) | Đã xong | Mục 22 |
+| 4/4 | Bước 13–14 + Dashboard (quay video/kết nối chuyên gia/quản lý nhiều trẻ) | Đã xong | Mục 23 (mục này) |
+
+## 25. "Chân dung toàn cảnh" — tổng hợp mức tổng quan 9 lĩnh vực (2026-08-15)
+
+Phạm vi: sau khi trẻ đã có mô tả biểu hiện (Phần 1) cho đủ cả 9 lĩnh vực, hệ thống gắn nhãn từng lĩnh vực (AI hỗ trợ, dựa trên `expert_knowledge_chunks` loại `so_sanh` — 2 nhóm `phan_loai` mới `binh_thuong`/`roi_loan_pho_tu_ky`, xem mục 24/prompt trước), rồi CODE (không phải AI) đếm và xếp trẻ vào 1 trong 3 mức: "Trong giới hạn thường gặp" / "Có điểm cần theo dõi" / "Nên tìm đánh giá chuyên môn sớm".
+
+### Migration (bảng MỚI, không sửa bảng cũ)
+
+- [domain_overview_labels_table.dart](lib/data/local/tables/domain_overview_labels_table.dart) + [overview_summaries_table.dart](lib/data/local/tables/overview_summaries_table.dart) — đúng schema đề bài. Mỗi lần gắn nhãn/tổng hợp ghi 1 dòng MỚI (lịch sử theo `computed_at`), không UPDATE đè — "hiện hành" là dòng mới nhất (`getLatestForChild`).
+- [database.dart](lib/data/local/database.dart): version 4 → **5**, `onUpgrade` chỉ thêm 2 bảng mới, không đụng bảng/dữ liệu cũ. Test migration: [overview_migration_test.dart](test/overview_migration_test.dart) — tạo DB thật ở version 4 có sẵn 1 hồ sơ trẻ, mở lại bằng `AppDatabase` version 5, xác nhận dữ liệu cũ còn nguyên + 2 bảng mới dùng được ngay.
+- [child_repository.dart](lib/data/repositories/child_repository.dart) — `delete()` đã thêm xoá 2 bảng mới vào transaction (bắt buộc vì `PRAGMA foreign_keys = ON` và cả 2 bảng đều `REFERENCES children(id)`), không thì xoá hồ sơ trẻ đã có nhãn/tổng hợp sẽ lỗi FK constraint.
+
+### Bước gắn nhãn từng lĩnh vực (AI hỗ trợ, KHÔNG quyết định mức cuối)
+
+[overview_repository.dart](lib/data/repositories/overview_repository.dart) — `OverviewRepository.labelDomain()`:
+- Chưa có mô tả (`assessments` content_type='mo_ta' rỗng) → nhãn cứng `'chua_du_du_lieu'`, **không gọi AI** (verify bằng test đếm số lần gọi HTTP = 0).
+- Đã có mô tả → lấy toàn bộ `expert_knowledge_chunks` content_type='so_sanh' đúng `linh_vuc` + độ tuổi (qua `ExpertKnowledgeRepository.query()` có sẵn), tự tính cosine similarity bằng `VectorSearchService.cosineSimilarity()` **đã có sẵn** (không viết lại logic vector search mới), tách top 3 chunk mỗi nhóm `phan_loai` (`binh_thuong`/`roi_loan_pho_tu_ky`) đưa vào prompt.
+- [prompt_builder.dart](lib/domain/services/prompt_builder.dart) — thêm `buildDomainOverviewLabelPrompt()`: ép Groq trả ĐÚNG 1 JSON `{"nhan": ..., "ly_do_ngan_gon": ...}`, nêu rõ PHẢI chọn `'chua_du_du_lieu'` nếu dữ liệu tham khảo không đủ, không được đoán.
+- Parse JSON có validate (`nhan` phải thuộc đúng 3 giá trị) — sai định dạng hoặc lỗi gọi API (mạng/timeout) đều fallback `'chua_du_du_lieu'` kèm lý do, log lỗi qua `print`, **không crash** (test riêng: mock Groq trả text không phải JSON).
+
+### Bước tổng hợp mức cuối — 100% CODE, KHÔNG gọi AI
+
+[overview_tier_calculator.dart](lib/domain/services/overview_tier_calculator.dart) — hàm thuần `calculateOverviewTier(List<String> labels)`, không I/O, không phụ thuộc AI:
+- Hằng số ngưỡng đặt tên rõ ràng ở đầu file: `nguongThuongGap = 2`, `nguongCanTheoDoi = 5`, `nguongThieuDuLieuToiThieu = 4` — **mỗi hằng số đều có docstring ghi rõ đây là ngưỡng TẠM do dự án tự đặt cho demo, KHÔNG phải thang đo lâm sàng đã kiểm định**, cần thay bằng ngưỡng có cơ sở chuyên môn trước khi dùng thật.
+- `so_thieu >= 4` → `insufficientData`, không tính tier.
+- Còn lại: `so_can_theo_doi` 0–2 → `thuong_gap`; 3–5 → `can_theo_doi`; ≥6 → `chuyen_mon_som`.
+- `OverviewRepository.computeAndSaveOverview()` chỉ gọi hàm này SAU KHI đọc đủ 9/9 nhãn mới nhất từ `domain_overview_labels` (chưa đủ 9/9 → `insufficientLabels`, không tính) — lưu `overview_summaries` + 1 dòng `history_logs` (event_type='tong_quan').
+
+### UI
+
+[overview_portrait_page.dart](lib/features/assessment/overview/overview_portrait_page.dart) *(mới)* — `OverviewPortraitPage`:
+- Chưa đủ 9/9 → hiện tiến độ (x/9) thay vì kết quả, không có nút tổng hợp.
+- Đủ 9/9, chưa từng tổng hợp → nút "Tổng hợp Chân dung toàn cảnh" (gọi `labelAllDomains` + `computeAndSaveOverview`).
+- Đã có kết quả → hiện tier bằng ĐÚNG 1 trong 3 tên đã chốt (`tierDisplayLabel()`, không có nơi nào khác tự viết lại chuỗi này), danh sách 9 lĩnh vực kèm nhãn + lý do ngắn, nút "Tính toán lại".
+- `tier == 'chuyen_mon_som'` → thêm nút "Kết nối chuyên gia/trung tâm" dẫn thẳng `ExpertConnectPage` đã có sẵn (Bước 14).
+- Dòng cảnh báo "Đây là tổng hợp mang tính tham khảo... không phải kết luận chẩn đoán y khoa." đặt NGOÀI mọi nhánh điều kiện trong `build()` — luôn hiện dù ở trạng thái nào (tiến độ/chưa tổng hợp/đã có kết quả/lỗi).
+- [domain_list_page.dart](lib/features/assessment/domain_list_page.dart) — chỉ hiện nút "Xem Chân dung toàn cảnh" khi `nextDomain == null` (đủ 9/9), đặt ngay dưới dòng chúc mừng đã có sẵn.
+- [history_page.dart](lib/features/history/history_page.dart) — thêm `'tong_quan'` vào `_iconFor`/`_labelFor` (hiện "Chân dung toàn cảnh" thay vì rơi vào nhánh mặc định).
+
+### Kiểm chứng
+
+- `flutter analyze`: **0 issues**.
+- `flutter test`: **91/91 PASS** (18 test mới, không có test cũ nào bị hỏng):
+  - [overview_tier_calculator_test.dart](test/overview_tier_calculator_test.dart) — bao phủ đủ ranh giới ngưỡng (2/3, 5/6), toàn bộ thường gặp, toàn bộ chuyên môn sớm, trộn `chua_du_du_lieu` dưới/đúng/trên ngưỡng 4, và xác nhận `tierDisplayLabel` không dùng nhãn cấm ("bình thường"/"nghi ngờ"/"nguy hiểm").
+  - [overview_migration_test.dart](test/overview_migration_test.dart) — migration v4→v5 không mất dữ liệu cũ.
+  - [overview_repository_test.dart](test/overview_repository_test.dart) — mock NVIDIA/Groq qua `http.testing.MockClient` (không gọi API thật), gồm: chưa có mô tả → không gọi AI; AI trả sai định dạng → fallback không crash; chưa đủ 9/9 nhãn → không lưu; đủ 9/9 nhưng ≥4 thiếu dữ liệu → không lưu; và **luồng đầy đủ**: tạo 1 trẻ giả, nhập mô tả mock cho cả 9 lĩnh vực, chạy `labelAllDomains` + `computeAndSaveOverview`, rồi **đọc lại trực tiếp bằng `db.query()` từ database thật** (`domain_overview_labels` đúng 9 dòng, `overview_summaries` đúng 1 dòng tier='can_theo_doi', `history_logs` đúng 1 dòng 'tong_quan') — không chỉ tin giá trị trả về từ hàm.
+- **Chưa verify tay trên emulator thật** cho đợt này (khác các mục trước) — do luồng đầy đủ cần gọi Groq/NVIDIA thật (chưa có API key trong môi trường làm việc này) hoặc phải lái tay qua toàn bộ 9×5 màn hình mô tả; đã bù bằng test tích hợp ở trên (DB thật qua `sqflite_common_ffi`, chỉ mock tầng HTTP).
+
+### Lưu ý quan trọng khi dùng/diễn giải kết quả demo
+
+- **Ngưỡng 2/5 (và 4) ở `overview_tier_calculator.dart` là số TẠM do dự án tự đặt**, chưa có cơ sở/thang đo lâm sàng đã kiểm định — không dùng để đưa ra quyết định thật ngoài mục đích minh hoạ luồng.
+- **`expert_knowledge_chunks` loại `so_sanh` (nhóm `binh_thuong`/`roi_loan_pho_tu_ky`) hiện toàn bộ là dữ liệu placeholder** (`assets/reference/expert_content_so_sanh.json`, xem đợt việc trước) — kết quả gắn nhãn/tổng hợp khi demo/test tay **KHÔNG phản ánh nội dung chuyên môn thật**, chỉ xác nhận đúng luồng kỹ thuật (dữ liệu → vector search → prompt → parse → code tổng hợp → lưu DB).
+
+### Không làm / ngoài phạm vi (đúng theo đề bài)
+
+- Không để AI quyết định tier cuối cùng — `calculateOverviewTier()` là hàm Dart thuần, không gọi mạng, trace/debug được độc lập với LLM.
+- Không dùng nhãn "bình thường/nghi ngờ/nguy hiểm" ở bất kỳ đâu hiển thị cho người dùng.
+- Không bỏ dòng cảnh báo "không phải kết luận chẩn đoán" ở `OverviewPortraitPage`.
+- Không tự soạn nội dung chuyên môn thật cho `expert_knowledge_chunks`.
+- Không sửa bảng đã có — chỉ thêm 2 bảng mới qua migration v5.
+- Không commit git.
+
+Xuyên suốt cả 4 phần: chưa làm đẹp theme/màu sắc/font (giữ Material mặc định theo đúng chỉ định), bố cục mobile 1 cột cuộn dọc, không đổi bất kỳ logic lưu/đọc dữ liệu hay logic nghiệp vụ nào (sàng lọc, guardrail 3 trạng thái AI, embedding/RAG, quay video) — chỉ sắp xếp/bổ sung bố cục hiển thị và một số màn hình còn thiếu (Bước 1 Trang chủ, Bước 2 màn tóm tắt, Bước 3 màn xác nhận công cụ, Bước 7 màn đã lưu kết quả, Bước 8 banner tiếp tục, Bước 14 màn kết nối chuyên gia). `flutter analyze` 0 issues và `flutter test` full PASS được xác nhận lại ở cuối mỗi phần. Toàn bộ các quyết định tự chọn (khi đề bài yêu cầu tự quyết định + ghi rõ lý do) đã được ghi chú đầy đủ tại đúng mục tương ứng — không có quyết định nào bị bỏ sót không giải thích. Chưa commit git ở bất kỳ phần nào trong 4 phần, theo đúng yêu cầu xuyên suốt.

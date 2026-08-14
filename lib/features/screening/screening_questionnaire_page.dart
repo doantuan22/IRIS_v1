@@ -88,11 +88,21 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
         itemCount: questions.length + 2,
         itemBuilder: (context, index) {
           if (index == 0) {
+            final answered = _answers.length;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Công cụ sàng lọc: ${_questionSet.label}',
-                style: Theme.of(context).textTheme.titleSmall,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Công cụ sàng lọc: ${_questionSet.label}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Câu hỏi đã trả lời: $answered/${questions.length}'),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(value: answered / questions.length),
+                ],
               ),
             );
           }

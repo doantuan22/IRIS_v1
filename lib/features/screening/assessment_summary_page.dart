@@ -98,43 +98,79 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
           }
           final data = snapshot.data!;
           final total = nineDomains.length;
-          return Padding(
+          final screening = data.latestScreening;
+          return ListView(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Tổng hợp hồ sơ ${widget.child.name}', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
-                Text('Độ tuổi: ${formatAgeLabel(widget.child)}'),
-                const SizedBox(height: 8),
-                Text(data.hasScreening ? 'Đã sàng lọc' : 'Chưa sàng lọc'),
-                if (data.hasScreening && data.latestScreening != null) ...[
-                  const SizedBox(height: 8),
-                  Text('Kết quả sàng lọc gần nhất: ${data.latestScreening!.score ?? "(không có điểm)"}'),
-                ],
-                const SizedBox(height: 8),
-                Text('Đã có mô tả cho ${data.doneDomainCount}/$total lĩnh vực'),
-                const SizedBox(height: 24),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Đề xuất hướng đánh giá', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 8),
-                        Text(_buildSuggestion(data, ageMonths)),
+            children: [
+              // Khối 1 — thông tin trẻ.
+              Text('Tổng hợp hồ sơ ${widget.child.name}', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text('Độ tuổi: ${formatAgeLabel(widget.child)}'),
+              const SizedBox(height: 16),
+              // Khối 2 — tóm tắt sàng lọc.
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sàng lọc', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text(data.hasScreening ? 'Đã sàng lọc' : 'Chưa sàng lọc'),
+                      if (data.hasScreening && screening != null) ...[
+                        const SizedBox(height: 4),
+                        Text('Kết quả sàng lọc gần nhất: ${screening.score ?? "(không có điểm)"}'),
+                        if (screening.toolName != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Công cụ: ${screening.toolName}'),
+                        ],
+                        if (screening.performedAt != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Ngày thực hiện: ${screening.performedAt}'),
+                        ],
                       ],
-                    ),
+                      const SizedBox(height: 4),
+                      Text('Người đánh giá: ${widget.child.nguoiDanhGia ?? "Chưa cập nhật"}'),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
-                FilledButton(
-                  onPressed: _startAssessment,
-                  child: const Text('Bắt đầu đánh giá'),
+              ),
+              const SizedBox(height: 16),
+              // Khối 3 — số lĩnh vực đã/chưa đánh giá.
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Đánh giá 9 lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text('Đã có mô tả cho ${data.doneDomainCount}/$total lĩnh vực'),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              // Khối 4 — đề xuất hướng đánh giá.
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Đề xuất hướng đánh giá', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text(_buildSuggestion(data, ageMonths)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton(
+                onPressed: _startAssessment,
+                child: const Text('Bắt đầu đánh giá'),
+              ),
+            ],
           );
         },
       ),

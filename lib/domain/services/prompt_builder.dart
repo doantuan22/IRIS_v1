@@ -52,4 +52,39 @@ YÊU CẦU BẮT BUỘC:
 - Trả lời dựa trên đúng bối cảnh của trẻ, sử dụng dữ liệu hồ sơ ở trên.
 - Nếu có tài liệu tham khảo chuyên môn, có thể đối chiếu để giải thích rõ hơn biểu hiện này có phổ biến hay cần lưu ý.
 - KHÔNG được đưa ra chẩn đoán hay kết luận xác định. Chỉ mô tả, giải thích, và nếu phù hợp, gợi ý người dùng tìm đánh giá chuyên môn hoặc tiếp tục quan sát/quay video làm tư liệu.''';
+
+  /// System prompt gắn nhãn tổng quan 1 lĩnh vực cho "Chân dung toàn cảnh"
+  /// (xem `OverviewRepository.labelDomain`) — AI CHỈ được gắn nhãn TỪNG lĩnh
+  /// vực, KHÔNG được tự quyết định mức tổng quan cuối cùng (mức cuối tính
+  /// 100% bằng code ở `overview_tier_calculator.dart`). Ép trả về đúng 1
+  /// JSON object để parse máy móc, không lẫn văn bản tự do.
+  String buildDomainOverviewLabelPrompt({
+    required String linhVucLabel,
+    required String moTaText,
+    required String binhThuongContext,
+    required String roiLoanContext,
+  }) =>
+      '''
+$_baseIdentity
+
+NHIỆM VỤ: Gắn nhãn tổng quan cho lĩnh vực "$linhVucLabel" của trẻ, CHỈ dựa trên dữ liệu được cung cấp dưới đây.
+
+BẮT BUỘC: Chỉ được trả lời bằng ĐÚNG 1 JSON object, KHÔNG kèm bất kỳ chữ nào khác trước/sau (không giải thích thêm, không markdown, không code fence), đúng định dạng:
+{"nhan": "thuong_gap" | "can_theo_doi" | "chua_du_du_lieu", "ly_do_ngan_gon": "..."}
+
+Ý nghĩa từng giá trị "nhan" (chỉ được chọn đúng 1 trong 3):
+- "thuong_gap": mô tả của người dùng phù hợp với dữ liệu tham khảo nhóm "BIỂU HIỆN THƯỜNG GẶP" bên dưới.
+- "can_theo_doi": mô tả của người dùng phù hợp với dữ liệu tham khảo nhóm "DẤU HIỆU CẦN QUAN SÁT THÊM" bên dưới.
+- "chua_du_du_lieu": dữ liệu tham khảo bên dưới KHÔNG đủ để so sánh (rỗng, hoặc không liên quan tới mô tả) — PHẢI chọn nhãn này trong trường hợp đó, TUYỆT ĐỐI KHÔNG được suy đoán hay tự chọn "thuong_gap"/"can_theo_doi" khi thiếu dữ liệu tham khảo phù hợp.
+
+"ly_do_ngan_gon" là 1 câu giải thích ngắn gọn, dựa đúng trên dữ liệu bên dưới, sẽ hiển thị trực tiếp cho người dùng — không suy diễn ngoài dữ liệu.
+
+MÔ TẢ CỦA NGƯỜI DÙNG VỀ LĨNH VỰC NÀY:
+$moTaText
+
+DỮ LIỆU THAM KHẢO — NHÓM "BIỂU HIỆN THƯỜNG GẶP":
+$binhThuongContext
+
+DỮ LIỆU THAM KHẢO — NHÓM "DẤU HIỆU CẦN QUAN SÁT THÊM":
+$roiLoanContext''';
 }

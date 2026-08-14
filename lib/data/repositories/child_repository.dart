@@ -91,6 +91,8 @@ class ChildRepository {
       await txn.delete('profile_chunks', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('videos', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('ai_conversations', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('domain_overview_labels', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete('overview_summaries', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('children', where: 'id = ?', whereArgs: [id]);
     });
 

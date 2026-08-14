@@ -54,6 +54,10 @@ dependencies:
   # Sinh id cho các bảng SQLite
   uuid: ^4.5.1
 
+  # Lưu bền vững "hồ sơ trẻ đang hoạt động" (active_child_id) qua các lần
+  # mở app — chỉ 1 giá trị đơn giản, không cần SQLite cho việc này.
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

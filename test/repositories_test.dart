@@ -173,4 +173,209 @@ void main() {
     // ignore: avoid_print
     print('PASS: ExpertKnowledgeRepository.query lọc đúng theo linh_vuc + độ tuổi');
   });
+
+  test('ExpertKnowledgeRepository: lưu + đọc đúng "phan_loai", null khi không truyền', () async {
+    final expertRepo = ExpertKnowledgeRepository(appDatabase);
+
+    await expertRepo.add(
+      content: 'Biểu hiện thường gặp mẫu',
+      contentType: 'so_sanh',
+      phanLoai: 'thuong_gap',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.1, 0.2],
+    );
+    await expertRepo.add(
+      content: 'Cần quan sát thêm mẫu',
+      contentType: 'so_sanh',
+      phanLoai: 'can_quan_sat',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.3, 0.4],
+    );
+    await expertRepo.add(
+      content: 'Chân dung mẫu, không phân loại',
+      contentType: 'chan_dung',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.5, 0.6],
+    );
+
+    final result = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'so_sanh');
+    expect(result.length, 2);
+    expect(result.firstWhere((c) => c.content.contains('thường gặp')).phanLoai, 'thuong_gap');
+    expect(result.firstWhere((c) => c.content.contains('quan sát thêm')).phanLoai, 'can_quan_sat');
+
+    final chanDung = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'chan_dung');
+    expect(chanDung.single.phanLoai, isNull);
+    // ignore: avoid_print
+    print('PASS: ExpertKnowledgeRepository lưu + đọc đúng phan_loai, null khi không truyền');
+  });
+
+  test('ExpertKnowledgeRepository: lưu + đọc đúng "nhom_tre"/"boi_canh", lọc đúng qua query()', () async {
+    final expertRepo = ExpertKnowledgeRepository(appDatabase);
+
+    await expertRepo.add(
+      content: 'Chia sẻ từ phụ huynh trẻ bình thường, ở nhà',
+      contentType: 'chia_se_phu_huynh',
+      nhomTre: 'binh_thuong',
+      boiCanh: 'o_nha',
+      nguonTaiLieu: 'Mẹ bé 5 tuổi',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.1, 0.2],
+    );
+    await expertRepo.add(
+      content: 'Chia sẻ từ phụ huynh trẻ ASD, ở trường',
+      contentType: 'chia_se_phu_huynh',
+      nhomTre: 'asd',
+      boiCanh: 'o_truong',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.3, 0.4],
+    );
+    await expertRepo.add(
+      content: 'So sánh mẫu, không có nhom_tre/boi_canh',
+      contentType: 'so_sanh',
+      phanLoai: 'thuong_gap',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.5, 0.6],
+    );
+
+    final chiaSe = await expertRepo.query(
+      linhVuc: 'quan_he_xa_hoi',
+      ageInMonths: 60,
+      contentType: 'chia_se_phu_huynh',
+    );
+    expect(chiaSe.length, 2);
+    final binhThuong = chiaSe.firstWhere((c) => c.nhomTre == 'binh_thuong');
+    expect(binhThuong.boiCanh, 'o_nha');
+    expect(binhThuong.nguonTaiLieu, 'Mẹ bé 5 tuổi');
+    final asd = chiaSe.firstWhere((c) => c.nhomTre == 'asd');
+    expect(asd.boiCanh, 'o_truong');
+
+    final locTheoNhomTre = await expertRepo.query(
+      linhVuc: 'quan_he_xa_hoi',
+      ageInMonths: 60,
+      contentType: 'chia_se_phu_huynh',
+      nhomTre: 'asd',
+    );
+    expect(locTheoNhomTre.single.content, contains('ASD'));
+
+    final locTheoBoiCanh = await expertRepo.query(
+      linhVuc: 'quan_he_xa_hoi',
+      ageInMonths: 60,
+      contentType: 'chia_se_phu_huynh',
+      boiCanh: 'o_nha',
+    );
+    expect(locTheoBoiCanh.single.content, contains('bình thường'));
+
+    final soSanh = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'so_sanh');
+    expect(soSanh.single.nhomTre, isNull);
+    expect(soSanh.single.boiCanh, isNull);
+    // ignore: avoid_print
+    print('PASS: ExpertKnowledgeRepository lưu + đọc đúng nhom_tre/boi_canh, query() lọc đúng theo từng tham số');
+  });
+
+  test(
+      'ExpertKnowledgeRepository: cột "phan_loai" dùng lại đúng cho content_type="bac_si" với bộ giá trị mới '
+      '(moc_phat_trien/dau_hieu_luu_y/giai_thich) — không cần migration vì là TEXT tự do', () async {
+    final expertRepo = ExpertKnowledgeRepository(appDatabase);
+
+    await expertRepo.add(
+      content: 'Mốc phát triển mẫu',
+      contentType: 'bac_si',
+      phanLoai: 'moc_phat_trien',
+      nguonTaiLieu: 'Góc nhìn chuyên khoa Tâm thần Nhi (minh hoạ)',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.1, 0.2],
+    );
+    await expertRepo.add(
+      content: 'Dấu hiệu cần lưu ý mẫu',
+      contentType: 'bac_si',
+      phanLoai: 'dau_hieu_luu_y',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.3, 0.4],
+    );
+    await expertRepo.add(
+      content: 'Giải thích chuyên môn mẫu',
+      contentType: 'bac_si',
+      phanLoai: 'giai_thich',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.5, 0.6],
+    );
+
+    final bacSi = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'bac_si');
+    expect(bacSi.length, 3);
+    expect(bacSi.firstWhere((c) => c.content.contains('Mốc phát triển')).phanLoai, 'moc_phat_trien');
+    expect(bacSi.firstWhere((c) => c.content.contains('Dấu hiệu')).phanLoai, 'dau_hieu_luu_y');
+    expect(bacSi.firstWhere((c) => c.content.contains('Giải thích')).phanLoai, 'giai_thich');
+    // ignore: avoid_print
+    print('PASS: cột phan_loai (TEXT tự do) dùng đúng cho bộ giá trị mới của content_type="bac_si", không cần migration');
+  });
+
+  test(
+      'ExpertKnowledgeRepository: cột "phan_loai" dùng lại đúng cho content_type="chan_dung" với bộ giá trị mới '
+      '(diem_manh/khac_biet/can_ho_tro/muc_do_bieu_hien)', () async {
+    final expertRepo = ExpertKnowledgeRepository(appDatabase);
+
+    await expertRepo.add(
+      content: 'Điểm mạnh mẫu',
+      contentType: 'chan_dung',
+      phanLoai: 'diem_manh',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.1, 0.2],
+    );
+    await expertRepo.add(
+      content: 'Khác biệt mẫu',
+      contentType: 'chan_dung',
+      phanLoai: 'khac_biet',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.3, 0.4],
+    );
+    await expertRepo.add(
+      content: 'Cần hỗ trợ mẫu',
+      contentType: 'chan_dung',
+      phanLoai: 'can_ho_tro',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.5, 0.6],
+    );
+    await expertRepo.add(
+      content: 'Thường xuyên',
+      contentType: 'chan_dung',
+      phanLoai: 'muc_do_bieu_hien',
+      linhVuc: 'quan_he_xa_hoi',
+      doTuoiThangMin: 48,
+      doTuoiThangMax: 71,
+      embedding: [0.7, 0.8],
+    );
+
+    final chanDung = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'chan_dung');
+    expect(chanDung.length, 4);
+    expect(chanDung.firstWhere((c) => c.content.contains('Điểm mạnh')).phanLoai, 'diem_manh');
+    expect(chanDung.firstWhere((c) => c.content.contains('Khác biệt')).phanLoai, 'khac_biet');
+    expect(chanDung.firstWhere((c) => c.content.contains('Cần hỗ trợ')).phanLoai, 'can_ho_tro');
+    expect(chanDung.firstWhere((c) => c.content == 'Thường xuyên').phanLoai, 'muc_do_bieu_hien');
+    // ignore: avoid_print
+    print('PASS: cột phan_loai dùng đúng cho bộ giá trị mới của content_type="chan_dung"');
+  });
 }

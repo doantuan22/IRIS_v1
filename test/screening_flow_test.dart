@@ -4,6 +4,7 @@ import 'package:iris_app/data/local/database.dart';
 import 'package:iris_app/data/repositories/history_log_repository.dart';
 import 'package:iris_app/data/repositories/screening_repository.dart';
 import 'package:iris_app/features/child_profile/child_list_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Bơm 1 số frame cố định thay vì `pumpAndSettle()` — trang danh sách/chi
@@ -35,6 +36,10 @@ void main() {
 
   setUp(() {
     AppDatabase.debugPathOverride = inMemoryDatabasePath;
+    // `CreateProfilePage` giờ gọi `ActiveChildService` (shared_preferences)
+    // ngay sau khi lưu hồ sơ — cần mock giá trị ban đầu vì widget test không
+    // có platform channel thật cho shared_preferences.
+    SharedPreferences.setMockInitialValues({});
   });
 
   tearDown(() async {
@@ -59,19 +64,34 @@ void main() {
     await pumpFrames(tester);
     await tester.enterText(find.byType(TextFormField).at(1), '3');
 
-    // Form giờ có thêm 2 trường "Người đánh giá"/"Vai trò" nên dài hơn
-    // viewport mặc định của widget test — cuộn tới nút trước khi bấm.
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+    // Form giờ dài hơn viewport mặc định của widget test (thêm 2 trường
+    // "Người đánh giá"/"Vai trò" + nút chọn giới tính dạng segmented) — nút
+    // "Lưu hồ sơ" có thể chưa được build sẵn (ngoài cache extent mặc định
+    // của ListView), nên cuộn dần bằng `scrollUntilVisible` (tự build thêm
+    // item khi cuộn) thay vì `ensureVisible` (yêu cầu widget đã tồn tại
+    // trong cây sẵn). `.first` vì mỗi `TextFormField` cũng tự có 1
+    // `Scrollable` nội bộ (cuộn text trong ô nhập) — Scrollable đầu tiên
+    // theo thứ tự duyệt cây luôn là của `ListView` bọc ngoài form.
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilledButton, 'Lưu hồ sơ'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await pumpFrames(tester, times: 5);
     await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
     await pumpFrames(tester);
 
-    expect(find.text('Bé Test Flow'), findsOneWidget);
+    // Sau khi lưu, giờ hiện màn tóm tắt (Bước 2) thay vì quay thẳng về danh
+    // sách — "Bé Test Flow" có thể tồn tại đồng thời ở cả màn tóm tắt lẫn
+    // ChildListPage bên dưới (đã reload qua `result: true`), nên dùng
+    // findsWidgets thay vì findsOneWidget cho tên trẻ.
+    expect(find.text('Tạo hồ sơ thành công!'), findsOneWidget);
+    expect(find.text('Bé Test Flow'), findsWidgets);
     // ignore: avoid_print
-    print('PASS: tạo hồ sơ trẻ "Bé Test Flow" thành công, hiện trong danh sách');
+    print('PASS: tạo hồ sơ trẻ "Bé Test Flow" thành công, hiện màn tóm tắt hồ sơ');
 
-    // --- Vào chi tiết hồ sơ ---
-    await tester.tap(find.text('Bé Test Flow'));
+    // --- Bấm "Xem hồ sơ" vào chi tiết hồ sơ ---
+    await tester.tap(find.widgetWithText(FilledButton, 'Xem hồ sơ'));
     await pumpFrames(tester);
 
     expect(find.text('Chưa sàng lọc'), findsOneWidget);
@@ -112,9 +132,17 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Có'));
     await pumpFrames(tester);
 
+    // Bước 3 giờ có thêm màn xác nhận công cụ sàng lọc trước khi vào câu hỏi.
+    expect(find.text('Công cụ sẽ sử dụng: Bộ B (31 tháng trở lên)'), findsOneWidget);
+    // ignore: avoid_print
+    print('PASS: trẻ 36 tháng tuổi được chọn đúng Bộ B (31 tháng trở lên) ở màn xác nhận công cụ');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Bắt đầu'));
+    await pumpFrames(tester);
+
     expect(find.text('Công cụ sàng lọc: Bộ B (31 tháng trở lên)'), findsOneWidget);
     // ignore: avoid_print
-    print('PASS: trẻ 36 tháng tuổi được chọn đúng Bộ B (31 tháng trở lên), không còn dùng cứng 1 bộ');
+    print('PASS: bấm "Bắt đầu" vào đúng bảng câu hỏi Bộ B (31 tháng trở lên)');
 
     // ListView.builder chỉ dựng sẵn item trong viewport — phải scroll từng
     // câu vào tầm nhìn trước khi tap (không thể tap thẳng item ngoài màn hình).
@@ -141,18 +169,44 @@ void main() {
     print('PASS: hoàn thành bộ câu hỏi mock (6 câu "Không"), kết quả "0/6" + dòng chữ disclaimer hiển thị đúng');
 
     // --- Bước 4: tổng hợp & đề xuất, đọc đúng dữ liệu thật sau khi sàng lọc ---
+    // Màn kết quả giờ cuộn được (thêm vòng tròn điểm số) — cuộn tới nút
+    // trước khi bấm, cùng cách xử lý như màn tạo hồ sơ ở trên.
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilledButton, 'Tiếp tục'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await pumpFrames(tester, times: 5);
     await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
     await pumpFrames(tester);
 
     expect(find.text('Tổng hợp hồ sơ & đề xuất'), findsOneWidget);
     expect(find.text('Đã sàng lọc'), findsOneWidget);
     expect(find.text('Kết quả sàng lọc gần nhất: 0/6'), findsOneWidget);
+    // Bước 4 giờ chia thành nhiều khối (Card) — cuộn tới khối cuối để xác
+    // nhận cả nội dung lẫn nút đều có mặt.
+    await tester.scrollUntilVisible(
+      find.text('Đã có mô tả cho 0/9 lĩnh vực'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await pumpFrames(tester, times: 5);
     expect(find.text('Đã có mô tả cho 0/9 lĩnh vực'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilledButton, 'Bắt đầu đánh giá'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await pumpFrames(tester, times: 5);
     expect(find.widgetWithText(FilledButton, 'Bắt đầu đánh giá'), findsOneWidget);
     // ignore: avoid_print
     print('PASS: Bước 4 hiển thị đúng dữ liệu thật sau khi sàng lọc (đã sàng lọc, điểm 0/6, 0/9 lĩnh vực)');
 
-    // Quay lại hồ sơ (Bước 4 -> Intro -> ProfileDetail) — badge cập nhật đúng.
+    // Quay lại hồ sơ (Bước 4 -> ToolConfirm -> Intro -> ProfileDetail, thêm 1
+    // bước so với nhánh "Chưa muốn" vì giờ có thêm màn xác nhận công cụ) —
+    // badge cập nhật đúng.
+    await tester.pageBack();
+    await pumpFrames(tester);
     await tester.pageBack();
     await pumpFrames(tester);
     await tester.pageBack();

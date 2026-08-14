@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../data/local/database.dart';
 import '../../../data/repositories/child_repository.dart';
+import '../../../domain/services/active_child_service.dart';
+import 'create_profile_summary_page.dart';
 
 enum _AgeInputMode { dob, ageYears }
 
@@ -20,6 +22,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   final _nguoiDanhGiaController = TextEditingController();
 
   final _childRepository = ChildRepository(AppDatabase.instance);
+  final _activeChildService = ActiveChildService();
 
   _AgeInputMode _ageInputMode = _AgeInputMode.dob;
   DateTime? _selectedDob;
@@ -70,7 +73,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
     setState(() => _saving = true);
     try {
-      await _childRepository.create(
+      final created = await _childRepository.create(
         name: _nameController.text.trim(),
         dob: _ageInputMode == _AgeInputMode.dob ? _selectedDob?.toIso8601String() : null,
         ageYears: _ageInputMode == _AgeInputMode.ageYears
@@ -82,7 +85,19 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             : _nguoiDanhGiaController.text.trim(),
         vaiTro: _vaiTro,
       );
-      if (mounted) Navigator.of(context).pop(true);
+      // Hồ sơ vừa tạo luôn trở thành "hồ sơ đang hoạt động" — áp dụng thống
+      // nhất cho mọi lối vào (tạo hồ sơ đầu tiên khi mở app lần đầu, hoặc
+      // tạo thêm hồ sơ mới từ tab "Tài khoản"), không phân biệt ngữ cảnh gọi.
+      await _activeChildService.setActiveChildId(created.id);
+      if (mounted) {
+        // `result: true` báo ngay cho màn gọi (VD ChildListPage) làm mới danh
+        // sách trong lúc người dùng đang xem màn tóm tắt — không đợi họ bấm
+        // quay lại hết ngăn xếp mới refresh.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => CreateProfileSummaryPage(child: created)),
+          result: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -146,15 +161,18 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _gender,
-              decoration: const InputDecoration(labelText: 'Giới tính'),
-              items: const [
-                DropdownMenuItem(value: 'nam', child: Text('Nam')),
-                DropdownMenuItem(value: 'nu', child: Text('Nữ')),
-                DropdownMenuItem(value: 'khac', child: Text('Khác')),
+            const Text('Giới tính', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              emptySelectionAllowed: true,
+              segments: const [
+                ButtonSegment(value: 'nam', label: Text('Nam')),
+                ButtonSegment(value: 'nu', label: Text('Nữ')),
+                ButtonSegment(value: 'khac', label: Text('Khác')),
               ],
-              onChanged: (value) => setState(() => _gender = value),
+              selected: _gender == null ? const {} : {_gender!},
+              onSelectionChanged: (selection) =>
+                  setState(() => _gender = selection.isEmpty ? null : selection.first),
             ),
             const SizedBox(height: 16),
             TextFormField(

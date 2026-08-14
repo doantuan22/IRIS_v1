@@ -25,7 +25,11 @@ void main() {
     try {
       // Bước 1 — tạo 1 database THẬT ở đúng schema version 1 (trước khi có
       // 2 cột mới), có sẵn 1 hồ sơ trẻ — mô phỏng máy người dùng trước khi
-      // cập nhật app.
+      // cập nhật app. Database v1 thật luôn có đủ các bảng khác (được tạo
+      // cùng lúc trong `onCreate` gốc) — tạo thêm `expert_knowledge_chunks`
+      // ở đúng schema v1 (chưa có `phan_loai`) để `onUpgrade` sau này (bước
+      // migration v2→v3) chạy đúng như trên database thật, không phải lỗi
+      // "no such table" chỉ vì fixture test thiếu bảng.
       final oldDb = await openDatabase(
         dbPath,
         version: 1,
@@ -39,6 +43,18 @@ void main() {
               gender TEXT,
               status TEXT DEFAULT 'active',
               created_at TEXT NOT NULL
+            );
+          ''');
+          await db.execute('''
+            CREATE TABLE expert_knowledge_chunks (
+              id TEXT PRIMARY KEY,
+              content TEXT NOT NULL,
+              content_type TEXT NOT NULL,
+              linh_vuc TEXT,
+              do_tuoi_thang_min INTEGER,
+              do_tuoi_thang_max INTEGER,
+              nguon_tai_lieu TEXT,
+              embedding BLOB NOT NULL
             );
           ''');
         },

@@ -13,6 +13,7 @@ import '../../../data/repositories/screening_repository.dart';
 import '../../../domain/models/child.dart';
 import '../../ai_chat/ai_chat_page.dart';
 import '../../assessment/domain_list_page.dart';
+import '../../expert_connect/expert_connect_page.dart';
 import '../../history/history_page.dart';
 import '../../screening/screening_intro_page.dart';
 import '../../video_recording/video_list_page.dart';
@@ -153,6 +154,9 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
           await _expertKnowledgeRepository.add(
             content: content,
             contentType: entry['content_type'] as String,
+            phanLoai: entry['phan_loai'] as String?,
+            nhomTre: entry['nhom_tre'] as String?,
+            boiCanh: entry['boi_canh'] as String?,
             linhVuc: entry['linh_vuc'] as String?,
             doTuoiThangMin: entry['do_tuoi_thang_min'] as int?,
             doTuoiThangMax: entry['do_tuoi_thang_max'] as int?,
@@ -250,6 +254,14 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
             ),
             icon: const Icon(Icons.videocam_outlined),
             label: const Text('Quay video tình huống'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => ExpertConnectPage(child: child)),
+            ),
+            icon: const Icon(Icons.groups_outlined),
+            label: const Text('Kết nối chuyên gia/trung tâm'),
           ),
           const SizedBox(height: 24),
           TextButton.icon(

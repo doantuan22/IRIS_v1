@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models/child.dart';
 import 'assessment_summary_page.dart';
-import 'screening_questionnaire_page.dart';
+import 'screening_tool_confirm_page.dart';
 
 /// Bước 3 — Lựa chọn thực hiện bài sàng lọc: đúng 2 nhánh, không có nhánh
 /// thứ 3. "Chưa muốn" là lựa chọn trung lập, KHÔNG tạo bản ghi `screenings`
@@ -42,7 +42,7 @@ class ScreeningIntroPage extends StatelessWidget {
             const SizedBox(height: 32),
             FilledButton(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ScreeningQuestionnairePage(child: child)),
+                MaterialPageRoute(builder: (_) => ScreeningToolConfirmPage(child: child)),
               ),
               child: const Text('Có'),
             ),

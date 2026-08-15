@@ -229,7 +229,7 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
               MaterialPageRoute(builder: (_) => DomainListPage(child: child)),
             ),
             icon: const Icon(Icons.checklist_outlined),
-            label: const Text('Đánh giá 9 lĩnh vực'),
+            label: const Text('Đánh giá 7 lĩnh vực'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -253,7 +253,7 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
               MaterialPageRoute(builder: (_) => VideoListPage(child: child)),
             ),
             icon: const Icon(Icons.videocam_outlined),
-            label: const Text('Quay video tình huống'),
+            label: const Text('Video quan sát'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

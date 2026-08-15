@@ -17,6 +17,7 @@ CREATE TABLE overview_summaries (
   tier TEXT NOT NULL,
   so_linh_vuc_can_theo_doi INTEGER NOT NULL,
   so_linh_vuc_thieu_du_lieu INTEGER NOT NULL,
+  mo_ta_tong_hop TEXT,
   computed_at TEXT NOT NULL
 );
 

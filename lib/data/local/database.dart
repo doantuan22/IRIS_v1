@@ -43,7 +43,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 7,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -88,6 +88,51 @@ class AppDatabase {
         if (oldVersion < 5) {
           await db.execute(domainOverviewLabelsTableCreate);
           await db.execute(overviewSummariesTableCreate);
+        }
+        // Version 6 — dọn dữ liệu cho 2 lĩnh vực bị loại bỏ ('hanh_vi', 'ung_xu')
+        // từ 9 lĩnh vực xuống 7 lĩnh vực.
+        if (oldVersion < 6) {
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('assessments', 'profile_chunks', 'domain_overview_labels', 'expert_knowledge_chunks')",
+          );
+          final tableNames = tables.map((r) => r['name'] as String).toSet();
+          if (tableNames.contains('assessments')) {
+            try {
+              await db.execute("DELETE FROM assessments WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+            } catch (_) {}
+          }
+          if (tableNames.contains('profile_chunks')) {
+            try {
+              await db.execute("DELETE FROM profile_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+            } catch (_) {}
+          }
+          if (tableNames.contains('domain_overview_labels')) {
+            try {
+              await db.execute("DELETE FROM domain_overview_labels WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+            } catch (_) {}
+          }
+          if (tableNames.contains('expert_knowledge_chunks')) {
+            try {
+              await db.execute("DELETE FROM expert_knowledge_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+            } catch (_) {}
+          }
+        }
+        // Version 7 — xoá sạch dữ liệu tĩnh 'chan_dung' và thêm cột 'mo_ta_tong_hop' vào overview_summaries
+        if (oldVersion < 7) {
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('expert_knowledge_chunks', 'overview_summaries')",
+          );
+          final tableNames = tables.map((r) => r['name'] as String).toSet();
+          if (tableNames.contains('expert_knowledge_chunks')) {
+            try {
+              await db.execute("DELETE FROM expert_knowledge_chunks WHERE content_type = 'chan_dung'");
+            } catch (_) {}
+          }
+          if (tableNames.contains('overview_summaries')) {
+            try {
+              await db.execute('ALTER TABLE overview_summaries ADD COLUMN mo_ta_tong_hop TEXT');
+            } catch (_) {}
+          }
         }
       },
     );

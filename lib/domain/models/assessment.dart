@@ -1,4 +1,4 @@
-/// Model dữ liệu đánh giá 9 lĩnh vực, ánh xạ tới bảng `assessments`.
+/// Model dữ liệu đánh giá 7 lĩnh vực, ánh xạ tới bảng `assessments`.
 /// Chỉ chứa dữ liệu riêng của trẻ (mô tả biểu hiện / ghi chú chuyên gia
 /// case-specific), không phải nội dung tham khảo chung.
 class Assessment {

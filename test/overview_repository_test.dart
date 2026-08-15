@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:iris_app/core/constants/nine_domains.dart';
+import 'package:iris_app/core/constants/domains.dart';
 import 'package:iris_app/data/local/database.dart';
 import 'package:iris_app/data/remote/groq_api_client.dart';
 import 'package:iris_app/data/remote/nvidia_api_client.dart';
@@ -43,7 +43,27 @@ class _PerDomainGroqMock {
         requests.add(request);
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         final systemPrompt = (body['messages'] as List<dynamic>)[0]['content'] as String;
-        final domain = nineDomains.firstWhere((d) => systemPrompt.contains('lĩnh vực "${d.label}"'));
+
+        // Xử lý bước sinh mô tả chân dung tổng hợp
+        if (systemPrompt.contains('phác hoạ bức tranh tổng quan') ||
+            systemPrompt.contains('Chân dung biểu hiện')) {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'content': 'Bé thể hiện sự tương tác tích cực và cần theo dõi thêm ở một số kỹ năng.',
+                  },
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }
+
+        final domain = domains.firstWhere((d) => systemPrompt.contains('lĩnh vực "${d.label}"'));
         final nhan = labelByDomainCode[domain.code]!;
         return http.Response(
           jsonEncode({
@@ -142,7 +162,7 @@ void main() {
     print('PASS: AI trả JSON sai định dạng => fallback chua_du_du_lieu, không ném lỗi ra ngoài');
   });
 
-  test('computeAndSaveOverview: chưa đủ nhãn 9/9 => insufficientLabels, KHÔNG lưu overview_summaries', () async {
+  test('computeAndSaveOverview: chưa đủ nhãn 7/7 => insufficientLabels, KHÔNG lưu overview_summaries', () async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Thiếu Nhãn', ageYears: 3);
     await DomainOverviewLabelRepository(AppDatabase.instance).save(
       childId: child.id,
@@ -159,18 +179,18 @@ void main() {
     final summaries = await OverviewSummaryRepository(AppDatabase.instance).getLatestForChild(child.id);
     expect(summaries, isNull);
     // ignore: avoid_print
-    print('PASS: chưa đủ nhãn 9/9 => insufficientLabels, không lưu overview_summaries');
+    print('PASS: chưa đủ nhãn 7/7 => insufficientLabels, không lưu overview_summaries');
   });
 
   test(
-      'computeAndSaveOverview: đủ 9/9 nhãn nhưng >=4 thiếu dữ liệu => insufficientData, '
+      'computeAndSaveOverview: đủ 7/7 nhãn nhưng >=4 thiếu dữ liệu => insufficientData, '
       'KHÔNG lưu overview_summaries', () async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Thiếu Dữ Liệu', ageYears: 3);
     final labelRepo = DomainOverviewLabelRepository(AppDatabase.instance);
-    for (var i = 0; i < nineDomains.length; i++) {
+    for (var i = 0; i < domains.length; i++) {
       await labelRepo.save(
         childId: child.id,
-        linhVuc: nineDomains[i].code,
+        linhVuc: domains[i].code,
         nhan: i < 4 ? 'chua_du_du_lieu' : 'thuong_gap',
       );
     }
@@ -184,17 +204,17 @@ void main() {
     final summaries = await OverviewSummaryRepository(AppDatabase.instance).getLatestForChild(child.id);
     expect(summaries, isNull);
     // ignore: avoid_print
-    print('PASS: đủ 9/9 nhãn nhưng >=4 thiếu dữ liệu => insufficientData, không lưu overview_summaries');
+    print('PASS: đủ 7/7 nhãn nhưng >=4 thiếu dữ liệu => insufficientData, không lưu overview_summaries');
   });
 
   test(
-      'Luồng đầy đủ: 9 mô tả thật -> labelAllDomains (AI giả) -> computeAndSaveOverview (code thuần) '
+      'Luồng đầy đủ: 7 mô tả thật -> labelAllDomains (AI giả) -> computeAndSaveOverview (code thuần) '
       '-> đọc lại domain_overview_labels + overview_summaries + history_logs TRỰC TIẾP từ database thật',
       () async {
-    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Đủ 9 Lĩnh Vực', ageYears: 4);
+    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Đủ 7 Lĩnh Vực', ageYears: 4);
     final assessmentRepository = AssessmentRepository(AppDatabase.instance);
 
-    for (final domain in nineDomains) {
+    for (final domain in domains) {
       await assessmentRepository.save(
         childId: child.id,
         linhVuc: domain.code,
@@ -203,11 +223,11 @@ void main() {
       );
     }
 
-    // 4 lĩnh vực đầu 'can_theo_doi' (>2, <=5 => tier can_theo_doi), 5 lĩnh
+    // 4 lĩnh vực đầu 'can_theo_doi' (>2, <=5 => tier can_theo_doi), 3 lĩnh
     // vực còn lại 'thuong_gap', 0 thiếu dữ liệu.
     final labelPlan = <String, String>{};
-    for (var i = 0; i < nineDomains.length; i++) {
-      labelPlan[nineDomains[i].code] = i < 4 ? 'can_theo_doi' : 'thuong_gap';
+    for (var i = 0; i < domains.length; i++) {
+      labelPlan[domains[i].code] = i < 4 ? 'can_theo_doi' : 'thuong_gap';
     }
     final groqMock = _PerDomainGroqMock(labelPlan);
 
@@ -215,10 +235,10 @@ void main() {
     // ở việc khác) — ở đây thêm 1 chunk tối thiểu để đúng luồng vector
     // search có dữ liệu (không bắt buộc, luồng vẫn chạy đúng nếu rỗng).
     await ExpertKnowledgeRepository(AppDatabase.instance).add(
-      content: '[Placeholder] Biểu hiện thường gặp mẫu cho hành vi',
+      content: '[Placeholder] Biểu hiện thường gặp mẫu cho nhận thức',
       contentType: 'so_sanh',
       phanLoai: 'binh_thuong',
-      linhVuc: 'hanh_vi',
+      linhVuc: 'nhan_thuc',
       doTuoiThangMin: 36,
       doTuoiThangMax: 47,
       embedding: _fixedEmbedding,
@@ -231,8 +251,8 @@ void main() {
     );
 
     final labels = await overviewRepository.labelAllDomains(child);
-    expect(labels.length, 9);
-    expect(groqMock.requests.length, 9);
+    expect(labels.length, 7);
+    expect(groqMock.requests.length, 7);
 
     final result = await overviewRepository.computeAndSaveOverview(child);
     expect(result.status, OverviewComputationStatus.computed);
@@ -245,17 +265,19 @@ void main() {
     final rawDb = await AppDatabase.instance.database;
 
     final labelRows = await rawDb.query('domain_overview_labels', where: 'child_id = ?', whereArgs: [child.id]);
-    expect(labelRows.length, 9);
+    expect(labelRows.length, 7);
     final canTheoDoiRows = labelRows.where((r) => r['nhan'] == 'can_theo_doi').length;
     final thuongGapRows = labelRows.where((r) => r['nhan'] == 'thuong_gap').length;
     expect(canTheoDoiRows, 4);
-    expect(thuongGapRows, 5);
+    expect(thuongGapRows, 3);
 
     final summaryRows = await rawDb.query('overview_summaries', where: 'child_id = ?', whereArgs: [child.id]);
     expect(summaryRows.length, 1);
     expect(summaryRows.single['tier'], 'can_theo_doi');
     expect(summaryRows.single['so_linh_vuc_can_theo_doi'], 4);
     expect(summaryRows.single['so_linh_vuc_thieu_du_lieu'], 0);
+    expect(summaryRows.single['mo_ta_tong_hop'], isNotNull);
+    expect(result.summary!.moTaTongHop, isNotNull);
 
     final historyLogs = await HistoryLogRepository(AppDatabase.instance).getForChild(child.id);
     final tongQuanLogs = historyLogs.where((l) => l.eventType == 'tong_quan').toList();
@@ -264,9 +286,101 @@ void main() {
 
     // ignore: avoid_print
     print(
-      'PASS: luồng đầy đủ 9 lĩnh vực — đọc lại từ database thật xác nhận đúng '
-      '9 domain_overview_labels (4 can_theo_doi + 5 thuong_gap), 1 overview_summaries '
-      '(tier=can_theo_doi), 1 history_logs (tong_quan)',
+      'PASS: luồng đầy đủ 7 lĩnh vực — đọc lại từ database thật xác nhận đúng '
+      '7 domain_overview_labels (4 can_theo_doi + 3 thuong_gap), 1 overview_summaries '
+      '(tier=can_theo_doi, moTaTongHop), 1 history_logs (tong_quan)',
     );
+  });
+
+  test('computeAndSaveOverview: Groq lỗi ở bước sinh mô tả => tier vẫn lưu, moTaTongHop null, không crash', () async {
+    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Lỗi Mô Tả', ageYears: 3);
+    final labelRepo = DomainOverviewLabelRepository(AppDatabase.instance);
+
+    for (final domain in domains) {
+      await labelRepo.save(
+        childId: child.id,
+        linhVuc: domain.code,
+        nhan: 'thuong_gap',
+      );
+    }
+
+    // Groq Client ném Exception khi gọi sinh mô tả tổng hợp
+    final errorGroqClient = MockClient((request) async {
+      throw Exception('Giả lập lỗi mạng khi sinh mô tả tổng hợp');
+    });
+
+    final overviewRepository = OverviewRepository(
+      db: AppDatabase.instance,
+      groqApiClient: GroqApiClient(client: errorGroqClient),
+    );
+
+    final result = await overviewRepository.computeAndSaveOverview(child);
+    expect(result.status, OverviewComputationStatus.computed);
+    expect(result.summary!.tier, 'thuong_gap');
+    expect(result.summary!.moTaTongHop, isNull);
+
+    // Xác nhận trực tiếp trong database: tier vẫn được lưu với mo_ta_tong_hop null
+    final saved = await OverviewSummaryRepository(AppDatabase.instance).getLatestForChild(child.id);
+    expect(saved, isNotNull);
+    expect(saved!.tier, 'thuong_gap');
+    expect(saved.moTaTongHop, isNull);
+
+    // ignore: avoid_print
+    print('PASS: Groq lỗi khi sinh mô tả => tier vẫn lưu thành công, moTaTongHop=null, không throw');
+  });
+
+  test('generateAndSaveSummaryDescription: thử lại độc lập cập nhật đúng moTaTongHop cho summary đã có', () async {
+    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Thử Lại Mô Tả', ageYears: 3);
+    final labelRepo = DomainOverviewLabelRepository(AppDatabase.instance);
+
+    for (final domain in domains) {
+      await labelRepo.save(
+        childId: child.id,
+        linhVuc: domain.code,
+        nhan: 'thuong_gap',
+      );
+    }
+
+    final summaryRepo = OverviewSummaryRepository(AppDatabase.instance);
+    final existingSummary = await summaryRepo.save(
+      childId: child.id,
+      tier: 'thuong_gap',
+      soLinhVucCanTheoDoi: 0,
+      soLinhVucThieuDuLieu: 0,
+      moTaTongHop: null,
+    );
+
+    final mockClient = MockClient((request) async => http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'role': 'assistant',
+                  'content': 'Đoạn mô tả tổng hợp được tạo sau khi thử lại thành công.',
+                },
+              },
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ));
+
+    final overviewRepository = OverviewRepository(
+      db: AppDatabase.instance,
+      groqApiClient: GroqApiClient(client: mockClient),
+    );
+
+    final updated = await overviewRepository.generateAndSaveSummaryDescription(child, existingSummary);
+    expect(updated, isNotNull);
+    expect(updated!.id, existingSummary.id);
+    expect(updated.tier, 'thuong_gap');
+    expect(updated.moTaTongHop, 'Đoạn mô tả tổng hợp được tạo sau khi thử lại thành công.');
+
+    // Kiểm tra đọc lại trực tiếp từ DB
+    final readBack = await summaryRepo.getLatestForChild(child.id);
+    expect(readBack?.moTaTongHop, 'Đoạn mô tả tổng hợp được tạo sau khi thử lại thành công.');
+
+    // ignore: avoid_print
+    print('PASS: generateAndSaveSummaryDescription thử lại thành công và cập nhật đúng moTaTongHop');
   });
 }

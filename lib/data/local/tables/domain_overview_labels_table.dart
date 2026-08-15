@@ -1,5 +1,5 @@
 /// Bảng `domain_overview_labels` (thêm ở version 5, xem `onUpgrade` trong
-/// `database.dart`) — nhãn tổng quan CHO TỪNG LĨNH VỰC trong 9 lĩnh vực của
+/// `database.dart`) — nhãn tổng quan CHO TỪNG LĨNH VỰC trong 7 lĩnh vực của
 /// 1 trẻ, dùng để tổng hợp "Chân dung toàn cảnh". Mỗi lần gắn nhãn ghi 1
 /// dòng MỚI (lịch sử theo thời gian qua `computed_at`), không UPDATE đè —
 /// nhãn "hiện hành" của 1 (child_id, linh_vuc) là dòng có `computed_at` mới

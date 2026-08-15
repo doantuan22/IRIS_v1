@@ -7,39 +7,35 @@ import '../../../../data/repositories/history_log_repository.dart';
 import '../../../../data/repositories/profile_chunk_repository.dart';
 import '../../../../domain/models/assessment.dart';
 import '../../../../domain/models/child.dart';
-import '../comparison_video/comparison_video_page.dart';
-import '../part_step_indicator.dart';
 
-/// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiện ở đầu Phần 1 (Mô tả biểu
-/// hiện) để người dùng hiểu đang mô tả về khía cạnh nào. **Text tạm** — chưa
-/// phải nội dung đã chuẩn hoá chính thức cho cả 9 lĩnh vực, cần thay bằng
-/// nội dung thật khi có (xem SETUP_REPORT.md).
+/// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiện ở đầu Mô tả biểu
+/// hiện để người dùng hiểu đang mô tả về khía cạnh nào.
 const Map<String, String> _domainIntroTextTemp = {
-  'hanh_vi': 'Cách trẻ phản ứng, tương tác và điều chỉnh hành vi trong các tình huống hàng ngày.',
   'nhan_thuc': 'Khả năng của trẻ trong việc hiểu, ghi nhớ, suy luận và giải quyết vấn đề phù hợp với độ tuổi.',
   'cam_xuc': 'Cách trẻ nhận biết, thể hiện và điều tiết cảm xúc của bản thân.',
   'giac_quan': 'Cách trẻ tiếp nhận và phản ứng với các kích thích giác quan (âm thanh, ánh sáng, xúc giác...).',
   'quan_he_xa_hoi':
-      'Khả năng của trẻ trong việc tương tác, giao tiếp và tham gia với người khác trong nhiều hoàn cảnh khác nhau.',
+      'Khả năng của trẻ trong việc tương tác, giao tiếp, ứng xử, tuân thủ quy tắc và thích nghi với các tình huống xã hội.',
   'ngon_ngu': 'Khả năng hiểu và sử dụng ngôn ngữ để giao tiếp với người xung quanh.',
-  'ung_xu': 'Cách trẻ ứng xử, tuân thủ quy tắc và thích nghi với các tình huống xã hội.',
   'sinh_hoc': 'Các yếu tố phát triển thể chất và sinh học liên quan đến sự phát triển chung của trẻ.',
   'sinh_hoat_ca_nhan': 'Khả năng tự thực hiện các hoạt động sinh hoạt cá nhân hàng ngày phù hợp với độ tuổi.',
 };
 
-/// Phần 1/5 của mỗi lĩnh vực — Mô tả biểu hiện: dữ liệu riêng của trẻ do
-/// người dùng nhập, lưu vào bảng `assessments` (content_type='mo_ta') và
-/// đồng thời embed để lưu vào `profile_chunks` phục vụ RAG.
+/// Mô tả biểu hiện: dữ liệu riêng của trẻ do người dùng nhập, lưu vào bảng
+/// `assessments` (content_type='mo_ta') và đồng thời embed để lưu vào
+/// `profile_chunks` phục vụ RAG.
 class DescriptionPage extends StatefulWidget {
   final Child child;
   final String linhVuc;
   final String linhVucLabel;
+  final NvidiaApiClient? nvidiaApiClient;
 
   const DescriptionPage({
     super.key,
     required this.child,
     required this.linhVuc,
     required this.linhVucLabel,
+    this.nvidiaApiClient,
   });
 
   @override
@@ -50,7 +46,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
   final _assessmentRepository = AssessmentRepository(AppDatabase.instance);
   final _profileChunkRepository = ProfileChunkRepository(AppDatabase.instance);
   final _historyLogRepository = HistoryLogRepository(AppDatabase.instance);
-  final _nvidiaApiClient = NvidiaApiClient();
+  late final _nvidiaApiClient = widget.nvidiaApiClient ?? NvidiaApiClient();
   final _contentController = TextEditingController();
 
   late Future<List<Assessment>> _descriptionsFuture;
@@ -130,7 +126,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
   /// Gọi NVIDIA embed + lưu `profile_chunks` cho [content]. Trả `true` nếu
   /// thành công. Dùng chung cho lần lưu đầu (`_save`) và nút "Thử lại xử lý
   /// cho AI" (`_retryEmbedding`) — không tạo bản ghi `assessments` mới, chỉ
-  /// xử lý lại bước embedding cho mô tả đã có sẵn.
+  /// cập nhật chunk RAG.
   Future<bool> _embedAndSaveChunk(String content) async {
     try {
       final embedding = await _nvidiaApiClient.embed(content);
@@ -164,27 +160,6 @@ class _DescriptionPageState extends State<DescriptionPage> {
     ));
   }
 
-  void _goNext() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => ComparisonVideoPage(
-          child: widget.child,
-          linhVuc: widget.linhVuc,
-          linhVucLabel: widget.linhVucLabel,
-        ),
-      ),
-    );
-  }
-
-  /// Nút "Lưu & tiếp tục" — gọi lại đúng [_save] hiện có (không viết logic
-  /// lưu mới) rồi mới điều hướng tiếp bằng [_goNext] hiện có. Chỉ là 2 hàm
-  /// đã có sẵn được gọi nối tiếp nhau.
-  Future<void> _saveAndContinue() async {
-    await _save();
-    if (!mounted) return;
-    _goNext();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -192,7 +167,6 @@ class _DescriptionPageState extends State<DescriptionPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const PartStepIndicator(step: 1),
           Text(
             _domainIntroTextTemp[widget.linhVuc] ?? 'Mô tả biểu hiện của trẻ trong lĩnh vực này.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).hintColor),
@@ -245,34 +219,16 @@ class _DescriptionPageState extends State<DescriptionPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Lưu nháp'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _saving ? null : _saveAndContinue,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Lưu & tiếp tục'),
-                ),
-              ),
-            ],
+          FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: _saving
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_outlined),
+            label: const Text('Lưu mô tả'),
           ),
           if (_pendingEmbedContent != null) ...[
             const SizedBox(height: 8),

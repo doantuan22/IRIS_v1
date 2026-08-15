@@ -4,11 +4,9 @@ import '../../../../data/local/database.dart';
 import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
 import '../../../../domain/models/expert_knowledge_chunk.dart';
-import '../parent_input/parent_input_page.dart';
-import '../part_step_indicator.dart';
 import 'comparison_detail_page.dart';
 
-/// Phần 2/5 — "So sánh nhanh": đọc `expert_knowledge_chunks`
+/// "So sánh nhanh": đọc `expert_knowledge_chunks`
 /// (content_type='so_sanh') đúng theo lĩnh vực + độ tuổi trẻ (qua
 /// `childAgeInMonths()`), tách thành 2 khối theo `phan_loai`
 /// ('thuong_gap'/'can_quan_sat'). "Xem chi tiết so sánh" mở
@@ -47,18 +45,6 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
     );
   }
 
-  void _goNext() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => ParentInputPage(
-          child: widget.child,
-          linhVuc: widget.linhVuc,
-          linhVucLabel: widget.linhVucLabel,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,7 +74,6 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const PartStepIndicator(step: 2),
               Text(
                 'So sánh nhanh (${formatAgeLabel(widget.child)})',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -142,11 +127,6 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
                     .textTheme
                     .bodySmall
                     ?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _goNext,
-                child: const Text('Tiếp theo'),
               ),
             ],
           );

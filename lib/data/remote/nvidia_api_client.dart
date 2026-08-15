@@ -25,13 +25,21 @@ class NvidiaApiException implements Exception {
 class NvidiaApiClient {
   final http.Client _client;
   final Duration _timeout;
+  final bool _isCustomClient;
 
   /// [timeout] cho phép ghi đè trong test (mặc định 15 giây khi dùng thật).
   NvidiaApiClient({http.Client? client, Duration? timeout})
       : _client = client ?? http.Client(),
-        _timeout = timeout ?? _nvidiaTimeout;
+        _timeout = timeout ?? _nvidiaTimeout,
+        _isCustomClient = client != null;
 
   Future<List<double>> embed(String text) async {
+    if (!_isCustomClient && !ApiConfig.hasNvidiaApiKey) {
+      throw NvidiaApiException(
+        'Chưa cấu hình NVIDIA_API_KEY. Vui lòng cấu hình API key khi chạy hoặc build app.',
+      );
+    }
+
     final http.Response response;
     try {
       response = await _client.post(

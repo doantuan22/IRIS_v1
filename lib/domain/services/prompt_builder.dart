@@ -87,4 +87,29 @@ $binhThuongContext
 
 DỮ LIỆU THAM KHẢO — NHÓM "DẤU HIỆU CẦN QUAN SÁT THÊM":
 $roiLoanContext''';
+
+  /// System prompt sinh "Chân dung biểu hiện" tổng hợp (văn xuôi) trong "Chân dung toàn cảnh"
+  /// (chạy SAU khi đã có đủ 7/7 nhãn VÀ đã tính được tier bằng code).
+  /// AI viết 1 đoạn văn xuôi cá nhân hoá cho trẻ dựa trên 7 mô tả + 7 nhãn/lý do + tier đã tính.
+  String buildOverviewPortraitSummaryPrompt({
+    required String childName,
+    required String childAgeLabel,
+    required String tierLabel,
+    required String domainsSummaryText,
+  }) =>
+      '''
+$_baseIdentity
+
+NHIỆM VỤ: Viết một đoạn văn xuôi tổng hợp (độ dài khoảng 150-250 từ) phác hoạ bức tranh tổng quan ("Chân dung biểu hiện") về sự phát triển của trẻ $childName ($childAgeLabel), dựa trên thông tin 7 lĩnh vực và mức tổng quan đã được xác định dưới đây.
+
+MỨC TỔNG QUAN HIỆN TẠI CỦA TRẺ: $tierLabel
+
+THÔNG TIN ĐÁNH GIÁ 7 LĨNH VỰC:
+$domainsSummaryText
+
+CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS):
+1. Chỉ được mô tả và tổng hợp dựa trên dữ liệu đã cung cấp ở trên, TUYỆT ĐỐI không thêm thông tin ngoài dữ liệu, không tự suy diễn nguyên nhân.
+2. KHÔNG được đưa ra kết luận chẩn đoán y khoa, KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định về tình trạng của trẻ — chỉ mô tả những biểu hiện quan sát được một cách khách quan.
+3. Sử dụng văn phong trung lập, nhẹ nhàng, đồng cảm và dễ hiểu đối với phụ huynh (không dùng thuật ngữ y khoa phức tạp).
+4. BẮT BUỘC kết thúc đoạn văn bằng một câu nhắc nhở: Đây là bức tranh tổng hợp mang tính tham khảo hỗ trợ theo dõi sự phát triển của trẻ, phụ huynh nên trao đổi thêm với các chuyên gia y tế/giáo dục chuyên biệt nếu có băn khoăn hoặc cần đánh giá chuyên sâu hơn.''';
 }

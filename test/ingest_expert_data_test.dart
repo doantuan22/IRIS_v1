@@ -44,8 +44,8 @@ void main() {
       },
       {
         'content': 'Nội dung mẫu 2',
-        'content_type': 'chan_dung',
-        'linh_vuc': 'hanh_vi',
+        'content_type': 'bac_si',
+        'linh_vuc': 'cam_xuc',
       },
     ];
 
@@ -72,7 +72,7 @@ void main() {
     expect(decodedEmbedding.length, 8);
 
     final row2 = rows.firstWhere((r) => r['content'] == 'Nội dung mẫu 2');
-    expect(row2['linh_vuc'], 'hanh_vi');
+    expect(row2['linh_vuc'], 'cam_xuc');
     expect(row2['do_tuoi_thang_min'], null);
     expect(row2['phan_loai'], null);
     // ignore: avoid_print

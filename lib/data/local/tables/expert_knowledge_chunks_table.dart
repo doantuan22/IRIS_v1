@@ -1,6 +1,6 @@
 /// Bảng `expert_knowledge_chunks` — nội dung tham khảo dùng chung cho mọi trẻ
-/// (tĩnh, do nhóm phát triển biên soạn/thu thập sẵn), gồm 4 loại nội dung:
-/// so_sanh / chia_se_phu_huynh / bac_si / chan_dung. Hai loại sau chỉ khác
+/// (tĩnh, do nhóm phát triển biên soạn/thu thập sẵn), gồm 3 loại nội dung:
+/// so_sanh / chia_se_phu_huynh / bac_si. Hai loại sau chỉ khác
 /// nhau về văn phong trình bày, không phải nội dung do phụ huynh/bác sĩ thật
 /// đăng trực tiếp.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/nine_domains.dart';
+import '../../../core/constants/domains.dart';
 import '../../../data/local/database.dart';
 import '../../../data/repositories/assessment_repository.dart';
 import '../../../data/repositories/domain_overview_label_repository.dart';
@@ -37,13 +37,13 @@ class _LoadedState {
 
   const _LoadedState({required this.doneDomainCount, required this.labels, this.summary});
 
-  bool get isComplete => doneDomainCount >= nineDomains.length;
+  bool get isComplete => doneDomainCount >= domains.length;
 }
 
-/// "Chân dung toàn cảnh" — tổng hợp 9 nhãn lĩnh vực (AI hỗ trợ gắn nhãn
+/// "Chân dung toàn cảnh" — tổng hợp 7 nhãn lĩnh vực (AI hỗ trợ gắn nhãn
 /// từng lĩnh vực) thành 1 trong 3 mức tổng quan, tính 100% BẰNG CODE (xem
 /// `overview_tier_calculator.dart`) — AI KHÔNG được quyết định mức cuối
-/// cùng. Chỉ khả dụng khi trẻ đã có mô tả (Phần 1) cho ĐỦ CẢ 9 lĩnh vực.
+/// cùng. Chỉ khả dụng khi trẻ đã có mô tả (Phần 1) cho ĐỦ CẢ 7 lĩnh vực.
 class OverviewPortraitPage extends StatefulWidget {
   final Child child;
 
@@ -63,6 +63,8 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
   bool _computing = false;
   String? _computeError;
 
+  bool _generatingDescription = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,7 +79,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
     final assessments = await _assessmentRepository.getForChild(widget.child.id);
     final doneDomains = assessments.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet();
 
-    if (doneDomains.length < nineDomains.length) {
+    if (doneDomains.length < domains.length) {
       return _LoadedState(doneDomainCount: doneDomains.length, labels: const {});
     }
 
@@ -99,16 +101,29 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       _reload();
     } catch (e) {
       if (!mounted) return;
-      setState(() => _computeError = 'Không tổng hợp được, vui lòng thử lại: $e');
+      setState(() => _computeError = 'Lỗi khi tổng hợp: $e');
     } finally {
       if (mounted) setState(() => _computing = false);
+    }
+  }
+
+  Future<void> _retryDescription(OverviewSummary summary) async {
+    if (_generatingDescription) return;
+    setState(() => _generatingDescription = true);
+    try {
+      final updated = await _overviewRepository.generateAndSaveSummaryDescription(widget.child, summary);
+      if (updated != null && mounted) {
+        _reload();
+      }
+    } finally {
+      if (mounted) setState(() => _generatingDescription = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chân dung toàn cảnh')),
+      appBar: AppBar(title: Text('Chân dung toàn cảnh — ${widget.child.name}')),
       body: FutureBuilder<_LoadedState>(
         future: _stateFuture,
         builder: (context, snapshot) {
@@ -116,7 +131,16 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Không tải được dữ liệu: ${snapshot.error}', textAlign: TextAlign.center),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const SizedBox(height: 12),
+                    Text('Không tải được dữ liệu: ${snapshot.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                  ],
+                ),
               ),
             );
           }
@@ -132,8 +156,8 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
               else
                 _buildReady(state),
               if (_computeError != null) ...[
-                const SizedBox(height: 12),
-                Text(_computeError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                const SizedBox(height: 16),
+                Text(_computeError!, style: const TextStyle(color: Colors.red)),
               ],
               const SizedBox(height: 24),
               // Dòng cảnh báo LUÔN hiển thị, bất kể trạng thái ở trên —
@@ -147,7 +171,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
   }
 
   Widget _buildIncomplete(int doneCount) {
-    final total = nineDomains.length;
+    final total = domains.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -156,7 +180,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
         LinearProgressIndicator(value: total == 0 ? 0 : doneCount / total),
         const SizedBox(height: 16),
         const Text(
-          'Cần hoàn thành mô tả biểu hiện (Phần 1) cho đủ cả 9 lĩnh vực trước khi tổng hợp '
+          'Cần hoàn thành mô tả biểu hiện (Phần 1) cho đủ cả 7 lĩnh vực trước khi tổng hợp '
           'Chân dung toàn cảnh.',
         ),
         const SizedBox(height: 16),
@@ -173,7 +197,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Đã có đủ mô tả cho cả 9 lĩnh vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh.'),
+          const Text('Đã có đủ mô tả cho cả 7 lĩnh vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh.'),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _computing ? null : _compute,
@@ -207,19 +231,82 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${summary.soLinhVucCanTheoDoi}/${nineDomains.length} lĩnh vực cần theo dõi',
+                  '${summary.soLinhVucCanTheoDoi}/${domains.length} lĩnh vực cần theo dõi',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
                 ),
               ],
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        if (summary.moTaTongHop != null && summary.moTaTongHop!.isNotEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Chân dung biểu hiện', style: Theme.of(context).textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    summary.moTaTongHop!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Chưa thể tạo mô tả tổng hợp bằng AI.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: _generatingDescription ? null : () => _retryDescription(summary),
+                      icon: _generatingDescription
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh, size: 16),
+                      label: const Text('Tạo mô tả tổng hợp'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         const SizedBox(height: 20),
         Text('Chi tiết theo lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: Column(
-            children: nineDomains.map((domain) {
+            children: domains.map((domain) {
               final label = state.labels[domain.code];
               return ListTile(
                 title: Text(domain.label),

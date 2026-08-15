@@ -26,16 +26,24 @@ class GroqApiException implements Exception {
 class GroqApiClient {
   final http.Client _client;
   final Duration _timeout;
+  final bool _isCustomClient;
 
   /// [timeout] cho phép ghi đè trong test (mặc định 30 giây khi dùng thật).
   GroqApiClient({http.Client? client, Duration? timeout})
       : _client = client ?? http.Client(),
-        _timeout = timeout ?? _groqTimeout;
+        _timeout = timeout ?? _groqTimeout,
+        _isCustomClient = client != null;
 
   Future<String> generate({
     required String systemPrompt,
     required String userQuestion,
   }) async {
+    if (!_isCustomClient && !ApiConfig.hasGroqApiKey) {
+      throw GroqApiException(
+        'Chưa cấu hình GROQ_API_KEY. Vui lòng cấu hình API key khi chạy hoặc build app.',
+      );
+    }
+
     final http.Response response;
     try {
       response = await _client.post(

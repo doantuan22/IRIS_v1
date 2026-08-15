@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/api_config.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/ai_conversation_repository.dart';
 import '../../data/repositories/ai_repository.dart';
@@ -48,6 +49,11 @@ class _AiChatPageState extends State<AiChatPage> {
     final question = _questionController.text.trim();
     if (question.isEmpty) return;
 
+    if (!ApiConfig.hasAiConfig) {
+      setState(() => _errorMessage = 'Chưa cấu hình API key, tính năng AI hiện không khả dụng.');
+      return;
+    }
+
     setState(() {
       _asking = true;
       _errorMessage = null;
@@ -70,6 +76,24 @@ class _AiChatPageState extends State<AiChatPage> {
       appBar: AppBar(title: Text('Hỏi đáp AI — ${widget.child.name}')),
       body: Column(
         children: [
+          if (!ApiConfig.hasAiConfig)
+            Container(
+              width: double.infinity,
+              color: Theme.of(context).colorScheme.errorContainer,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Chưa cấu hình API key, tính năng AI hiện không khả dụng.',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: FutureBuilder<List<AiConversation>>(
               future: _conversationsFuture,

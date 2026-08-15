@@ -6,6 +6,9 @@ import '../models/overview_summary.dart';
 /// NGƯỠNG TẠM do dự án tự đặt cho mục đích demo — KHÔNG phải thang đo lâm
 /// sàng đã được kiểm định, cần thay bằng ngưỡng có cơ sở chuyên môn trước
 /// khi dùng thật.
+/// Giá trị giữ nguyên từ thiết kế 9 lĩnh vực, nay tính trên nền 7 lĩnh vực
+/// nên tỷ lệ đạt mức 'chuyên môn sớm' khắt khe hơn trước (yêu cầu 6-7/7
+/// thay vì 6-9/9) - quyết định có chủ đích, không phải sai sót.
 const int nguongThuongGap = 2;
 
 /// Ngưỡng trên của số lĩnh vực nhãn `'can_theo_doi'` để còn xếp vào tier
@@ -13,13 +16,18 @@ const int nguongThuongGap = 2;
 /// (`nguongThuongGap`, `nguongCanTheoDoi`]. Vượt ngưỡng này xếp vào tier
 /// [tierChuyenMonSom]. NGƯỠNG TẠM do dự án tự đặt, không phải thang đo lâm
 /// sàng đã kiểm định.
+/// Giá trị giữ nguyên từ thiết kế 9 lĩnh vực, nay tính trên nền 7 lĩnh vực
+/// nên tỷ lệ đạt mức 'chuyên môn sớm' khắt khe hơn trước (yêu cầu 6-7/7
+/// thay vì 6-9/9) - quyết định có chủ đích, không phải sai sót.
 const int nguongCanTheoDoi = 5;
 
 /// Số lĩnh vực nhãn `'chua_du_du_lieu'` TỐI THIỂU để coi là "chưa đủ dữ liệu
-/// để tổng hợp" — tức chưa đủ 5/9 lĩnh vực có đủ dữ liệu để so sánh
-/// (9 - 4 = 5). Khi `so_thieu >= nguongThieuDuLieuToiThieu`, KHÔNG tính
+/// để tổng hợp". Khi `so_thieu >= nguongThieuDuLieuToiThieu`, KHÔNG tính
 /// tier, không lưu `overview_summaries`. NGƯỠNG TẠM do dự án tự đặt, không
 /// phải thang đo lâm sàng đã kiểm định.
+/// Giá trị giữ nguyên từ thiết kế 9 lĩnh vực, nay tính trên nền 7 lĩnh vực
+/// nên tỷ lệ đạt mức 'chuyên môn sớm' khắt khe hơn trước (yêu cầu 6-7/7
+/// thay vì 6-9/9) - quyết định có chủ đích, không phải sai sót.
 const int nguongThieuDuLieuToiThieu = 4;
 
 enum OverviewTierStatus { insufficientData, computed }
@@ -68,7 +76,7 @@ class OverviewTierResult {
 /// Tính mức tổng quan cuối cùng ("Chân dung toàn cảnh") — 100% CODE THUẦN,
 /// KHÔNG gọi AI, không phụ thuộc I/O — nhận vào đúng danh sách [labels] (mỗi
 /// phần tử là 1 trong 3 giá trị `'thuong_gap'`/`'can_theo_doi'`/
-/// `'chua_du_du_lieu'`, thường là 9 nhãn — 1 nhãn/lĩnh vực) rồi đếm + so
+/// `'chua_du_du_lieu'`, thường là 7 nhãn — 1 nhãn/lĩnh vực) rồi đếm + so
 /// ngưỡng, không suy diễn gì thêm ngoài phép đếm. Toàn bộ hằng số ngưỡng
 /// khai báo ở đầu file, có thể trace/debug độc lập với LLM.
 OverviewTierResult calculateOverviewTier(List<String> labels) {

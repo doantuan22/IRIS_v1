@@ -5,10 +5,10 @@ import '../../data/repositories/video_repository.dart';
 import '../../domain/models/child.dart';
 import '../../domain/models/video.dart';
 import 'video_detail_page.dart';
-import 'video_situation_page.dart';
+import 'video_preparation_page.dart';
 
-/// Mục 6 (Phụ lục 1) — Danh sách video quay tình huống của 1 trẻ: tình
-/// huống, ngày quay, trạng thái. Bấm vào mở lại video + nhận xét.
+/// Danh sách video quay quan sát của 1 trẻ: ngày quay, trạng thái, và tình huống (nếu có ở video cũ).
+/// Bấm vào mở lại video + nhận xét chuyên gia.
 class VideoListPage extends StatefulWidget {
   final Child child;
 
@@ -43,7 +43,7 @@ class _VideoListPageState extends State<VideoListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Video tình huống — ${widget.child.name}')),
+      appBar: AppBar(title: Text('Video quan sát — ${widget.child.name}')),
       body: FutureBuilder<List<Video>>(
         future: _videosFuture,
         builder: (context, snapshot) {
@@ -80,10 +80,19 @@ class _VideoListPageState extends State<VideoListPage> {
             itemCount: videos.length,
             itemBuilder: (context, index) {
               final video = videos[index];
+              final hasSituation = video.situation != null && video.situation!.trim().isNotEmpty;
+              final dateStr = '${video.recordedAt.day}/${video.recordedAt.month}/${video.recordedAt.year}';
+
               return ListTile(
-                title: Text(video.situation ?? '(không rõ tình huống)'),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.videocam_outlined),
+                ),
+                title: Text(
+                  hasSituation ? video.situation! : 'Video ngày $dateStr',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(
-                  '${video.recordedAt.day}/${video.recordedAt.month}/${video.recordedAt.year} • ${_statusLabel(video.status)}',
+                  hasSituation ? '$dateStr • ${_statusLabel(video.status)}' : _statusLabel(video.status),
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
@@ -100,7 +109,7 @@ class _VideoListPageState extends State<VideoListPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => VideoSituationPage(child: widget.child)),
+            MaterialPageRoute(builder: (_) => VideoPreparationPage(child: widget.child)),
           );
           _reload();
         },

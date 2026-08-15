@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import '../../core/constants/nine_domains.dart';
+import '../../core/constants/domains.dart';
+import '../../domain/models/assessment.dart';
 import '../../domain/models/child.dart';
 import '../../domain/models/domain_overview_label.dart';
 import '../../domain/models/overview_summary.dart';
@@ -25,8 +26,8 @@ const String _noReferenceContext = '(không có dữ liệu tham khảo phù h�
 const int _topChunksPerGroup = 3;
 
 /// Trạng thái kết quả `computeAndSaveOverview` — [insufficientLabels] khi
-/// chưa gắn nhãn đủ 9/9 lĩnh vực (chưa gọi `labelAllDomains` hoặc gọi dở
-/// dang); [insufficientData] khi ĐÃ đủ 9/9 nhãn nhưng quá nhiều lĩnh vực
+/// chưa gắn nhãn đủ 7/7 lĩnh vực (chưa gọi `labelAllDomains` hoặc gọi dở
+/// dang); [insufficientData] khi ĐÃ đủ 7/7 nhãn nhưng quá nhiều lĩnh vực
 /// `'chua_du_du_lieu'` (xem `overview_tier_calculator.dart`); [computed] khi
 /// đã tính và lưu `overview_summaries` thành công.
 enum OverviewComputationStatus { insufficientLabels, insufficientData, computed }
@@ -34,7 +35,7 @@ enum OverviewComputationStatus { insufficientLabels, insufficientData, computed 
 class OverviewComputationResult {
   final OverviewComputationStatus status;
 
-  /// Số lĩnh vực đã có nhãn (trên tổng 9) — chỉ có ý nghĩa khi [status] =
+  /// Số lĩnh vực đã có nhãn (trên tổng 7) — chỉ có ý nghĩa khi [status] =
   /// `insufficientLabels`.
   final int? soLinhVucDaGanNhan;
 
@@ -109,13 +110,13 @@ class OverviewRepository {
         _historyLogRepository = historyLogRepository ?? HistoryLogRepository(db),
         _promptBuilder = promptBuilder ?? PromptBuilder();
 
-  /// Gắn nhãn cho ĐỦ 9/9 lĩnh vực của [child], theo đúng thứ tự
-  /// `nineDomains`. Gọi tuần tự (không song song) để không vượt rate limit
-  /// Groq/NVIDIA — dữ liệu ở quy mô demo (9 lần gọi) nên không cần tối ưu
+  /// Gắn nhãn cho ĐỦ 7/7 lĩnh vực của [child], theo đúng thứ tự
+  /// `domains`. Gọi tuần tự (không song song) để không vượt rate limit
+  /// Groq/NVIDIA — dữ liệu ở quy mô demo (7 lần gọi) nên không cần tối ưu
   /// song song.
   Future<List<DomainOverviewLabel>> labelAllDomains(Child child) async {
     final results = <DomainOverviewLabel>[];
-    for (final domain in nineDomains) {
+    for (final domain in domains) {
       results.add(await labelDomain(child, domain.code, domain.label));
     }
     return results;
@@ -209,7 +210,7 @@ class OverviewRepository {
     final latest = await _labelRepository.getLatestForChild(child.id);
 
     final orderedLabels = <DomainOverviewLabel>[];
-    for (final domain in nineDomains) {
+    for (final domain in domains) {
       final label = latest[domain.code];
       if (label == null) {
         return OverviewComputationResult.insufficientLabels(soLinhVucDaGanNhan: latest.length);
@@ -222,11 +223,20 @@ class OverviewRepository {
       return OverviewComputationResult.insufficientData(soThieu: tierResult.soThieu);
     }
 
+    // Sinh đoạn văn xuôi mô tả tổng hợp (Groq) — nếu lỗi (mạng, timeout...),
+    // moTaTongHop là null, KHÔNG làm mất hay chặn việc lưu tier đã tính.
+    final moTaTongHop = await _generateSummaryDescription(
+      child: child,
+      tier: tierResult.tier!,
+      labels: orderedLabels,
+    );
+
     final summary = await _summaryRepository.save(
       childId: child.id,
       tier: tierResult.tier!,
       soLinhVucCanTheoDoi: tierResult.soCanTheoDoi,
       soLinhVucThieuDuLieu: tierResult.soThieu,
+      moTaTongHop: moTaTongHop,
     );
 
     try {
@@ -241,6 +251,93 @@ class OverviewRepository {
     }
 
     return OverviewComputationResult.computed(summary: summary, soThieu: tierResult.soThieu);
+  }
+
+  /// Sinh lại đoạn mô tả tổng hợp cho 1 bản ghi [summary] đã có sẵn (dùng khi thử lại
+  /// riêng bước gọi AI mà không cần tính lại tier).
+  Future<OverviewSummary?> generateAndSaveSummaryDescription(Child child, OverviewSummary summary) async {
+    final latest = await _labelRepository.getLatestForChild(child.id);
+    final orderedLabels = <DomainOverviewLabel>[];
+    for (final domain in domains) {
+      final label = latest[domain.code];
+      if (label != null) {
+        orderedLabels.add(label);
+      }
+    }
+    final moTa = await _generateSummaryDescription(
+      child: child,
+      tier: summary.tier,
+      labels: orderedLabels,
+    );
+    if (moTa != null) {
+      await _summaryRepository.updateMoTaTongHop(summary.id, moTa);
+      return _summaryRepository.getLatestForChild(child.id);
+    }
+    return null;
+  }
+
+  String _formatDomainsSummaryText(
+    List<DomainOverviewLabel> labels,
+    List<Assessment> assessments,
+  ) {
+    final buffer = StringBuffer();
+    for (final domain in domains) {
+      final label = labels.firstWhere(
+        (l) => l.linhVuc == domain.code,
+        orElse: () => DomainOverviewLabel(
+          id: '',
+          childId: '',
+          linhVuc: domain.code,
+          nhan: labelChuaDuDuLieu,
+          computedAt: DateTime.now(),
+        ),
+      );
+      final domainAssessments = assessments
+          .where((a) => a.linhVuc == domain.code && a.contentType == 'mo_ta')
+          .toList();
+      buffer.writeln('### Lĩnh vực: ${domain.label}');
+      buffer.writeln(
+        '- Đánh giá tổng quan lĩnh vực: ${label.nhan == labelThuongGap ? "Thường gặp" : label.nhan == labelCanTheoDoi ? "Cần theo dõi" : "Chưa đủ dữ liệu"}${label.lyDoNganGon != null ? " (${label.lyDoNganGon})" : ""}',
+      );
+      if (domainAssessments.isEmpty) {
+        buffer.writeln('- Mô tả người dùng: (chưa có)');
+      } else {
+        buffer.writeln('- Mô tả người dùng:');
+        for (final a in domainAssessments) {
+          buffer.writeln('  + ${a.content}');
+        }
+      }
+      buffer.writeln();
+    }
+    return buffer.toString().trim();
+  }
+
+  Future<String?> _generateSummaryDescription({
+    required Child child,
+    required String tier,
+    required List<DomainOverviewLabel> labels,
+  }) async {
+    try {
+      final assessments = await _assessmentRepository.getForChild(child.id);
+      final domainsSummaryText = _formatDomainsSummaryText(labels, assessments);
+      final systemPrompt = _promptBuilder.buildOverviewPortraitSummaryPrompt(
+        childName: child.name,
+        childAgeLabel: formatAgeLabel(child),
+        tierLabel: tierDisplayLabel(tier),
+        domainsSummaryText: domainsSummaryText,
+      );
+
+      final response = await _groqApiClient.generate(
+        systemPrompt: systemPrompt,
+        userQuestion: 'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
+      );
+      final trimmed = response.trim();
+      return trimmed.isNotEmpty ? trimmed : null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Lỗi khi sinh mô tả tổng hợp cho trẻ ${child.id}: $e');
+      return null;
+    }
   }
 
   /// Parse phản hồi JSON từ Groq — model đôi khi kèm text thừa quanh JSON

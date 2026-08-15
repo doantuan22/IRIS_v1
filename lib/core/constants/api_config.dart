@@ -16,4 +16,13 @@ class ApiConfig {
   static const String groqModelFast = 'openai/gpt-oss-20b';
   static const String groqModelQuality = 'openai/gpt-oss-120b';
   static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
+
+  /// Kiểm tra xem key NVIDIA đã được cung cấp hay chưa.
+  static bool get hasNvidiaApiKey => nvidiaApiKey.trim().isNotEmpty;
+
+  /// Kiểm tra xem key Groq đã được cung cấp hay chưa.
+  static bool get hasGroqApiKey => groqApiKey.trim().isNotEmpty;
+
+  /// Kiểm tra xem toàn bộ cấu hình AI đã sẵn sàng hay chưa.
+  static bool get hasAiConfig => hasNvidiaApiKey && hasGroqApiKey;
 }

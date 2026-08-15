@@ -14,25 +14,11 @@
     "do_tuoi_thang_max": 36
   },
   {
-    "content": "[Placeholder minh hoạ] Ở độ tuổi 18-30 tháng, phần lớn trẻ bắt đầu thể hiện khả năng tự kiểm soát hành vi đơn giản như chờ đến lượt trong trò chơi ngắn, dù vẫn còn dễ mất kiên nhẫn. Nội dung tham khảo thật sẽ được cập nhật sau.",
-    "content_type": "so_sanh",
-    "linh_vuc": "hanh_vi",
-    "do_tuoi_thang_min": 18,
-    "do_tuoi_thang_max": 30
-  },
-  {
     "content": "[Placeholder minh hoạ] Về mặt y khoa, giai đoạn 12-24 tháng là lúc trẻ bắt đầu hình thành gắn bó rõ rệt với người chăm sóc chính, thể hiện qua phản ứng lo lắng khi xa cách — đây là cột mốc phát triển quan hệ xã hội bình thường. Nội dung tham khảo thật sẽ được cập nhật sau.",
     "content_type": "bac_si",
     "linh_vuc": "quan_he_xa_hoi",
     "do_tuoi_thang_min": 12,
     "do_tuoi_thang_max": 24
-  },
-  {
-    "content": "[Placeholder minh hoạ] Chân dung biểu hiện cảm xúc thường gặp ở trẻ 3-4 tuổi: dễ thay đổi cảm xúc nhanh, bắt đầu gọi tên được một số cảm xúc cơ bản (vui, buồn, giận) dù chưa diễn đạt trọn vẹn nguyên nhân. Nội dung tham khảo thật sẽ được cập nhật sau.",
-    "content_type": "chan_dung",
-    "linh_vuc": "cam_xuc",
-    "do_tuoi_thang_min": 36,
-    "do_tuoi_thang_max": 48
   },
   {
     "content": "[Placeholder minh hoạ] Nhiều phụ huynh chia sẻ trẻ ở giai đoạn 6-18 tháng có phản ứng rất khác nhau với âm thanh lớn hoặc kết cấu bề mặt mới lạ — một số trẻ tò mò khám phá, số khác né tránh, cả hai đều là biến thể bình thường trong giai đoạn này. Nội dung tham khảo thật sẽ được cập nhật sau.",
@@ -199,62 +185,6 @@
     "content_type": "bac_si",
     "phan_loai": "giai_thich",
     "nguon_tai_lieu": "Góc nhìn chuyên khoa Tâm thần Nhi (minh hoạ)",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Bé chủ động bắt chuyện và rủ bạn cùng chơi trong hầu hết các tình huống được quan sát, không cần người lớn gợi ý.",
-    "content_type": "chan_dung",
-    "phan_loai": "diem_manh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Bé thể hiện rõ sự quan tâm khi thấy bạn buồn hoặc bị đau — thường lại gần hỏi han hoặc đưa đồ chơi để dỗ.",
-    "content_type": "chan_dung",
-    "phan_loai": "diem_manh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "So với nhiều bạn cùng tuổi, bé cần thời gian làm quen lâu hơn trước khi thực sự tham gia trò chơi nhóm, dù sau đó vẫn hoà nhập tốt.",
-    "content_type": "chan_dung",
-    "phan_loai": "khac_biet",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Bé có xu hướng thích chơi theo cặp (1 bạn) hơn là nhóm đông (3-4 bạn), khác với nhiều trẻ cùng tuổi thường thích chơi nhóm lớn.",
-    "content_type": "chan_dung",
-    "phan_loai": "khac_biet",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Cần hỗ trợ thêm trong việc chủ động chia sẻ đồ chơi mà không cần nhắc — hiện tại bé thường chỉ chia sẻ khi được yêu cầu trực tiếp.",
-    "content_type": "chan_dung",
-    "phan_loai": "can_ho_tro",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Nên tiếp tục tạo cơ hội cho bé luyện tập chờ đến lượt trong các trò chơi có nhiều người tham gia.",
-    "content_type": "chan_dung",
-    "phan_loai": "can_ho_tro",
-    "linh_vuc": "quan_he_xa_hoi",
-    "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 71
-  },
-  {
-    "content": "Thường xuyên",
-    "content_type": "chan_dung",
-    "phan_loai": "muc_do_bieu_hien",
     "linh_vuc": "quan_he_xa_hoi",
     "do_tuoi_thang_min": 48,
     "do_tuoi_thang_max": 71

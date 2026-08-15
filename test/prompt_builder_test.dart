@@ -53,4 +53,23 @@ void main() {
     // ignore: avoid_print
     print('PASS: buildState3Prompt() dùng đúng câu mặc định khi không có expert context');
   });
+
+  test('buildOverviewPortraitSummaryPrompt() nội suy đúng dữ liệu và chứa các guardrails bắt buộc', () {
+    final prompt = builder.buildOverviewPortraitSummaryPrompt(
+      childName: 'Bé An',
+      childAgeLabel: '3 tuổi',
+      tierLabel: 'Có điểm cần theo dõi',
+      domainsSummaryText: '### Lĩnh vực: Nhận thức\n- Đánh giá: Cần theo dõi\n- Mô tả: Bé chưa tập trung',
+    );
+
+    expect(prompt, contains('Bé An'));
+    expect(prompt, contains('3 tuổi'));
+    expect(prompt, contains('Có điểm cần theo dõi'));
+    expect(prompt, contains('### Lĩnh vực: Nhận thức'));
+    expect(prompt, contains('KHÔNG được đưa ra kết luận chẩn đoán y khoa'));
+    expect(prompt, contains('KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định'));
+    expect(prompt, contains('trao đổi thêm với các chuyên gia'));
+    // ignore: avoid_print
+    print('PASS: buildOverviewPortraitSummaryPrompt() đúng guardrails và nội suy đúng thông tin');
+  });
 }

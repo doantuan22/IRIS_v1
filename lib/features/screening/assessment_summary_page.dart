@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/nine_domains.dart';
+import '../../core/constants/domains.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -23,7 +23,7 @@ class _SummaryData {
 
 /// Bước 4 — Tổng hợp hồ sơ & đề xuất hướng đánh giá. Hiện sau khi người dùng
 /// hoàn thành HOẶC bỏ qua sàng lọc (cả 2 nhánh Bước 3), trước khi vào giao
-/// diện 9 lĩnh vực (Bước 5). Toàn bộ nội dung đọc từ dữ liệu thật của trẻ,
+/// diện 7 lĩnh vực (Bước 5). Toàn bộ nội dung đọc từ dữ liệu thật của trẻ,
 /// đề xuất hướng đánh giá tính bằng logic Dart thuần (if/else), không gọi AI.
 class AssessmentSummaryPage extends StatefulWidget {
   final Child child;
@@ -54,7 +54,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
   /// Logic Dart thuần — không gọi AI. Kết hợp tuổi (qua bộ câu hỏi sàng lọc
   /// tương ứng), trạng thái sàng lọc, và số lĩnh vực đã có mô tả.
   String _buildSuggestion(_SummaryData data, int ageMonths) {
-    final total = nineDomains.length;
+    final total = domains.length;
     final toolLabel = selectScreeningQuestionSet(ageMonths).label;
 
     if (!data.hasScreening && data.doneDomainCount == 0) {
@@ -97,7 +97,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final data = snapshot.data!;
-          final total = nineDomains.length;
+          final total = domains.length;
           final screening = data.latestScreening;
           return ListView(
             padding: const EdgeInsets.all(24),
@@ -143,7 +143,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Đánh giá 9 lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
+                      Text('Đánh giá 7 lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       Text('Đã có mô tả cho ${data.doneDomainCount}/$total lĩnh vực'),
                     ],

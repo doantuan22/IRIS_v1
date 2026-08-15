@@ -21,7 +21,7 @@ void main() {
 
   group('đủ dữ liệu (so_thieu < 4) — xếp tier theo so_can_theo_doi', () {
     test('0 can_theo_doi => thuong_gap', () {
-      final result = calculateOverviewTier(labels(thuongGap: 9));
+      final result = calculateOverviewTier(labels(thuongGap: 7));
       expect(result.status, OverviewTierStatus.computed);
       expect(result.tier, tierThuongGap);
       expect(result.soCanTheoDoi, 0);
@@ -29,33 +29,33 @@ void main() {
     });
 
     test('ranh giới trên: đúng 2 can_theo_doi vẫn => thuong_gap', () {
-      final result = calculateOverviewTier(labels(canTheoDoi: 2, thuongGap: 7));
+      final result = calculateOverviewTier(labels(canTheoDoi: 2, thuongGap: 5));
       expect(result.tier, tierThuongGap);
     });
 
     test('ranh giới dưới kế tiếp: đúng 3 can_theo_doi => can_theo_doi', () {
-      final result = calculateOverviewTier(labels(canTheoDoi: 3, thuongGap: 6));
+      final result = calculateOverviewTier(labels(canTheoDoi: 3, thuongGap: 4));
       expect(result.tier, tierCanTheoDoi);
     });
 
     test('ranh giới trên: đúng 5 can_theo_doi vẫn => can_theo_doi', () {
-      final result = calculateOverviewTier(labels(canTheoDoi: 5, thuongGap: 4));
+      final result = calculateOverviewTier(labels(canTheoDoi: 5, thuongGap: 2));
       expect(result.tier, tierCanTheoDoi);
     });
 
     test('ranh giới kế tiếp: đúng 6 can_theo_doi => chuyen_mon_som', () {
-      final result = calculateOverviewTier(labels(canTheoDoi: 6, thuongGap: 3));
+      final result = calculateOverviewTier(labels(canTheoDoi: 6, thuongGap: 1));
       expect(result.tier, tierChuyenMonSom);
     });
 
-    test('toàn bộ 9 can_theo_doi => chuyen_mon_som', () {
-      final result = calculateOverviewTier(labels(canTheoDoi: 9));
+    test('toàn bộ 7 can_theo_doi => chuyen_mon_som', () {
+      final result = calculateOverviewTier(labels(canTheoDoi: 7));
       expect(result.tier, tierChuyenMonSom);
-      expect(result.soCanTheoDoi, 9);
+      expect(result.soCanTheoDoi, 7);
     });
 
     test('có lẫn chua_du_du_lieu nhưng dưới ngưỡng (3 thiếu) vẫn tính tier bình thường', () {
-      final result = calculateOverviewTier(labels(thieu: 3, canTheoDoi: 3, thuongGap: 3));
+      final result = calculateOverviewTier(labels(thieu: 3, canTheoDoi: 3, thuongGap: 1));
       expect(result.status, OverviewTierStatus.computed);
       expect(result.tier, tierCanTheoDoi);
       expect(result.soThieu, 3);
@@ -66,24 +66,24 @@ void main() {
 
   group('thiếu dữ liệu (so_thieu >= 4) — KHÔNG tính tier', () {
     test('ranh giới: đúng 4 thiếu => insufficientData, tier = null', () {
-      final result = calculateOverviewTier(labels(thieu: 4, canTheoDoi: 5));
+      final result = calculateOverviewTier(labels(thieu: 4, canTheoDoi: 3));
       expect(result.status, OverviewTierStatus.insufficientData);
       expect(result.isInsufficientData, true);
       expect(result.tier, isNull);
       expect(result.soThieu, 4);
       // so_can_theo_doi vẫn được đếm đúng dù không dùng để tính tier — hữu
       // ích cho log/debug.
-      expect(result.soCanTheoDoi, 5);
+      expect(result.soCanTheoDoi, 3);
     });
 
-    test('toàn bộ 9 lĩnh vực đều thiếu dữ liệu => insufficientData', () {
-      final result = calculateOverviewTier(labels(thieu: 9));
+    test('toàn bộ 7 lĩnh vực đều thiếu dữ liệu => insufficientData', () {
+      final result = calculateOverviewTier(labels(thieu: 7));
       expect(result.status, OverviewTierStatus.insufficientData);
-      expect(result.soThieu, 9);
+      expect(result.soThieu, 7);
     });
 
-    test('7 thiếu, 2 can_theo_doi => vẫn insufficientData dù can_theo_doi thấp', () {
-      final result = calculateOverviewTier(labels(thieu: 7, canTheoDoi: 2));
+    test('5 thiếu, 2 can_theo_doi => vẫn insufficientData dù can_theo_doi thấp', () {
+      final result = calculateOverviewTier(labels(thieu: 5, canTheoDoi: 2));
       expect(result.status, OverviewTierStatus.insufficientData);
     });
   });

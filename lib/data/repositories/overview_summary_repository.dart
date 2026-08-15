@@ -17,6 +17,7 @@ class OverviewSummaryRepository {
     required String tier,
     required int soLinhVucCanTheoDoi,
     required int soLinhVucThieuDuLieu,
+    String? moTaTongHop,
   }) async {
     final summary = OverviewSummary(
       id: _uuid.v4(),
@@ -24,11 +25,24 @@ class OverviewSummaryRepository {
       tier: tier,
       soLinhVucCanTheoDoi: soLinhVucCanTheoDoi,
       soLinhVucThieuDuLieu: soLinhVucThieuDuLieu,
+      moTaTongHop: moTaTongHop,
       computedAt: DateTime.now(),
     );
     final db = await _db.database;
     await db.insert('overview_summaries', _toRow(summary));
     return summary;
+  }
+
+  /// Cập nhật đoạn mô tả tổng hợp cho bản ghi [id] đã có sẵn (dùng khi thử lại
+  /// bước sinh mô tả bằng AI mà không cần tính lại tier).
+  Future<void> updateMoTaTongHop(String id, String moTaTongHop) async {
+    final db = await _db.database;
+    await db.update(
+      'overview_summaries',
+      {'mo_ta_tong_hop': moTaTongHop},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   /// Kết quả tổng hợp mới nhất của [childId], `null` nếu chưa từng tổng hợp
@@ -52,6 +66,7 @@ class OverviewSummaryRepository {
         'tier': summary.tier,
         'so_linh_vuc_can_theo_doi': summary.soLinhVucCanTheoDoi,
         'so_linh_vuc_thieu_du_lieu': summary.soLinhVucThieuDuLieu,
+        'mo_ta_tong_hop': summary.moTaTongHop,
         'computed_at': summary.computedAt.toIso8601String(),
       };
 
@@ -61,6 +76,7 @@ class OverviewSummaryRepository {
         tier: row['tier'] as String,
         soLinhVucCanTheoDoi: row['so_linh_vuc_can_theo_doi'] as int,
         soLinhVucThieuDuLieu: row['so_linh_vuc_thieu_du_lieu'] as int,
+        moTaTongHop: row['mo_ta_tong_hop'] as String?,
         computedAt: DateTime.parse(row['computed_at'] as String),
       );
 }

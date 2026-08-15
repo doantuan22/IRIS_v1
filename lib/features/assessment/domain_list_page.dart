@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/nine_domains.dart';
+import '../../core/constants/domains.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../domain/models/child.dart';
-import 'nine_domains/description/description_page.dart';
+import 'domain_hub_page.dart';
 import 'overview/overview_portrait_page.dart';
 
 /// Icon minh hoạ cho từng lĩnh vực — chỉ phục vụ hiển thị (Material icon có
 /// sẵn), không ảnh hưởng logic/schema.
 const Map<String, IconData> _domainIcons = {
-  'hanh_vi': Icons.directions_run_outlined,
   'nhan_thuc': Icons.psychology_outlined,
   'cam_xuc': Icons.mood_outlined,
   'giac_quan': Icons.visibility_outlined,
   'quan_he_xa_hoi': Icons.groups_outlined,
   'ngon_ngu': Icons.record_voice_over_outlined,
-  'ung_xu': Icons.emoji_people_outlined,
   'sinh_hoc': Icons.favorite_outline,
   'sinh_hoat_ca_nhan': Icons.self_improvement_outlined,
 };
 
-/// Bước 5 — Danh sách 9 lĩnh vực đánh giá. Mỗi item hiện trạng thái đơn
+/// Bước 5 — Danh sách 7 lĩnh vực đánh giá. Mỗi item hiện trạng thái đơn
 /// giản dựa trên việc đã có bản ghi `assessments` (content_type='mo_ta')
 /// cho lĩnh vực đó hay chưa.
 class DomainListPage extends StatefulWidget {
@@ -57,7 +55,7 @@ class _DomainListPageState extends State<DomainListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Đánh giá 9 lĩnh vực — ${widget.child.name}')),
+      appBar: AppBar(title: Text('Đánh giá 7 lĩnh vực — ${widget.child.name}')),
       body: FutureBuilder<Set<String>>(
         future: _domainsWithDescriptionFuture,
         builder: (context, snapshot) {
@@ -66,15 +64,15 @@ class _DomainListPageState extends State<DomainListPage> {
           }
           final domainsWithDescription = snapshot.data!;
           final doneCount = domainsWithDescription.length;
-          final total = nineDomains.length;
+          final total = domains.length;
           // Bước 8 — gợi ý lĩnh vực nên làm tiếp theo. Kiến trúc hiện tại
           // chỉ theo dõi 1 trạng thái nhị phân mỗi lĩnh vực (đã có mô tả
           // Phần 1 hay chưa — dùng chung với badge "Đã có mô tả"/"Chưa có
           // mô tả" trên từng thẻ), không có khái niệm "đang dở" tách biệt.
           // Vì vậy gợi ý = lĩnh vực CHƯA có mô tả đầu tiên theo đúng thứ tự
-          // 9 lĩnh vực — logic đơn giản nhất khớp đúng dữ liệu đang có.
-          NineDomain? nextDomain;
-          for (final domain in nineDomains) {
+          // 7 lĩnh vực — logic đơn giản nhất khớp đúng dữ liệu đang có.
+          Domain? nextDomain;
+          for (final domain in domains) {
             if (!domainsWithDescription.contains(domain.code)) {
               nextDomain = domain;
               break;
@@ -109,7 +107,7 @@ class _DomainListPageState extends State<DomainListPage> {
                         children: [
                           const Icon(Icons.celebration_outlined, color: Colors.green),
                           const SizedBox(width: 8),
-                          const Expanded(child: Text('Bạn đã hoàn thành đánh giá cả 9 lĩnh vực!')),
+                          const Expanded(child: Text('Bạn đã hoàn thành đánh giá cả 7 lĩnh vực!')),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -123,7 +121,7 @@ class _DomainListPageState extends State<DomainListPage> {
                     ],
                     const SizedBox(height: 8),
                     Text(
-                      'Bạn không cần hoàn thành tất cả 9 lĩnh vực trong cùng một phiên. '
+                      'Bạn không cần hoàn thành tất cả 7 lĩnh vực trong cùng một phiên. '
                       'Hãy đánh giá theo nhịp độ phù hợp của bạn và bé.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
                     ),
@@ -139,16 +137,16 @@ class _DomainListPageState extends State<DomainListPage> {
                     crossAxisSpacing: 12,
                     childAspectRatio: 1.1,
                   ),
-                  itemCount: nineDomains.length,
+                  itemCount: domains.length,
                   itemBuilder: (context, index) {
-                    final domain = nineDomains[index];
+                    final domain = domains[index];
                     final hasDescription = domainsWithDescription.contains(domain.code);
                     return Card(
                       child: InkWell(
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => DescriptionPage(
+                              builder: (_) => DomainHubPage(
                                 child: widget.child,
                                 linhVuc: domain.code,
                                 linhVucLabel: domain.label,
@@ -201,7 +199,7 @@ class _DomainListPageState extends State<DomainListPage> {
 /// được promote non-null bên trong closure `async`).
 class _NextDomainCard extends StatelessWidget {
   final Child child;
-  final NineDomain domain;
+  final Domain domain;
   final VoidCallback onContinue;
 
   const _NextDomainCard({required this.child, required this.domain, required this.onContinue});
@@ -233,7 +231,7 @@ class _NextDomainCard extends StatelessWidget {
                 onPressed: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => DescriptionPage(
+                      builder: (_) => DomainHubPage(
                         child: child,
                         linhVuc: domain.code,
                         linhVucLabel: domain.label,

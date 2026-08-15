@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../domain/models/assessment.dart';
 import '../local/database.dart';
 
-/// Lưu và truy vấn dữ liệu đánh giá 9 lĩnh vực (chỉ dữ liệu riêng của trẻ:
+/// Lưu và truy vấn dữ liệu đánh giá 7 lĩnh vực (chỉ dữ liệu riêng của trẻ:
 /// mô tả biểu hiện / ghi chú chuyên gia case-specific) trên bảng
 /// `assessments`. KHÔNG chứa nội dung tham khảo chung.
 class AssessmentRepository {

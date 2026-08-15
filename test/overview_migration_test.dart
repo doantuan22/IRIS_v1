@@ -95,8 +95,8 @@ void main() {
       // Bước 4 — chạy lại migration lần 2 (mở app lần nữa) không được lỗi vì
       // CREATE TABLE chạy trùng — đúng cách sqflite chỉ chạy onUpgrade 1 lần
       // dựa theo version đã lưu, không phải test lại logic sqflite, chỉ xác
-      // nhận version cuối cùng đã đúng 5.
-      expect(db.getVersion(), completion(5));
+      // nhận version cuối cùng đã được nâng cấp.
+      expect(db.getVersion(), completion(7));
 
       // ignore: avoid_print
       print(

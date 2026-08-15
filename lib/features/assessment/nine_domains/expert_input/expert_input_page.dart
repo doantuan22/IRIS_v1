@@ -4,11 +4,9 @@ import '../../../../data/local/database.dart';
 import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
 import '../../../../domain/models/expert_knowledge_chunk.dart';
-import '../part_step_indicator.dart';
-import '../summary_portrait/summary_portrait_page.dart';
 import 'expert_detail_page.dart';
 
-/// Phần 4/5 — "Thông tin từ bác sĩ": đọc `expert_knowledge_chunks`
+/// "Thông tin từ bác sĩ": đọc `expert_knowledge_chunks`
 /// (content_type='bac_si') đúng theo lĩnh vực + độ tuổi trẻ. Card đầu trang
 /// chỉ minh hoạ VAI TRÒ chuyên môn (không gắn danh tính bác sĩ thật). 3 mục
 /// điều hướng mở [ExpertDetailPage] dùng lại đúng danh sách đã tải, cuộn
@@ -44,18 +42,6 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
       linhVuc: widget.linhVuc,
       ageInMonths: childAgeInMonths(widget.child),
       contentType: 'bac_si',
-    );
-  }
-
-  void _goNext() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => SummaryPortraitPage(
-          child: widget.child,
-          linhVuc: widget.linhVuc,
-          linhVucLabel: widget.linhVucLabel,
-        ),
-      ),
     );
   }
 
@@ -99,7 +85,6 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const PartStepIndicator(step: 4),
               Text(
                 'Thông tin từ bác sĩ (${formatAgeLabel(widget.child)})',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -163,11 +148,6 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
                   onTap: () => _openDetail(context, chunks, 'giai_thich'),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _goNext,
-                child: const Text('Tiếp theo'),
-              ),
             ],
           );
         },

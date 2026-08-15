@@ -12,15 +12,14 @@ import 'video_review_page.dart';
 
 const Duration _maxRecordingDuration = Duration(minutes: 3);
 
-/// Bước 3/4 — Quay video: preview camera thật + nút quay/dừng + đồng hồ
+/// Bước 2/3 — Quay video: preview camera thật + nút quay/dừng + đồng hồ
 /// đang quay, tự dừng khi chạm giới hạn thời lượng. Mọi lỗi camera/ghi file
-/// đều hiện rõ ràng, không crash — dữ liệu (hồ sơ, tình huống đã chọn) vẫn
-/// giữ nguyên để người dùng có thể quay lại thử lại.
+/// đều hiện rõ ràng, không crash — thông tin hồ sơ vẫn giữ nguyên để người
+/// dùng có thể quay lại thử lại.
 class VideoRecordingCapturePage extends StatefulWidget {
   final Child child;
-  final String situation;
 
-  const VideoRecordingCapturePage({super.key, required this.child, required this.situation});
+  const VideoRecordingCapturePage({super.key, required this.child});
 
   @override
   State<VideoRecordingCapturePage> createState() => _VideoRecordingCapturePageState();
@@ -102,7 +101,6 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
         MaterialPageRoute(
           builder: (_) => VideoReviewPage(
             child: widget.child,
-            situation: widget.situation,
             filePath: savedPath,
           ),
         ),
@@ -144,7 +142,7 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Đang quay — ${widget.situation}')),
+      appBar: AppBar(title: const Text('Quay video')),
       body: _buildBody(),
     );
   }
@@ -158,12 +156,19 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              Text(_errorMessage!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
               const SizedBox(height: 16),
               OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Quay lại'),
+                onPressed: () {
+                  setState(() => _errorMessage = null);
+                  _initCamera();
+                },
+                child: const Text('Thử lại'),
               ),
             ],
           ),
@@ -176,27 +181,59 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
+    return Stack(
       children: [
-        Expanded(child: CameraPreview(controller)),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Text(_formatDuration(_elapsed), style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _isSaving ? null : (_isRecording ? _stopRecording : _startRecording),
-                icon: _isSaving
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(_isRecording ? Icons.stop : Icons.fiber_manual_record),
-                label: Text(_isSaving ? 'Đang lưu...' : (_isRecording ? 'Dừng quay' : 'Bắt đầu quay')),
+        Center(child: CameraPreview(controller)),
+        Positioned(
+          top: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: _isRecording ? Colors.red.withValues(alpha: 0.8) : Colors.black54,
+                borderRadius: BorderRadius.circular(20),
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isRecording) ...[
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    _isRecording ? _formatDuration(_elapsed) : 'Tối đa 3 phút',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 32,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _isSaving
+                ? const CircularProgressIndicator(color: Colors.white)
+                : FloatingActionButton.large(
+                    onPressed: _isRecording ? _stopRecording : _startRecording,
+                    backgroundColor: _isRecording ? Colors.red : Colors.white,
+                    child: Icon(
+                      _isRecording ? Icons.stop : Icons.fiber_manual_record,
+                      color: _isRecording ? Colors.white : Colors.red,
+                      size: 36,
+                    ),
+                  ),
           ),
         ),
       ],

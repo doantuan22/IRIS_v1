@@ -138,7 +138,11 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_video.situation ?? 'Video'),
+        title: Text(
+          _video.situation != null && _video.situation!.trim().isNotEmpty
+              ? _video.situation!
+              : 'Chi tiết video',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -152,6 +156,10 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
         children: [
           _buildPlayer(),
           const SizedBox(height: 16),
+          if (_video.situation != null && _video.situation!.trim().isNotEmpty) ...[
+            Text('Tình huống: ${_video.situation}', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+          ],
           Text('Trạng thái: ${_statusLabel(_video.status)}', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(

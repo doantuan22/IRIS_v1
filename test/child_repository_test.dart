@@ -139,8 +139,8 @@ void main() {
 
     final childA = await childRepo.create(name: 'Bé A', ageYears: 3);
     final childB = await childRepo.create(name: 'Bé B', ageYears: 4);
-    await assessmentRepo.save(childId: childA.id, linhVuc: 'hanh_vi', content: 'mô tả A');
-    await assessmentRepo.save(childId: childB.id, linhVuc: 'hanh_vi', content: 'mô tả B');
+    await assessmentRepo.save(childId: childA.id, linhVuc: 'nhan_thuc', content: 'mô tả A');
+    await assessmentRepo.save(childId: childB.id, linhVuc: 'nhan_thuc', content: 'mô tả B');
 
     await childRepo.delete(childA.id);
 

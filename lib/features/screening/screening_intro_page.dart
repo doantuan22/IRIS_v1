@@ -7,7 +7,7 @@ import 'screening_tool_confirm_page.dart';
 /// Bước 3 — Lựa chọn thực hiện bài sàng lọc: đúng 2 nhánh, không có nhánh
 /// thứ 3. "Chưa muốn" là lựa chọn trung lập, KHÔNG tạo bản ghi `screenings`
 /// và không mang bất kỳ hàm ý kết luận nào. Cả 2 nhánh đều dẫn tiếp vào Bước
-/// 4 (tổng hợp hồ sơ & đề xuất hướng đánh giá) trước khi vào 9 lĩnh vực —
+/// 4 (tổng hợp hồ sơ & đề xuất hướng đánh giá) trước khi vào 7 lĩnh vực —
 /// dùng `push` (không phải `pushReplacement`) để giữ trang này trong ngăn
 /// xếp: `ProfileDetailPage._openScreening()` đang `await` chính route này,
 /// nếu tự thay thế chính mình thì Future đó hoàn tất ngay khi bấm nút (thay

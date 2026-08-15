@@ -28,6 +28,7 @@ class OverviewSummary {
   final String tier;
   final int soLinhVucCanTheoDoi;
   final int soLinhVucThieuDuLieu;
+  final String? moTaTongHop;
   final DateTime computedAt;
 
   const OverviewSummary({
@@ -36,6 +37,7 @@ class OverviewSummary {
     required this.tier,
     required this.soLinhVucCanTheoDoi,
     required this.soLinhVucThieuDuLieu,
+    this.moTaTongHop,
     required this.computedAt,
   });
 }

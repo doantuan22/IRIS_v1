@@ -1259,3 +1259,162 @@ Phạm vi: sau khi trẻ đã có mô tả biểu hiện (Phần 1) cho đủ c�
 - Không commit git.
 
 Xuyên suốt cả 4 phần: chưa làm đẹp theme/màu sắc/font (giữ Material mặc định theo đúng chỉ định), bố cục mobile 1 cột cuộn dọc, không đổi bất kỳ logic lưu/đọc dữ liệu hay logic nghiệp vụ nào (sàng lọc, guardrail 3 trạng thái AI, embedding/RAG, quay video) — chỉ sắp xếp/bổ sung bố cục hiển thị và một số màn hình còn thiếu (Bước 1 Trang chủ, Bước 2 màn tóm tắt, Bước 3 màn xác nhận công cụ, Bước 7 màn đã lưu kết quả, Bước 8 banner tiếp tục, Bước 14 màn kết nối chuyên gia). `flutter analyze` 0 issues và `flutter test` full PASS được xác nhận lại ở cuối mỗi phần. Toàn bộ các quyết định tự chọn (khi đề bài yêu cầu tự quyết định + ghi rõ lý do) đã được ghi chú đầy đủ tại đúng mục tương ứng — không có quyết định nào bị bỏ sót không giải thích. Chưa commit git ở bất kỳ phần nào trong 4 phần, theo đúng yêu cầu xuyên suốt.
+
+## 26. Chuyển đổi cấu trúc từ 9 lĩnh vực sang 7 lĩnh vực (2026-08-15)
+
+Phạm vi: chuyển đổi toàn bộ hệ thống đánh giá của ứng dụng IRIS từ cấu trúc 9 lĩnh vực sang ĐÚNG 7 lĩnh vực:
+- **7 lĩnh vực chuẩn**: `nhan_thuc`, `cam_xuc`, `giac_quan`, `quan_he_xa_hoi`, `ngon_ngu`, `sinh_hoc`, `sinh_hoat_ca_nhan`.
+- **Bỏ hẳn**: `hanh_vi` (Hành vi) — không còn tồn tại dưới bất kỳ hình thức nào.
+- **Gộp ý nghĩa**: `ung_xu` (Ứng xử) vào `quan_he_xa_hoi` (Quan hệ xã hội) — mã `ung_xu` không còn được dùng lưu mới.
+
+### Migration SQLite (Version 5 → 6)
+
+- [database.dart](lib/data/local/database.dart): nâng `version: 6`. Trong `onUpgrade`, thêm nhánh `oldVersion < 6` thực hiện xoá sạch dữ liệu của 2 lĩnh vực bị loại bỏ ở cả 4 bảng (`assessments`, `profile_chunks`, `domain_overview_labels`, `expert_knowledge_chunks`) với câu lệnh `DELETE FROM ... WHERE linh_vuc IN ('hanh_vi', 'ung_xu')`, có kiểm tra bảng tồn tại và try-catch phòng thủ để an toàn với mọi fixture test / database cũ.
+- Test migration: [seven_domains_migration_test.dart](test/seven_domains_migration_test.dart) — dựng DB version 5 với dữ liệu ở cả 4 bảng (chứa `hanh_vi`, `ung_xu`, `ngon_ngu`, `cam_xuc`), mở lại bằng `AppDatabase` (version 6), xác nhận toàn bộ bản ghi `hanh_vi` và `ung_xu` bị xoá sạch ở cả 4 bảng, trong khi dữ liệu của các lĩnh vực khác còn nguyên vẹn.
+
+### Cập nhật hằng số & code lõi
+
+- [domains.dart](lib/core/constants/domains.dart) *(mới)*: thay thế file `nine_domains.dart` (đã xoá), định nghĩa `class Domain` và danh sách `const List<Domain> domains = [...]` gồm đúng 7 lĩnh vực theo thứ tự.
+- [overview_tier_calculator.dart](lib/domain/services/overview_tier_calculator.dart): **GIỮ NGUYÊN các ngưỡng số** (`nguongThuongGap = 2`, `nguongCanTheoDoi = 5`, `nguongThieuDuLieuToiThieu = 4`). Đã cập nhật docstring giải thích rõ: *"Giá trị giữ nguyên từ thiết kế 9 lĩnh vực, nay tính trên nền 7 lĩnh vực nên tỷ lệ đạt mức 'chuyên môn sớm' khắt khe hơn trước (yêu cầu 6-7/7 thay vì 6-9/9) - quyết định có chủ đích, không phải sai sót."*
+- [overview_repository.dart](lib/data/repositories/overview_repository.dart): chuyển sang import `domains.dart`, duyệt qua `domains` (7 lĩnh vực) trong `labelAllDomains` và `computeAndSaveOverview`.
+- [pubspec.yaml](pubspec.yaml): xoá 2 đường dẫn `assets/videos/hanh_vi/` và `assets/videos/ung_xu/`.
+- [expert_content.json](assets/reference/expert_content.json) & [expert_content_so_sanh.json](assets/reference/expert_content_so_sanh.json): lọc bỏ toàn bộ entry gắn với `hanh_vi` và `ung_xu` (file `expert_content_so_sanh.json` còn đúng 70 entry = 7 lĩnh vực × 10 entry).
+
+### Cập nhật UI & Business Logic
+
+- [domain_list_page.dart](lib/features/assessment/domain_list_page.dart): xoá icon `hanh_vi`/`ung_xu`, cập nhật tiêu đề AppBar "Đánh giá 7 lĩnh vực — ...", tiến độ "x/7 lĩnh vực", thông báo hoàn thành 7 lĩnh vực, và banner gợi ý lĩnh vực tiếp theo duyệt qua `domains`.
+- [overview_portrait_page.dart](lib/features/assessment/overview/overview_portrait_page.dart): điều kiện hoàn thành `doneDomainCount >= domains.length` (7), cập nhật chuỗi text "7 lĩnh vực", text chi tiết `${summary.soLinhVucCanTheoDoi}/7 lĩnh vực cần theo dõi`.
+- [description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart): xoá `hanh_vi` và `ung_xu` khỏi map `_domainIntroTextTemp`, cập nhật định nghĩa của `quan_he_xa_hoi` để bao quát tương tác, giao tiếp, ứng xử, tuân thủ quy tắc và thích nghi xã hội.
+- [home_page.dart](lib/features/home/home_page.dart) & [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart): cập nhật nhãn nút thành "Đánh giá 7 lĩnh vực".
+- [assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart): tiêu đề card "Đánh giá 7 lĩnh vực", logic đề xuất tính theo mẫu số `domains.length` (7).
+- [multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart): mẫu số tiến độ `x/7`, quy tắc `_statusLabel` (0/7: Chưa, 7/7: Đã, còn lại: Đang), thống kê đếm hoàn thành theo `domains.length`.
+- [domain_overview_labels_table.dart](lib/data/local/tables/domain_overview_labels_table.dart), [assessment_repository.dart](lib/data/repositories/assessment_repository.dart), [assessment.dart](lib/domain/models/assessment.dart), [screening_intro_page.dart](lib/features/screening/screening_intro_page.dart): cập nhật docstrings.
+
+### Cập nhật Test Suite & Kiểm chứng
+
+- [seven_domains_migration_test.dart](test/seven_domains_migration_test.dart): kiểm chứng migration v5 $\rightarrow$ v6 dọn sạch 2 lĩnh vực cũ ở 4 bảng.
+- [overview_repository_test.dart](test/overview_repository_test.dart): mock và kiểm chứng luồng 7 lĩnh vực.
+- [overview_tier_calculator_test.dart](test/overview_tier_calculator_test.dart): cập nhật các ca test số lượng nhãn theo nền 7 lĩnh vực.
+- [screening_flow_test.dart](test/screening_flow_test.dart): cập nhật assertion `Đã có mô tả cho 0/7 lĩnh vực`.
+- [ingest_so_sanh_data_test.dart](test/ingest_so_sanh_data_test.dart): cập nhật test ingest đủ 70 entry thật (49 `binh_thuong` + 21 `roi_loan_pho_tu_ky`).
+- [repositories_test.dart](test/repositories_test.dart), [child_repository_test.dart](test/child_repository_test.dart), [ingest_expert_data_test.dart](test/ingest_expert_data_test.dart): đổi dữ liệu mock sang các lĩnh vực hợp lệ (`nhan_thuc`, `cam_xuc`).
+- [overview_migration_test.dart](test/overview_migration_test.dart): cập nhật mong đợi getVersion() nâng lên phiên bản mới nhất.
+- **Kết quả**:
+  - `flutter analyze`: **0 issues found** (sạch 100%).
+  - `flutter test`: **92/92 PASS** (100% test vượt qua).
+
+## 27. Loại bỏ Phần 5 (Chân dung biểu hiện cấp lĩnh vực) & Nâng cấp Chân dung toàn cảnh với mô tả tổng hợp AI (2026-08-15)
+
+Phạm vi:
+1. **Loại bỏ Phần 5 cấp lĩnh vực**: Bỏ hẳn "Chân dung biểu hiện" dạng nội dung tĩnh trong luồng từng lĩnh vực. Chuỗi đánh giá mỗi lĩnh vực nay gồm đúng 4 phần:
+   - Phần 1: Mô tả biểu hiện (`DescriptionPage`, `step: 1`)
+   - Phần 2: So sánh với trẻ cùng độ tuổi (`ComparisonVideoPage`, `step: 2`)
+   - Phần 3: Chia sẻ từ phụ huynh (`ParentInputPage`, `step: 3`)
+   - Phần 4: Thông tin từ bác sĩ (`ExpertInputPage`, `step: 4`) $\rightarrow$ bấm "Hoàn tất" chuyển thẳng sang `SavedResultPage`.
+2. **Xoá thư mục & dữ liệu tĩnh `chan_dung`**:
+   - Xoá hoàn toàn thư mục `lib/features/assessment/nine_domains/summary_portrait/` (`summary_portrait_page.dart` và `summary_detail_page.dart`).
+   - Lọc bỏ 8 entry `content_type='chan_dung'` trong `assets/reference/expert_content.json` (từ 30 còn 22 entry).
+   - Cập nhật [part_step_indicator.dart](lib/features/assessment/nine_domains/part_step_indicator.dart) hiển thị `Phần $step/4`.
+3. **Nâng cấp "Chân dung toàn cảnh" với mô tả tổng hợp AI**:
+   - [overview_summaries_table.dart](lib/data/local/tables/overview_summaries_table.dart): thêm cột `mo_ta_tong_hop TEXT`.
+   - [overview_summary.dart](lib/domain/models/overview_summary.dart) & [overview_summary_repository.dart](lib/data/repositories/overview_summary_repository.dart): thêm trường `final String? moTaTongHop;`, hàm `updateMoTaTongHop(id, moTaTongHop)`.
+   - [prompt_builder.dart](lib/domain/services/prompt_builder.dart): bổ sung hàm `buildOverviewPortraitSummaryPrompt` với các guardrails bắt buộc (không chẩn đoán, không khẳng định tự kỷ/rối loạn, văn phong đồng cảm, kết thúc bằng lời khuyên trao đổi chuyên gia).
+   - [overview_repository.dart](lib/data/repositories/overview_repository.dart):
+     - `computeAndSaveOverview`: giữ nguyên 100% logic tính tier bằng code thuần, gọi Groq AI sinh `moTaTongHop` (bọc try-catch, nếu lỗi lưu `null` không làm gián đoạn việc lưu tier).
+     - Thêm phương thức `generateAndSaveSummaryDescription(child, summary)` để thử lại riêng bước gọi AI mà không cần tính lại tier.
+   - [overview_portrait_page.dart](lib/features/assessment/overview/overview_portrait_page.dart): hiển thị Card "Chân dung biểu hiện" tổng hợp khi có dữ liệu, hoặc Card thông báo kèm nút "Tạo mô tả tổng hợp" khi `moTaTongHop == null`. Nút "Tính toán lại" và Disclaimer cảnh báo luôn được bảo toàn.
+4. **Migration SQLite (Version 6 → 7)**:
+   - [database.dart](lib/data/local/database.dart): nâng `version: 7`. Thêm nhánh `oldVersion < 7` thực hiện `DELETE FROM expert_knowledge_chunks WHERE content_type = 'chan_dung'` và `ALTER TABLE overview_summaries ADD COLUMN mo_ta_tong_hop TEXT` với kiểm tra an toàn schema.
+   - Test migration: [chan_dung_and_overview_description_migration_test.dart](test/chan_dung_and_overview_description_migration_test.dart) kiểm chứng xoá sạch dữ liệu `chan_dung`, thêm cột mới và bảo toàn 100% dữ liệu `overview_summaries` cũ.
+5. **Cập nhật Test Suite**:
+   - [overview_repository_test.dart](test/overview_repository_test.dart): mock và test thành công luồng sinh mô tả tổng hợp, test trường hợp lỗi AI fallback `moTaTongHop=null`, test hàm thử lại `generateAndSaveSummaryDescription`.
+   - [prompt_builder_test.dart](test/prompt_builder_test.dart): kiểm chứng prompt mô tả tổng hợp đúng guardrails.
+   - [ingest_expert_data_test.dart](test/ingest_expert_data_test.dart) & [repositories_test.dart](test/repositories_test.dart): xoá bỏ các tham chiếu đến `chan_dung`.
+   - **Kết quả kiểm thử**:
+     - `flutter analyze`: **0 issues found** (sạch 100%).
+     - `flutter test`: **95/95 PASS** (100% test vượt qua).
+
+28. **Chuyển đổi hoàn toàn điều hướng giữa 4 phần đánh giá lĩnh vực sang Mô hình Hub tự do (Free Navigation)**
+   - **Audit thực tế trước khi triển khai**:
+     - Phát hiện: `DomainListPage` vào thẳng `DescriptionPage`; 4 màn con dùng `pushReplacement` nối tiếp tuần tự và hiển thị `PartStepIndicator(step: x)`; `SavedResultPage` nằm ở cuối luồng tuần tự; Nút "Lưu" chỉ có ở `DescriptionPage`.
+   - **Tạo Màn hình Hub trung tâm cấp Lĩnh vực** ([domain_hub_page.dart](lib/features/assessment/domain_hub_page.dart)):
+     - Card Header hiển thị khái niệm/định nghĩa của lĩnh vực.
+     - Thẻ 1: **"Mô tả biểu hiện của trẻ"** — được nhấn mạnh trực quan với badge `Quan trọng`, icon nổi bật, hiển thị số lượng ghi nhận đã lưu ("Chưa có ghi nhận nào" / "Đã có x ghi nhận biểu hiện"). Đây là dữ liệu thật duy nhất của trẻ dùng cho AI gắn nhãn và tổng hợp sau này.
+     - Thẻ 2: **"So sánh với trẻ cùng độ tuổi"** — tra cứu nhanh biểu hiện thường gặp vs cần quan sát thêm.
+     - Thẻ 3: **"Chia sẻ từ phụ huynh"** — tham khảo góc nhìn thực tế từ các phụ huynh khác.
+     - Thẻ 4: **"Thông tin từ bác sĩ"** — tra cứu mốc phát triển y khoa, dấu hiệu lưu ý và giải thích chuyên môn.
+     - Cả 4 thẻ đều mở độc lập bằng `Navigator.push`, bất kỳ lúc nào, không có thứ tự bắt buộc, không bị khoá hay kiểm tra điều kiện hoàn thành phần trước.
+   - **Cập nhật Điều hướng & Gỡ bỏ Luồng tuần tự**:
+     - [domain_list_page.dart](lib/features/assessment/domain_list_page.dart): Tap trên thẻ lĩnh vực và nút "Tiếp tục ngay" mở `DomainHubPage`.
+     - [description_page.dart](lib/features/assessment/nine_domains/description/description_page.dart): Gỡ bỏ `PartStepIndicator`, gỡ bỏ `_goNext()` và `_saveAndContinue()`, chuyển sang nút `FilledButton.icon` "Lưu mô tả" (chỉ lưu vào DB/RAG và reload danh sách tại chỗ, không navigate đi).
+     - [comparison_video_page.dart](lib/features/assessment/nine_domains/comparison_video/comparison_video_page.dart): Gỡ bỏ `PartStepIndicator`, gỡ bỏ nút "Tiếp theo" và `_goNext()`.
+     - [parent_input_page.dart](lib/features/assessment/nine_domains/parent_input/parent_input_page.dart): Gỡ bỏ `PartStepIndicator`, gỡ bỏ nút "Tiếp theo" và `_goNext()`.
+     - [expert_input_page.dart](lib/features/assessment/nine_domains/expert_input/expert_input_page.dart): Gỡ bỏ `PartStepIndicator`, gỡ bỏ nút "Hoàn tất" và `_goNext()`.
+     - Xoá hoàn toàn 2 file tàn dư luồng tuần tự: `lib/features/assessment/nine_domains/part_step_indicator.dart` và `lib/features/assessment/nine_domains/saved_result_page.dart`.
+   - **Kiểm thử tự động toàn diện** ([domain_hub_free_navigation_test.dart](test/domain_hub_free_navigation_test.dart)):
+     - *Test 1*: Từ Hub vào thẳng "So sánh" khi CHƯA từng có mô tả $\rightarrow$ PASS, mở mượt mà, không bị chặn.
+     - *Test 2*: Vào từng phần trong 4 phần rồi bấm Back $\rightarrow$ PASS, quay về Hub đầy đủ 4 thẻ.
+     - *Test 3*: Thứ tự ngẫu nhiên (Bác sĩ $\rightarrow$ Chia sẻ $\rightarrow$ Mô tả & Lưu $\rightarrow$ So sánh) $\rightarrow$ PASS, dữ liệu lưu chuẩn vào DB và Hub cập nhật badge "Đã có 1 ghi nhận biểu hiện".
+     - *Test 4*: Nút "Lưu" CHỈ tồn tại ở màn Mô tả biểu hiện, KHÔNG tồn tại ở 3 màn tham khảo $\rightarrow$ PASS.
+   - **Kết quả kiểm thử toàn dự án**:
+     - `flutter analyze`: **0 issues found** (sạch 100%).
+     - `flutter test`: **99/99 PASS** (100% test thành công).
+
+29. **Audit Bảo Mật API Key, Build Release APK & Xác Thực Toàn Diện Cloud AI Thật (NVIDIA & Groq)**
+   - **Audit Rủi ro lộ Key Git**:
+     - `.gitignore` đã có `dart_define.json` (dòng 49).
+     - Đã chạy kiểm tra lịch sử Git: `git log --all --full-history -- dart_define.json` $\rightarrow$ **0 commit**. File chứa key thật **CHƯA TỪNG bị commit** vào bất kỳ commit nào trong lịch sử kho mã nguồn.
+     - Đã tạo file template an toàn [dart_define.json.example](dart_define.json.example) với các giá trị placeholder (`YOUR_NVIDIA_API_KEY_HERE`, `YOUR_GROQ_API_KEY_HERE`), xoá bỏ file cũ `dart_define.example.json`.
+   - **Audit Code đọc Key & Xử lý An toàn**:
+     - [api_config.dart](lib/core/constants/api_config.dart): Khớp chính xác tên biến `String.fromEnvironment('NVIDIA_API_KEY')` và `String.fromEnvironment('GROQ_API_KEY')`. Bổ sung các getter `hasNvidiaApiKey`, `hasGroqApiKey`, `hasAiConfig`.
+     - [nvidia_api_client.dart](lib/data/remote/nvidia_api_client.dart) & [groq_api_client.dart](lib/data/remote/groq_api_client.dart): Tự động kiểm tra key khi chạy thật, ném `NvidiaApiException` và `GroqApiException` rõ ràng thay vì lỗi mạng khó hiểu. Phân biệt `_isCustomClient` cho phép unit test MockClient chạy độc lập mà không bắt buộc key thật.
+     - [ai_chat_page.dart](lib/features/ai_chat/ai_chat_page.dart): Bổ sung Banner cảnh báo thân thiện trên giao diện khi chưa cấu hình API key (*"Chưa cấu hình API key, tính năng AI hiện không khả dụng."*).
+     - **Kiểm tra rò rỉ log**: Grep toàn bộ thư mục `lib/` xác nhận **100% không có chỗ nào in giá trị API key thật hoặc headers chứa key ra log/console**.
+   - **Build Release APK & Cài đặt Thiết bị Thật**:
+     - Lệnh build: `flutter build apk --release --dart-define-from-file=dart_define.json`
+     - Kết quả: Build thành công file APK `build/app/outputs/flutter-apk/app-release.apk` (dung lượng 54.4 MB, Gradle assembleRelease hoàn tất không lỗi).
+     - Cài đặt lên máy ảo `Pixel_7` (`emulator-5554`): `adb install -r build/app/outputs/flutter-apk/app-release.apk` $\rightarrow$ **Success**.
+     - Khởi chạy app trên máy ảo và chụp ảnh màn hình xác thực: `app_release_screenshot.png`.
+   - **Bằng chứng Xác thực Toàn diện với Cloud AI Thật** ([real_cloud_ai_verification_test.dart](test/real_cloud_ai_verification_test.dart)):
+     - **a. NVIDIA NIM Embedding thật**:
+       - Input text: `"Bé 3 tuổi rất thích xếp các khối gỗ theo hàng thẳng và lặp đi lặp lại"`
+       - API Endpoint: `https://integrate.api.nvidia.com/v1/embeddings` (model `nvidia/nv-embedqa-e5-v5`)
+       - Kết quả: Nhận về vector float 1024 chiều (5 giá trị đầu: `[-0.018402, -0.017349, 0.009185, 0.034301, 0.002599]`), lưu thành công vào SQLite bảng `profile_chunks`.
+     - **b. Groq Generation thật (Hỏi đáp AI)**:
+       - Input question: `"Bé 3 tuổi chưa nói được từ đơn thì phụ huynh nên làm gì để hỗ trợ bé?"`
+       - API Endpoint: `https://api.groq.com/openai/v1/chat/completions` (model `openai/gpt-oss-20b`)
+       - Kết quả: Groq trả về câu trả lời tiếng Việt chuẩn UTF-8, tuân thủ đúng guardrail: *"Chưa đủ dữ liệu để đưa ra nhận định về cách hỗ trợ bé 3 tuổi chưa nói được từ đơn. Bạn có thể thực hiện sàng lọc ngôn ngữ hoặc bổ sung mô tả chi tiết hơn về biểu hiện của bé vào hồ sơ để được tư vấn chính xác hơn."*, lưu vào bảng `ai_conversations`.
+     - **c. Groq Chân dung toàn cảnh 7 lĩnh vực thật**:
+       - Gắn nhãn AI 7 lĩnh vực với mô tả thật $\rightarrow$ Groq phân loại thành công 7/7 nhãn `thuong_gap` kèm lý do ngắn gọn.
+       - Mức tổng quan tính toán bằng code: `thuong_gap`.
+       - Groq sinh văn xuôi Chân dung biểu hiện tổng hợp chuẩn xác, không chẩn đoán y khoa, kết thúc bằng lời khuyên trao đổi chuyên gia theo đúng guardrail:
+         > *"Bé Test ở độ tuổi 3 tuổi đang có những biểu hiện phát triển phù hợp với mức độ thường gặp. Trong lĩnh vực nhận thức, bé đã nhận biết được các đồ vật quen thuộc và có thể làm theo những chỉ dẫn đơn giản của bố mẹ... Đây là bức tranh tổng hợp mang tính tham khảo hỗ trợ theo dõi sự phát triển của trẻ, phụ huynh nên trao đổi thêm với các chuyên gia y tế/giáo dục chuyên biệt nếu có băn khoăn hoặc cần đánh giá chuyên sâu hơn."*
+       - Lưu thành công vào bảng `overview_summaries` (cột `mo_ta_tong_hop`).
+   - **Tài liệu hoá**:
+     - Viết mới toàn diện file [README.md](README.md) hướng dẫn cấu hình `dart_define.json`, lệnh chạy `flutter run` dev và lệnh `flutter build apk --release`.
+30. **Gỡ Bỏ Bước "Chọn Tình Huống" Khỏi Chức Năng Quay Video (Tinh Gọn Còn 3 Màn)**
+   - **Xoá màn hình & Route cũ**:
+     - Đã xoá file `lib/features/video_recording/video_situation_page.dart`.
+     - Luồng quay video tinh gọn còn đúng **3 màn**: **1. Chuẩn bị quay** (`VideoPreparationPage`) $\rightarrow$ **2. Quay video** (`VideoRecordingCapturePage`) $\rightarrow$ **3. Xem lại & Gửi** (`VideoReviewPage`).
+   - **Cập nhật Entry Points (Lối vào)**:
+     - [home_page.dart](lib/features/home/home_page.dart): Nút "Quay video quan sát" đi thẳng vào `VideoPreparationPage(child: child)`.
+     - [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart): Đổi nhãn thành "Video quan sát", dẫn tới `VideoListPage`.
+   - **Cập nhật các màn hình trong luồng**:
+     - [video_preparation_page.dart](lib/features/video_recording/video_preparation_page.dart): Trở thành Bước 1/3, bỏ tham số `situation`, bỏ dòng Text `Tình huống: ...`, nút "Bắt đầu quay" mở `VideoRecordingCapturePage`.
+     - [video_recording_capture_page.dart](lib/features/video_recording/video_recording_capture_page.dart): Trở thành Bước 2/3, bỏ tham số `situation`, tiêu đề AppBar đổi thành `Quay video`.
+     - [video_review_page.dart](lib/features/video_recording/video_review_page.dart): Trở thành Bước 3/3, bỏ tham số `situation`, lưu video mới với `situation: null`, nút "Quay thêm video khác" quay lại `VideoPreparationPage`.
+     - [video_list_page.dart](lib/features/video_recording/video_list_page.dart): Nút `+` (FAB) mở thẳng `VideoPreparationPage`. Hiển thị: video có `situation` thì hiện tình huống; video `situation = null` thì hiện "Video ngày d/m/y" + trạng thái (ẩn hẳn dòng tình huống, không có chữ `null`).
+     - [video_detail_page.dart](lib/features/video_recording/video_detail_page.dart): Ẩn dòng `Tình huống: ...` khi `situation = null`, debug mô phỏng chuyên gia hoạt động bình thường.
+   - **Bảo toàn Schema SQLite**:
+     - Cột `videos.situation TEXT` được giữ nguyên trong schema bảng `videos` để bảo toàn dữ liệu các video cũ đã có tình huống trước đây.
+     - `VideoRepository.save` hỗ trợ `situation` là optional (`null` cho video mới).
+   - **Kiểm thử tự động**:
+     - Tạo mới [video_flow_no_situation_test.dart](test/video_flow_no_situation_test.dart) (4/4 PASS): verify mở thẳng màn chuẩn bị, ẩn tình huống null ở danh sách và chi tiết, nút FAB hoạt động chuẩn.
+     - Cập nhật [video_repository_test.dart](test/video_repository_test.dart) bổ sung test case lưu `situation = null`.
+   - **Kết quả kiểm thử toàn dự án**:
+     - `flutter analyze`: **0 issues found** (sạch 100%).
+
+
+
+
+

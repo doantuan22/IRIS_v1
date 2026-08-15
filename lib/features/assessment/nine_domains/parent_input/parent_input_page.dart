@@ -4,11 +4,9 @@ import '../../../../data/local/database.dart';
 import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
 import '../../../../domain/models/expert_knowledge_chunk.dart';
-import '../expert_input/expert_input_page.dart';
-import '../part_step_indicator.dart';
 import 'parent_context_page.dart';
 
-/// Phần 3/5 — "Góc nhìn từ phụ huynh": đọc `expert_knowledge_chunks`
+/// "Góc nhìn từ phụ huynh": đọc `expert_knowledge_chunks`
 /// (content_type='chia_se_phu_huynh') đúng theo lĩnh vực + độ tuổi trẻ, tách
 /// theo `nhom_tre` ('binh_thuong'/'asd') thành 2 tab quote card (nội dung +
 /// trích dẫn `nguon_tai_lieu`). "Xem kinh nghiệm theo tình huống" mở
@@ -50,18 +48,6 @@ class _ParentInputPageState extends State<ParentInputPage> {
     );
   }
 
-  void _goNext() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => ExpertInputPage(
-          child: widget.child,
-          linhVuc: widget.linhVuc,
-          linhVucLabel: widget.linhVucLabel,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,7 +83,6 @@ class _ParentInputPageState extends State<ParentInputPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const PartStepIndicator(step: 3),
                       Text(
                         'Góc nhìn từ phụ huynh (${formatAgeLabel(widget.child)})',
                         style: Theme.of(context).textTheme.titleLarge,
@@ -123,7 +108,7 @@ class _ParentInputPageState extends State<ParentInputPage> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(16),
                       child: TextButton.icon(
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
@@ -139,13 +124,7 @@ class _ParentInputPageState extends State<ParentInputPage> {
                       ),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton(
-                    onPressed: _goNext,
-                    child: const Text('Tiếp theo'),
-                  ),
-                ),
+                const SizedBox(height: 8),
               ],
             ),
           );

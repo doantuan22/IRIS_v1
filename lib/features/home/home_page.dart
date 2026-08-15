@@ -12,7 +12,7 @@ import '../expert_connect/expert_connect_page.dart';
 import '../history/history_page.dart';
 import '../multi_child_dashboard/multi_child_dashboard_page.dart';
 import '../screening/screening_intro_page.dart';
-import '../video_recording/video_situation_page.dart';
+import '../video_recording/video_preparation_page.dart';
 
 /// Trang chủ — điểm vào chính của app, xoay quanh khái niệm "1 hồ sơ trẻ
 /// đang hoạt động" (active child, lưu bền vững qua `ActiveChildService`).
@@ -210,15 +210,15 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                   MaterialPageRoute(builder: (_) => DomainListPage(child: child)),
                 ),
                 icon: const Icon(Icons.checklist_outlined),
-                label: const Text('Đánh giá 9 lĩnh vực'),
+                label: const Text('Đánh giá 7 lĩnh vực'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => VideoSituationPage(child: child)),
+                  MaterialPageRoute(builder: (_) => VideoPreparationPage(child: child)),
                 ),
                 icon: const Icon(Icons.videocam_outlined),
-                label: const Text('Quay video tình huống'),
+                label: const Text('Quay video quan sát'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(

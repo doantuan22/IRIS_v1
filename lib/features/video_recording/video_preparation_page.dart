@@ -11,43 +11,46 @@ const List<String> _tips = [
   'Giữ máy ổn định, hạn chế rung lắc khi quay.',
 ];
 
-/// Bước 2/4 — Màn tips tĩnh trước khi quay.
+/// Bước 1/3 — Màn tips tĩnh chuẩn bị trước khi quay video quan sát trẻ.
 class VideoPreparationPage extends StatelessWidget {
   final Child child;
-  final String situation;
 
-  const VideoPreparationPage({super.key, required this.child, required this.situation});
+  const VideoPreparationPage({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chuẩn bị quay')),
+      appBar: AppBar(title: const Text('Chuẩn bị quay video')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Tình huống: $situation', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Lưu ý quan trọng khi quay video cho bé ${child.name}:',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
                 children: _tips
                     .map(
                       (tip) => ListTile(
-                        leading: const Icon(Icons.check_circle_outline),
+                        leading: const Icon(Icons.check_circle_outline, color: Colors.teal),
                         title: Text(tip),
                       ),
                     )
                     .toList(),
               ),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => VideoRecordingCapturePage(child: child, situation: situation),
+                  builder: (_) => VideoRecordingCapturePage(child: child),
                 ),
               ),
-              child: const Text('Bắt đầu quay'),
+              icon: const Icon(Icons.videocam),
+              label: const Text('Bắt đầu quay'),
             ),
           ],
         ),

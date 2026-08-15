@@ -186,12 +186,12 @@ void main() {
     // Bước 4 giờ chia thành nhiều khối (Card) — cuộn tới khối cuối để xác
     // nhận cả nội dung lẫn nút đều có mặt.
     await tester.scrollUntilVisible(
-      find.text('Đã có mô tả cho 0/9 lĩnh vực'),
+      find.text('Đã có mô tả cho 0/7 lĩnh vực'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     await pumpFrames(tester, times: 5);
-    expect(find.text('Đã có mô tả cho 0/9 lĩnh vực'), findsOneWidget);
+    expect(find.text('Đã có mô tả cho 0/7 lĩnh vực'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.widgetWithText(FilledButton, 'Bắt đầu đánh giá'),
       200,
@@ -200,7 +200,7 @@ void main() {
     await pumpFrames(tester, times: 5);
     expect(find.widgetWithText(FilledButton, 'Bắt đầu đánh giá'), findsOneWidget);
     // ignore: avoid_print
-    print('PASS: Bước 4 hiển thị đúng dữ liệu thật sau khi sàng lọc (đã sàng lọc, điểm 0/6, 0/9 lĩnh vực)');
+    print('PASS: Bước 4 hiển thị đúng dữ liệu thật sau khi sàng lọc (đã sàng lọc, điểm 0/6, 0/7 lĩnh vực)');
 
     // Quay lại hồ sơ (Bước 4 -> ToolConfirm -> Intro -> ProfileDetail, thêm 1
     // bước so với nhánh "Chưa muốn" vì giờ có thêm màn xác nhận công cụ) —

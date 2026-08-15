@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/nine_domains.dart';
+import '../../core/constants/domains.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/child_repository.dart';
@@ -54,11 +54,6 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     });
   }
 
-  /// Bấm vào 1 dòng hồ sơ (khác menu ⋮) → chọn làm hồ sơ đang hoạt động,
-  /// quay thẳng về Trang chủ. Dùng `popUntil((route) => route.isFirst)` vì
-  /// `HomePage` luôn là route gốc duy nhất của app (kể cả khi màn này được
-  /// mở từ nhiều tầng điều hướng khác nhau — tab "Tài khoản" hoặc icon dashboard
-  /// ở `ChildListPage`), nên luôn quay đúng về Trang chủ bất kể mở từ đâu.
   Future<void> _selectAsActive(Child child) async {
     await _activeChildService.setActiveChildId(child.id);
     if (!mounted) return;
@@ -96,17 +91,17 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
 
   /// Trạng thái đánh giá — quy tắc đơn giản hoá có chủ đích (đúng tinh thần
   /// "có thể đơn giản hoá" của roadmap cho mục Phụ lục 1), không cố khớp
-  /// 100% ví dụ minh hoạ trong tài liệu gốc: 0/9 → "Chưa đánh giá", 9/9 →
+  /// 100% ví dụ minh hoạ trong tài liệu gốc: 0/7 → "Chưa đánh giá", 7/7 →
   /// "Đã đánh giá", còn lại → "Đang đánh giá".
   String _statusLabel(int doneCount) {
-    final total = nineDomains.length;
+    final total = domains.length;
     if (doneCount == 0) return 'Chưa đánh giá';
     if (doneCount == total) return 'Đã đánh giá';
     return 'Đang đánh giá';
   }
 
   bool _matchesFilter(_ChildSummary s) {
-    final total = nineDomains.length;
+    final total = domains.length;
     switch (_filter) {
       case _ProgressFilter.all:
         return true;
@@ -126,19 +121,7 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
         .toList();
   }
 
-  Future<bool?> _confirm(String title, String content) => showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
-            TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xác nhận')),
-          ],
-        ),
-      );
-
-  Future<void> _handleMenuAction(String action, Child child) async {
+  void _handleMenuAction(String action, Child child) async {
     switch (action) {
       case 'view':
         await Navigator.of(context).push(
@@ -149,31 +132,34 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => HistoryPage(child: child)),
         );
+        _reload();
       case 'archive':
-        final confirmed = await _confirm(
-          'Lưu trữ hồ sơ',
-          'Lưu trữ hồ sơ "${child.name}"? Hồ sơ sẽ ẩn khỏi danh sách "Đang quản lý", có thể khôi phục lại sau ở tab "Đã lưu trữ".',
-        );
-        if (confirmed == true) {
-          await _childRepository.archive(child.id);
-          _reload();
-        }
+        await _childRepository.archive(child.id);
+        _reload();
       case 'unarchive':
-        final confirmed = await _confirm(
-          'Khôi phục hồ sơ',
-          'Khôi phục hồ sơ "${child.name}" về danh sách "Đang quản lý"?',
-        );
-        if (confirmed == true) {
-          await _childRepository.unarchive(child.id);
-          _reload();
-        }
+        await _childRepository.unarchive(child.id);
+        _reload();
       case 'delete':
-        final confirmed = await _confirm(
-          'Xoá hồ sơ',
-          'Xoá vĩnh viễn hồ sơ "${child.name}"? Toàn bộ dữ liệu liên quan (sàng lọc, mô tả đánh giá, lịch sử, video, hội thoại AI) sẽ bị xoá và KHÔNG thể khôi phục.',
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Xoá hồ sơ trẻ'),
+            content: Text(
+              'Bạn có chắc muốn xoá hồ sơ "${child.name}" không?\n'
+              'Toàn bộ dữ liệu sàng lọc, đánh giá, video của trẻ này sẽ bị xoá vĩnh viễn.',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
+              TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xoá')),
+            ],
+          ),
         );
         if (confirmed == true) {
           await _childRepository.delete(child.id);
+          final activeId = await _activeChildService.getActiveChildId();
+          if (activeId == child.id) {
+            await _activeChildService.clearActiveChildId();
+          }
           _reload();
         }
     }
@@ -187,22 +173,25 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
   }
 
   String _formatLastUpdated(DateTime? d) {
-    if (d == null) return '—';
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} '
-        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    if (d == null) return 'Chưa có hoạt động';
+    final dd = d.day.toString().padLeft(2, '0');
+    final mm = d.month.toString().padLeft(2, '0');
+    return '$dd/$mm/${d.year}';
   }
 
   Widget _buildStatTile(String label, int value) {
     return Expanded(
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            children: [
-              Text('$value', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 4),
-              Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
-            ],
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          child: Center(
+            child: Column(
+              children: [
+                Text('$value', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 4),
+                Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
           ),
         ),
       ),
@@ -211,7 +200,7 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
 
   Widget _buildChildTile(_ChildSummary s, String? activeChildId) {
     final child = s.child;
-    final total = nineDomains.length;
+    final total = domains.length;
     final isActive = child.id == activeChildId;
     return Card(
       child: ListTile(
@@ -268,6 +257,13 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Quản lý nhiều trẻ'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.person_add_outlined),
+              tooltip: 'Tạo hồ sơ mới',
+              onPressed: _openCreateProfile,
+            ),
+          ],
           bottom: const TabBar(
             tabs: [Tab(text: 'Đang quản lý'), Tab(text: 'Đã lưu trữ')],
           ),
@@ -299,9 +295,9 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
             final active = all.where((s) => s.child.status == 'active').toList();
             final archived = all.where((s) => s.child.status == 'archived').toList();
             final total = active.length;
-            final doneCount = active.where((s) => s.doneDomainCount == nineDomains.length).length;
+            final doneCount = active.where((s) => s.doneDomainCount == domains.length).length;
             final inProgressCount = active
-                .where((s) => s.doneDomainCount > 0 && s.doneDomainCount < nineDomains.length)
+                .where((s) => s.doneDomainCount > 0 && s.doneDomainCount < domains.length)
                 .length;
             final notStartedCount = active.where((s) => s.doneDomainCount == 0).length;
 

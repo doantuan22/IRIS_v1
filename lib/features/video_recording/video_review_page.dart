@@ -7,20 +7,18 @@ import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../data/repositories/video_repository.dart';
 import '../../domain/models/child.dart';
-import 'video_situation_page.dart';
+import 'video_preparation_page.dart';
 
-/// Bước 4/4 — Phát lại video vừa quay, gửi cho chuyên gia (tạo bản ghi
+/// Bước 3/3 — Phát lại video vừa quay, gửi cho chuyên gia (tạo bản ghi
 /// `videos` + `history_logs`, mô phỏng trong phạm vi 1 thiết bị — không có
 /// kênh upload thật ra ngoài máy).
 class VideoReviewPage extends StatefulWidget {
   final Child child;
-  final String situation;
   final String filePath;
 
   const VideoReviewPage({
     super.key,
     required this.child,
-    required this.situation,
     required this.filePath,
   });
 
@@ -69,14 +67,14 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
       await _videoRepository.save(
         childId: widget.child.id,
         filePath: widget.filePath,
-        situation: widget.situation,
+        situation: null,
         status: 'pending',
       );
       try {
         await _historyLogRepository.add(
           childId: widget.child.id,
           eventType: 'video',
-          description: 'Quay video tình huống: ${widget.situation}',
+          description: 'Đã quay và gửi video quan sát của trẻ',
         );
       } catch (_) {
         // Không để lỗi ghi lịch sử làm mất video đã gửi thành công.
@@ -101,7 +99,7 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
 
   void _recordAnother() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => VideoSituationPage(child: widget.child)),
+      MaterialPageRoute(builder: (_) => VideoPreparationPage(child: widget.child)),
     );
   }
 
@@ -114,19 +112,17 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Tình huống: ${widget.situation}', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
             Expanded(child: _buildPlayer()),
             const SizedBox(height: 16),
             if (_sent) ...[
               const Text(
-                'Đã gửi. Bạn có thể quay thêm tình huống khác hoặc quay lại hồ sơ.',
+                'Đã gửi video thành công. Bạn có thể quay thêm video khác hoặc quay lại hồ sơ.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: _recordAnother,
-                child: const Text('Quay thêm tình huống khác'),
+                child: const Text('Quay thêm video khác'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -159,24 +155,27 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
     if (controller == null || !controller.value.isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Column(
-      children: [
-        Expanded(
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: controller.value.aspectRatio,
-              child: VideoPlayer(controller),
+    return AspectRatio(
+      aspectRatio: controller.value.aspectRatio,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          VideoPlayer(controller),
+          VideoProgressIndicator(controller, allowScrubbing: true),
+          Center(
+            child: IconButton(
+              iconSize: 48,
+              color: Colors.white70,
+              icon: Icon(controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle),
+              onPressed: () {
+                setState(() {
+                  controller.value.isPlaying ? controller.pause() : controller.play();
+                });
+              },
             ),
           ),
-        ),
-        IconButton(
-          iconSize: 48,
-          icon: Icon(controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle),
-          onPressed: () => setState(() {
-            controller.value.isPlaying ? controller.pause() : controller.play();
-          }),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

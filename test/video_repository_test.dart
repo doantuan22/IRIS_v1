@@ -50,6 +50,28 @@ void main() {
     print('PASS: VideoRepository.save + getForChild lưu và đọc đúng dữ liệu video');
   });
 
+  test('VideoRepository: lưu video mới KHÔNG CÓ tình huống (situation = null), đọc lại đúng', () async {
+    final childRepo = ChildRepository(appDatabase);
+    final videoRepo = VideoRepository(appDatabase);
+
+    final child = await childRepo.create(name: 'Bé An New', ageYears: 3);
+    final video = await videoRepo.save(
+      childId: child.id,
+      filePath: '/data/videos/new_video.mp4',
+      status: 'pending',
+    );
+
+    expect(video.situation, isNull);
+    expect(video.status, 'pending');
+
+    final list = await videoRepo.getForChild(child.id);
+    expect(list.length, 1);
+    expect(list.first.situation, isNull);
+    expect(list.first.filePath, '/data/videos/new_video.mp4');
+    // ignore: avoid_print
+    print('PASS: VideoRepository.save với situation = null hoạt động chuẩn xác');
+  });
+
   test('VideoRepository: getForChild chỉ trả video của đúng trẻ, không lẫn trẻ khác', () async {
     final childRepo = ChildRepository(appDatabase);
     final videoRepo = VideoRepository(appDatabase);

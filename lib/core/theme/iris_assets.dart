@@ -1,4 +1,6 @@
 abstract final class IrisAssets {
+  static const mascotSplashHeart =
+      'assets/images/mascot/iris_bear_splash_heart.png';
   static const mascotWaving = 'assets/images/mascot/iris_bear_waving.png';
   static const mascotShield = 'assets/images/mascot/iris_bear_shield.png';
   static const mascotClipboard = 'assets/images/mascot/iris_bear_clipboard.png';

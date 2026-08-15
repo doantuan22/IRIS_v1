@@ -3,22 +3,28 @@ import 'package:flutter/material.dart';
 /// Design tokens của IRIS. Mọi quyết định thị giác dùng chung được gom tại
 /// đây để toàn bộ ứng dụng đổi đồng bộ khi bảng màu hoặc kích thước thay đổi.
 abstract final class IrisColors {
-  static const primary = Color(0xFF3566E8);
-  static const primaryDark = Color(0xFF20306B);
-  static const primarySoft = Color(0xFFEAF1FF);
-  static const canvas = Color(0xFFF7F9FE);
+  static const navy900 = Color(0xFF102A6B);
+  static const navy800 = Color(0xFF15367D);
+  static const blue700 = Color(0xFF145CCB);
+  static const blue500 = Color(0xFF2A78F2);
+  static const primary = Color(0xFF1769E8);
+  static const primaryDark = navy900;
+  static const primarySoft = Color(0xFFDDEBFF);
+  static const canvas = Color(0xFFF8FBFF);
   static const surface = Color(0xFFFFFFFF);
-  static const textPrimary = Color(0xFF252A36);
-  static const textSecondary = Color(0xFF8A8F98);
-  static const divider = Color(0xFFE4E8F0);
-  static const success = Color(0xFF2FB36B);
-  static const successSoft = Color(0xFFE5F7ED);
-  static const warning = Color(0xFFF5A623);
-  static const warningSoft = Color(0xFFFFF3DC);
-  static const neutral = Color(0xFFB0B7C3);
-  static const neutralSoft = Color(0xFFF0F2F6);
-  static const danger = Color(0xFFF45B69);
-  static const dangerSoft = Color(0xFFFFEAED);
+  static const textPrimary = navy900;
+  static const textSecondary = Color(0xFF63738A);
+  static const divider = Color(0xFFD9E7F8);
+  static const dividerSubtle = Color(0xFFE8F0FA);
+  static const success = Color(0xFF22B56B);
+  static const successSoft = Color(0xFFE8F8EF);
+  static const warning = Color(0xFFF59B23);
+  static const warningSoft = Color(0xFFFFF4E3);
+  static const neutral = Color(0xFF9AABBF);
+  static const neutralSoft = Color(0xFFF1F6FC);
+  static const danger = Color(0xFFEF5A78);
+  static const dangerSoft = Color(0xFFFFEDF1);
+  static const splashGlow = Color(0xFFEAF3FF);
   static const cameraOverlay = Color(0x8A000000);
 
   // 7 accent cố định theo đúng 7 mã lĩnh vực hiện hành.
@@ -38,6 +44,8 @@ abstract final class IrisSpacing {
   static const md = 16.0;
   static const lg = 24.0;
   static const xl = 32.0;
+  static const xxl = 40.0;
+  static const xxxl = 48.0;
 
   static const page = EdgeInsets.all(md);
   static const card = EdgeInsets.all(md);
@@ -46,12 +54,14 @@ abstract final class IrisSpacing {
 
 abstract final class IrisRadii {
   static const input = 12.0;
-  static const card = 20.0;
-  static const banner = 24.0;
+  static const button = 12.0;
+  static const card = 18.0;
+  static const banner = 20.0;
   static const pill = 999.0;
 
   static const cardBorder = BorderRadius.all(Radius.circular(card));
   static const inputBorder = BorderRadius.all(Radius.circular(input));
+  static const buttonBorder = BorderRadius.all(Radius.circular(button));
   static const pillBorder = BorderRadius.all(Radius.circular(pill));
 }
 
@@ -69,8 +79,18 @@ abstract final class IrisSizes {
 
 abstract final class IrisShadows {
   static const soft = <BoxShadow>[
-    BoxShadow(color: Color(0x0F141E46), blurRadius: 16, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x0A102A6B), blurRadius: 14, offset: Offset(0, 4)),
   ];
+
+  static const overlay = <BoxShadow>[
+    BoxShadow(color: Color(0x14102A6B), blurRadius: 20, offset: Offset(0, 8)),
+  ];
+}
+
+abstract final class IrisMotion {
+  static const press = Duration(milliseconds: 140);
+  static const component = Duration(milliseconds: 220);
+  static const screen = Duration(milliseconds: 320);
 }
 
 /// Một nguồn duy nhất cho màu và icon của lĩnh vực.
@@ -123,7 +143,7 @@ abstract final class IrisTheme {
       onErrorContainer: Color(0xFF8D2632),
       outline: IrisColors.divider,
       outlineVariant: IrisColors.divider,
-      shadow: Color(0x14141E46),
+      shadow: Color(0x14102A6B),
     );
 
     final base = ThemeData(
@@ -193,7 +213,7 @@ abstract final class IrisTheme {
       borderSide: const BorderSide(color: IrisColors.divider),
     );
     final buttonShape = RoundedRectangleBorder(
-      borderRadius: IrisRadii.pillBorder,
+      borderRadius: IrisRadii.buttonBorder,
     );
 
     return base.copyWith(
@@ -212,7 +232,9 @@ abstract final class IrisTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: const EdgeInsets.symmetric(vertical: IrisSpacing.xs),
-        shape: cardShape,
+        shape: cardShape.copyWith(
+          side: const BorderSide(color: IrisColors.divider),
+        ),
         clipBehavior: Clip.antiAlias,
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -266,7 +288,7 @@ abstract final class IrisTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: IrisColors.surface,
-        elevation: 8,
+        elevation: 2,
         height: 72,
         indicatorColor: IrisColors.primarySoft,
         iconTheme: WidgetStateProperty.resolveWith(

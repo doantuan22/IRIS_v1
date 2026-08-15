@@ -48,22 +48,22 @@ class ProfileChunkRepository {
   }
 
   Map<String, Object?> _toRow(ProfileChunk chunk) => {
-        'id': chunk.id,
-        'child_id': chunk.childId,
-        'content': chunk.content,
-        'linh_vuc': chunk.linhVuc,
-        'nguon': chunk.nguon,
-        'embedding': encodeEmbedding(chunk.embedding),
-        'created_at': chunk.createdAt.toIso8601String(),
-      };
+    'id': chunk.id,
+    'child_id': chunk.childId,
+    'content': chunk.content,
+    'linh_vuc': chunk.linhVuc,
+    'nguon': chunk.nguon,
+    'embedding': encodeEmbedding(chunk.embedding),
+    'created_at': chunk.createdAt.toIso8601String(),
+  };
 
   ProfileChunk _fromRow(Map<String, Object?> row) => ProfileChunk(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        content: row['content'] as String,
-        linhVuc: row['linh_vuc'] as String?,
-        nguon: row['nguon'] as String?,
-        embedding: decodeEmbedding(row['embedding'] as Uint8List),
-        createdAt: DateTime.parse(row['created_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    content: row['content'] as String,
+    linhVuc: row['linh_vuc'] as String?,
+    nguon: row['nguon'] as String?,
+    embedding: decodeEmbedding(row['embedding'] as Uint8List),
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
 }

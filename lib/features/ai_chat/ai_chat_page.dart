@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/api_config.dart';
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/ai_conversation_repository.dart';
 import '../../data/repositories/ai_repository.dart';
@@ -19,8 +22,12 @@ class AiChatPage extends StatefulWidget {
 }
 
 class _AiChatPageState extends State<AiChatPage> {
-  final _aiConversationRepository = AiConversationRepository(AppDatabase.instance);
-  late final AiRepository _aiRepository = AiRepository(db: AppDatabase.instance);
+  final _aiConversationRepository = AiConversationRepository(
+    AppDatabase.instance,
+  );
+  late final AiRepository _aiRepository = AiRepository(
+    db: AppDatabase.instance,
+  );
   final _questionController = TextEditingController();
 
   late Future<List<AiConversation>> _conversationsFuture;
@@ -35,7 +42,9 @@ class _AiChatPageState extends State<AiChatPage> {
 
   void _reload() {
     setState(() {
-      _conversationsFuture = _aiConversationRepository.getForChild(widget.child.id);
+      _conversationsFuture = _aiConversationRepository.getForChild(
+        widget.child.id,
+      );
     });
   }
 
@@ -50,7 +59,10 @@ class _AiChatPageState extends State<AiChatPage> {
     if (question.isEmpty) return;
 
     if (!ApiConfig.hasAiConfig) {
-      setState(() => _errorMessage = 'Chưa cấu hình API key, tính năng AI hiện không khả dụng.');
+      setState(
+        () => _errorMessage =
+            'Chưa cấu hình API key, tính năng AI hiện không khả dụng.',
+      );
       return;
     }
 
@@ -79,16 +91,25 @@ class _AiChatPageState extends State<AiChatPage> {
           if (!ApiConfig.hasAiConfig)
             Container(
               width: double.infinity,
-              color: Theme.of(context).colorScheme.errorContainer,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: IrisColors.dangerSoft,
+              padding: const EdgeInsets.symmetric(
+                horizontal: IrisSpacing.md,
+                vertical: IrisSpacing.sm,
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(width: 12),
+                  const IrisMascot(
+                    asset: IrisAssets.mascotShield,
+                    height: IrisSizes.iconChip,
+                    semanticLabel: 'Gấu IRIS cầm khiên an toàn',
+                  ),
+                  const SizedBox(width: IrisSpacing.sm),
                   Expanded(
                     child: Text(
                       'Chưa cấu hình API key, tính năng AI hiện không khả dụng.',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],
@@ -105,27 +126,36 @@ class _AiChatPageState extends State<AiChatPage> {
                 if (conversations.isEmpty) {
                   return const Center(
                     child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Chưa có hỏi đáp nào. Hãy đặt câu hỏi bên dưới.'),
+                      padding: EdgeInsets.all(IrisSpacing.lg),
+                      child: Text(
+                        'Chưa có hỏi đáp nào. Hãy đặt câu hỏi bên dưới.',
+                      ),
                     ),
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: IrisSpacing.page,
                   itemCount: conversations.length,
-                  itemBuilder: (context, index) => _ConversationBubble(conversation: conversations[index]),
+                  itemBuilder: (context, index) =>
+                      _ConversationBubble(conversation: conversations[index]),
                 );
               },
             ),
           ),
           if (_errorMessage != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+              padding: const EdgeInsets.symmetric(
+                horizontal: IrisSpacing.md,
+                vertical: IrisSpacing.xxs,
+              ),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: IrisColors.danger),
+              ),
             ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(IrisSpacing.xs),
               child: Row(
                 children: [
                   Expanded(
@@ -138,7 +168,7 @@ class _AiChatPageState extends State<AiChatPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: IrisSpacing.xs),
                   _asking
                       ? const Padding(
                           padding: EdgeInsets.all(8),
@@ -148,7 +178,10 @@ class _AiChatPageState extends State<AiChatPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
-                      : IconButton(onPressed: _ask, icon: const Icon(Icons.send)),
+                      : IconButton(
+                          onPressed: _ask,
+                          icon: const Icon(Icons.send),
+                        ),
                 ],
               ),
             ),
@@ -172,37 +205,70 @@ class _ConversationBubble extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.all(12),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-            decoration: BoxDecoration(
-              color: Colors.teal.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
+            margin: const EdgeInsets.only(bottom: IrisSpacing.xxs),
+            padding: const EdgeInsets.all(IrisSpacing.sm),
+            constraints: BoxConstraints(
+              maxWidth:
+                  MediaQuery.of(context).size.width *
+                  IrisSizes.maxBubbleWidthFactor,
             ),
-            child: Text(conversation.question),
+            decoration: BoxDecoration(
+              color: IrisColors.primary,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(IrisRadii.card),
+                topRight: Radius.circular(IrisRadii.card),
+                bottomLeft: Radius.circular(IrisRadii.card),
+                bottomRight: Radius.circular(IrisSpacing.xxs),
+              ),
+            ),
+            child: Text(
+              conversation.question,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.white),
+            ),
           ),
         ),
         Align(
           alignment: Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(12),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(conversation.answer),
-                const SizedBox(height: 4),
-                Text(
-                  'Trạng thái ${conversation.state}',
-                  style: Theme.of(context).textTheme.labelSmall,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const IrisAssetIcon(asset: IrisAssets.iconAiChat),
+              const SizedBox(width: IrisSpacing.xs),
+              Container(
+                margin: const EdgeInsets.only(bottom: IrisSpacing.md),
+                padding: const EdgeInsets.all(IrisSpacing.sm),
+                constraints: BoxConstraints(
+                  maxWidth:
+                      MediaQuery.of(context).size.width *
+                          IrisSizes.maxBubbleWidthFactor -
+                      IrisSizes.iconChip -
+                      IrisSpacing.xs,
                 ),
-              ],
-            ),
+                decoration: const BoxDecoration(
+                  color: IrisColors.surface,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(IrisSpacing.xxs),
+                    topRight: Radius.circular(IrisRadii.card),
+                    bottomLeft: Radius.circular(IrisRadii.card),
+                    bottomRight: Radius.circular(IrisRadii.card),
+                  ),
+                  boxShadow: IrisShadows.soft,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(conversation.answer),
+                    const SizedBox(height: IrisSpacing.xxs),
+                    Text(
+                      'Trạng thái ${conversation.state}',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],

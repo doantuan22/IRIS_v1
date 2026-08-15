@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_theme.dart';
 import '../../domain/models/child.dart';
 import 'assessment_summary_page.dart';
 
@@ -9,11 +10,18 @@ class ScreeningResultPage extends StatelessWidget {
   final String score;
   final String resultSummary;
 
+  /// `true` khi bài sàng lọc này thực hiện trong luồng onboarding ngay sau
+  /// khi tạo hồ sơ — khi đó nút "Tiếp tục" dẫn thẳng về `HomePage` (xoá
+  /// back-stack) thay vì vào Bước 4 (`AssessmentSummaryPage`) như luồng gọi
+  /// từ `ProfileDetailPage._openScreening()`.
+  final bool isOnboarding;
+
   const ScreeningResultPage({
     super.key,
     required this.child,
     required this.score,
     required this.resultSummary,
+    this.isOnboarding = false,
   });
 
   /// Tách "x/y" từ [score] để tính tỉ lệ cho vòng tròn điểm — chỉ phục vụ
@@ -42,11 +50,14 @@ class ScreeningResultPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Kết quả sàng lọc')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(IrisSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Kết quả cho ${child.name}', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Kết quả cho ${child.name}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             Center(
               child: SizedBox(
@@ -61,25 +72,38 @@ class ScreeningResultPage extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: _ratio,
                         strokeWidth: 14,
-                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                        color: _ratio < 0.5
+                            ? IrisColors.primary
+                            : IrisColors.warning,
+                        backgroundColor: IrisColors.neutralSoft,
                       ),
                     ),
-                    Text(score, style: Theme.of(context).textTheme.headlineMedium),
+                    Text(
+                      score,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Text(_levelLabel, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              _levelLabel,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             Card(
-              color: Colors.amber.withValues(alpha: 0.15),
+              color: IrisColors.warningSoft,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: IrisSpacing.card,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Điểm: $score', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Điểm: $score',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     Text(resultSummary),
                   ],
@@ -94,9 +118,17 @@ class ScreeningResultPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             FilledButton(
-              onPressed: () => Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => AssessmentSummaryPage(child: child)),
-              ),
+              onPressed: () {
+                if (isOnboarding) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  return;
+                }
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => AssessmentSummaryPage(child: child),
+                  ),
+                );
+              },
               child: const Text('Tiếp tục'),
             ),
           ],
@@ -105,4 +137,3 @@ class ScreeningResultPage extends StatelessWidget {
     );
   }
 }
-

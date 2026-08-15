@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../domain/models/child.dart';
 import '../../domain/services/screening_question_bank.dart';
 import 'screening_questionnaire_page.dart';
@@ -9,8 +12,13 @@ import 'screening_questionnaire_page.dart';
 /// hỏi ngay khi chọn "Có".
 class ScreeningToolConfirmPage extends StatelessWidget {
   final Child child;
+  final bool isOnboarding;
 
-  const ScreeningToolConfirmPage({super.key, required this.child});
+  const ScreeningToolConfirmPage({
+    super.key,
+    required this.child,
+    this.isOnboarding = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +35,25 @@ class ScreeningToolConfirmPage extends StatelessWidget {
               'Công cụ sàng lọc sẽ dùng cho ${child.name} (${formatAgeLabel(child)}):',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
+            const IrisMascot(
+              asset: IrisAssets.mascotClipboard,
+              height: IrisSizes.mascotSmall,
+              semanticLabel: 'Gấu IRIS cầm bảng hồ sơ',
+            ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Công cụ sẽ sử dụng: ${questionSet.label}',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Công cụ sẽ sử dụng: ${questionSet.label}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
-                    Text('Gồm ${questionSet.questions.length} câu hỏi có/không, chọn tự động theo độ tuổi hiện tại của trẻ.'),
+                    Text(
+                      'Gồm ${questionSet.questions.length} câu hỏi có/không, chọn tự động theo độ tuổi hiện tại của trẻ.',
+                    ),
                   ],
                 ),
               ),
@@ -45,7 +61,12 @@ class ScreeningToolConfirmPage extends StatelessWidget {
             const SizedBox(height: 32),
             FilledButton(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ScreeningQuestionnairePage(child: child)),
+                MaterialPageRoute(
+                  builder: (_) => ScreeningQuestionnairePage(
+                    child: child,
+                    isOnboarding: isOnboarding,
+                  ),
+                ),
               ),
               child: const Text('Bắt đầu'),
             ),

@@ -44,7 +44,11 @@ class VideoRepository {
     return rows.map(_fromRow).toList();
   }
 
-  Future<void> updateStatus(String id, String status, {String? expertNote}) async {
+  Future<void> updateStatus(
+    String id,
+    String status, {
+    String? expertNote,
+  }) async {
     final db = await _db.database;
     final values = <String, Object?>{'status': status};
     if (expertNote != null) values['expert_note'] = expertNote;
@@ -56,7 +60,12 @@ class VideoRepository {
   /// xoá được — không được để lỗi ở bước này chặn việc xoá dòng DB.
   Future<void> delete(String id) async {
     final db = await _db.database;
-    final rows = await db.query('videos', columns: ['file_path'], where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query(
+      'videos',
+      columns: ['file_path'],
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     await db.delete('videos', where: 'id = ?', whereArgs: [id]);
 
     if (rows.isNotEmpty) {
@@ -78,22 +87,22 @@ class VideoRepository {
   }
 
   Map<String, Object?> _toRow(Video video) => {
-        'id': video.id,
-        'child_id': video.childId,
-        'situation': video.situation,
-        'file_path': video.filePath,
-        'status': video.status,
-        'expert_note': video.expertNote,
-        'recorded_at': video.recordedAt.toIso8601String(),
-      };
+    'id': video.id,
+    'child_id': video.childId,
+    'situation': video.situation,
+    'file_path': video.filePath,
+    'status': video.status,
+    'expert_note': video.expertNote,
+    'recorded_at': video.recordedAt.toIso8601String(),
+  };
 
   Video _fromRow(Map<String, Object?> row) => Video(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        situation: row['situation'] as String?,
-        filePath: row['file_path'] as String,
-        status: row['status'] as String? ?? 'not_sent',
-        expertNote: row['expert_note'] as String?,
-        recordedAt: DateTime.parse(row['recorded_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    situation: row['situation'] as String?,
+    filePath: row['file_path'] as String,
+    status: row['status'] as String? ?? 'not_sent',
+    expertNote: row['expert_note'] as String?,
+    recordedAt: DateTime.parse(row['recorded_at'] as String),
+  );
 }

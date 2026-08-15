@@ -91,6 +91,8 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/reference/
+    - assets/images/mascot/
+    - assets/images/icons/
     - assets/videos/quan_he_xa_hoi/
     - assets/videos/ngon_ngu/
     - assets/videos/nhan_thuc/

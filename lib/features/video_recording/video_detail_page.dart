@@ -58,7 +58,9 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
       if (!mounted) return;
       setState(() => _playerController = controller);
     } catch (e) {
-      if (mounted) setState(() => _playerError = 'Không phát lại được video: $e');
+      if (mounted) {
+        setState(() => _playerError = 'Không phát lại được video: $e');
+      }
     }
   }
 
@@ -80,8 +82,14 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
               : 'Video này sẽ bị xoá vĩnh viễn, không thể khôi phục.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
-          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xoá')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Xoá'),
+          ),
         ],
       ),
     );
@@ -92,9 +100,9 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không xoá được video: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Không xoá được video: $e')));
       }
     }
   }
@@ -103,8 +111,14 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
     if (_simulating) return;
     setState(() => _simulating = true);
     try {
-      final note = _expertNoteTemplates[_video.id.hashCode.abs() % _expertNoteTemplates.length];
-      await _videoRepository.updateStatus(_video.id, 'reviewed', expertNote: note);
+      final note =
+          _expertNoteTemplates[_video.id.hashCode.abs() %
+              _expertNoteTemplates.length];
+      await _videoRepository.updateStatus(
+        _video.id,
+        'reviewed',
+        expertNote: note,
+      );
       if (!mounted) return;
       setState(() {
         _video = Video(
@@ -129,10 +143,10 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'reviewed' => '🟢 Đã có nhận xét',
-        'pending' => '🟡 Đang chờ chuyên gia',
-        _ => 'Chưa gửi',
-      };
+    'reviewed' => '🟢 Đã có nhận xét',
+    'pending' => '🟡 Đang chờ chuyên gia',
+    _ => 'Chưa gửi',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -156,18 +170,28 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
         children: [
           _buildPlayer(),
           const SizedBox(height: 16),
-          if (_video.situation != null && _video.situation!.trim().isNotEmpty) ...[
-            Text('Tình huống: ${_video.situation}', style: Theme.of(context).textTheme.titleMedium),
+          if (_video.situation != null &&
+              _video.situation!.trim().isNotEmpty) ...[
+            Text(
+              'Tình huống: ${_video.situation}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
           ],
-          Text('Trạng thái: ${_statusLabel(_video.status)}', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Trạng thái: ${_statusLabel(_video.status)}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 4),
           Text(
             'Ngày quay: ${_video.recordedAt.day}/${_video.recordedAt.month}/${_video.recordedAt.year}',
           ),
           const SizedBox(height: 16),
           if (_video.expertNote != null) ...[
-            Text('Nhận xét chuyên gia', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              'Nhận xét chuyên gia',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 4),
             Text(_video.expertNote!),
           ],
@@ -207,7 +231,9 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
         ),
         IconButton(
           iconSize: 48,
-          icon: Icon(controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle),
+          icon: Icon(
+            controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle,
+          ),
           onPressed: () => setState(() {
             controller.value.isPlaying ? controller.pause() : controller.play();
           }),

@@ -27,7 +27,7 @@ import 'validate_so_sanh_data.dart' show SoSanhValidationReport, validateSoSanhD
 ///
 /// File kết quả mặc định `iris_so_sanh_seed.db` nằm ở thư mục gốc repo —
 /// KHÔNG phải database thật trên thiết bị/emulator. Để đưa dữ liệu vào app
-/// thật, dùng nút "Debug: Nạp dữ liệu tham khảo" trong `ProfileDetailPage`
+/// thật, dùng nút "Debug: Nạp dữ liệu tham khảo" trong `ChildDebugPage`
 /// sau khi đã thêm `expert_content_so_sanh.json` vào danh sách file mà nút
 /// đó đọc (file JSON của "so sánh" tách riêng khỏi `expert_content.json`
 /// theo đúng yêu cầu, không gộp chung).

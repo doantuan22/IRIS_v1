@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../domain/models/child.dart';
 import 'video_recording_capture_page.dart';
 
@@ -22,7 +25,7 @@ class VideoPreparationPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Chuẩn bị quay video')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: IrisSpacing.page,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -36,7 +39,10 @@ class VideoPreparationPage extends StatelessWidget {
                 children: _tips
                     .map(
                       (tip) => ListTile(
-                        leading: const Icon(Icons.check_circle_outline, color: Colors.teal),
+                        leading: const IrisIconChip(
+                          icon: Icons.check_rounded,
+                          color: IrisColors.success,
+                        ),
                         title: Text(tip),
                       ),
                     )
@@ -49,7 +55,10 @@ class VideoPreparationPage extends StatelessWidget {
                   builder: (_) => VideoRecordingCapturePage(child: child),
                 ),
               ),
-              icon: const Icon(Icons.videocam),
+              icon: const IrisAssetIcon(
+                asset: IrisAssets.iconVideo,
+                size: IrisSizes.iconMedium,
+              ),
               label: const Text('Bắt đầu quay'),
             ),
           ],

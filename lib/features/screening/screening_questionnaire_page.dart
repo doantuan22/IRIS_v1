@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_theme.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -9,14 +10,21 @@ import 'screening_result_page.dart';
 
 class ScreeningQuestionnairePage extends StatefulWidget {
   final Child child;
+  final bool isOnboarding;
 
-  const ScreeningQuestionnairePage({super.key, required this.child});
+  const ScreeningQuestionnairePage({
+    super.key,
+    required this.child,
+    this.isOnboarding = false,
+  });
 
   @override
-  State<ScreeningQuestionnairePage> createState() => _ScreeningQuestionnairePageState();
+  State<ScreeningQuestionnairePage> createState() =>
+      _ScreeningQuestionnairePageState();
 }
 
-class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage> {
+class _ScreeningQuestionnairePageState
+    extends State<ScreeningQuestionnairePage> {
   final _screeningRepository = ScreeningRepository(AppDatabase.instance);
   final _historyLogRepository = HistoryLogRepository(AppDatabase.instance);
   final Map<int, bool> _answers = {};
@@ -24,8 +32,9 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
 
   /// Bộ câu hỏi mock phù hợp theo tuổi trẻ (Chức năng #3 roadmap — "Xác định
   /// hướng đánh giá theo độ tuổi"), không dùng cứng 1 bộ cho mọi độ tuổi.
-  late final ScreeningQuestionSet _questionSet =
-      selectScreeningQuestionSet(childAgeInMonths(widget.child));
+  late final ScreeningQuestionSet _questionSet = selectScreeningQuestionSet(
+    childAgeInMonths(widget.child),
+  );
 
   bool get _allAnswered => _answers.length == _questionSet.questions.length;
 
@@ -38,7 +47,9 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
     }
 
     setState(() => _saving = true);
-    final flaggedCount = _answers.values.where((answeredYes) => answeredYes).length;
+    final flaggedCount = _answers.values
+        .where((answeredYes) => answeredYes)
+        .length;
     final total = _questionSet.questions.length;
     final resultSummary =
         'Có $flaggedCount/$total câu hỏi ghi nhận dấu hiệu cần chú ý. '
@@ -73,6 +84,7 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
           child: widget.child,
           score: screening.score ?? '$flaggedCount/$total',
           resultSummary: resultSummary,
+          isOnboarding: widget.isOnboarding,
         ),
       ),
     );
@@ -139,9 +151,12 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
                       Expanded(
                         child: OutlinedButton(
                           style: answer == true
-                              ? OutlinedButton.styleFrom(backgroundColor: Colors.orange.withValues(alpha: 0.2))
+                              ? OutlinedButton.styleFrom(
+                                  backgroundColor: IrisColors.warningSoft,
+                                )
                               : null,
-                          onPressed: () => setState(() => _answers[questionIndex] = true),
+                          onPressed: () =>
+                              setState(() => _answers[questionIndex] = true),
                           child: const Text('Có'),
                         ),
                       ),
@@ -150,9 +165,12 @@ class _ScreeningQuestionnairePageState extends State<ScreeningQuestionnairePage>
                         child: OutlinedButton(
                           key: ValueKey('answer_no_$questionIndex'),
                           style: answer == false
-                              ? OutlinedButton.styleFrom(backgroundColor: Colors.green.withValues(alpha: 0.2))
+                              ? OutlinedButton.styleFrom(
+                                  backgroundColor: IrisColors.successSoft,
+                                )
                               : null,
-                          onPressed: () => setState(() => _answers[questionIndex] = false),
+                          onPressed: () =>
+                              setState(() => _answers[questionIndex] = false),
                           child: const Text('Không'),
                         ),
                       ),

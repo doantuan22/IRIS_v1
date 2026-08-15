@@ -61,22 +61,22 @@ class OverviewSummaryRepository {
   }
 
   Map<String, Object?> _toRow(OverviewSummary summary) => {
-        'id': summary.id,
-        'child_id': summary.childId,
-        'tier': summary.tier,
-        'so_linh_vuc_can_theo_doi': summary.soLinhVucCanTheoDoi,
-        'so_linh_vuc_thieu_du_lieu': summary.soLinhVucThieuDuLieu,
-        'mo_ta_tong_hop': summary.moTaTongHop,
-        'computed_at': summary.computedAt.toIso8601String(),
-      };
+    'id': summary.id,
+    'child_id': summary.childId,
+    'tier': summary.tier,
+    'so_linh_vuc_can_theo_doi': summary.soLinhVucCanTheoDoi,
+    'so_linh_vuc_thieu_du_lieu': summary.soLinhVucThieuDuLieu,
+    'mo_ta_tong_hop': summary.moTaTongHop,
+    'computed_at': summary.computedAt.toIso8601String(),
+  };
 
   OverviewSummary _fromRow(Map<String, Object?> row) => OverviewSummary(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        tier: row['tier'] as String,
-        soLinhVucCanTheoDoi: row['so_linh_vuc_can_theo_doi'] as int,
-        soLinhVucThieuDuLieu: row['so_linh_vuc_thieu_du_lieu'] as int,
-        moTaTongHop: row['mo_ta_tong_hop'] as String?,
-        computedAt: DateTime.parse(row['computed_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    tier: row['tier'] as String,
+    soLinhVucCanTheoDoi: row['so_linh_vuc_can_theo_doi'] as int,
+    soLinhVucThieuDuLieu: row['so_linh_vuc_thieu_du_lieu'] as int,
+    moTaTongHop: row['mo_ta_tong_hop'] as String?,
+    computedAt: DateTime.parse(row['computed_at'] as String),
+  );
 }

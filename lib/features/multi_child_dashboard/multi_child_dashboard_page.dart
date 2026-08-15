@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/domains.dart';
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/child_repository.dart';
@@ -18,7 +21,11 @@ class _ChildSummary {
   final int doneDomainCount;
   final DateTime? lastUpdated;
 
-  const _ChildSummary({required this.child, required this.doneDomainCount, required this.lastUpdated});
+  const _ChildSummary({
+    required this.child,
+    required this.doneDomainCount,
+    required this.lastUpdated,
+  });
 }
 
 /// Phụ lục 1 — Tổng quan quản lý nhiều trẻ, dành cho phụ huynh nhiều con /
@@ -29,7 +36,8 @@ class MultiChildDashboardPage extends StatefulWidget {
   const MultiChildDashboardPage({super.key});
 
   @override
-  State<MultiChildDashboardPage> createState() => _MultiChildDashboardPageState();
+  State<MultiChildDashboardPage> createState() =>
+      _MultiChildDashboardPageState();
 }
 
 class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
@@ -50,7 +58,9 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     _reload();
     _activeChildIdFuture = _activeChildService.getActiveChildId();
     _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+      setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
   }
 
@@ -77,14 +87,18 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     final result = <_ChildSummary>[];
     for (final child in children) {
       final assessments = await _assessmentRepository.getForChild(child.id);
-      final doneDomains =
-          assessments.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet();
+      final doneDomains = assessments
+          .where((a) => a.contentType == 'mo_ta')
+          .map((a) => a.linhVuc)
+          .toSet();
       final logs = await _historyLogRepository.getForChild(child.id);
-      result.add(_ChildSummary(
-        child: child,
-        doneDomainCount: doneDomains.length,
-        lastUpdated: logs.isNotEmpty ? logs.first.eventDate : null,
-      ));
+      result.add(
+        _ChildSummary(
+          child: child,
+          doneDomainCount: doneDomains.length,
+          lastUpdated: logs.isNotEmpty ? logs.first.eventDate : null,
+        ),
+      );
     }
     return result;
   }
@@ -116,7 +130,11 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
 
   List<_ChildSummary> _applySearchAndFilter(List<_ChildSummary> list) {
     return list
-        .where((s) => _searchQuery.isEmpty || s.child.name.toLowerCase().contains(_searchQuery))
+        .where(
+          (s) =>
+              _searchQuery.isEmpty ||
+              s.child.name.toLowerCase().contains(_searchQuery),
+        )
         .where(_matchesFilter)
         .toList();
   }
@@ -129,9 +147,9 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
         );
         _reload();
       case 'history':
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => HistoryPage(child: child)),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => HistoryPage(child: child)));
         _reload();
       case 'archive':
         await _childRepository.archive(child.id);
@@ -149,8 +167,14 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
               'Toàn bộ dữ liệu sàng lọc, đánh giá, video của trẻ này sẽ bị xoá vĩnh viễn.',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
-              TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xoá')),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Huỷ'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Xoá'),
+              ),
             ],
           ),
         );
@@ -166,9 +190,9 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
   }
 
   Future<void> _openCreateProfile() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CreateProfilePage()),
-    );
+    final created = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const CreateProfilePage()));
     if (created == true) _reload();
   }
 
@@ -187,9 +211,16 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
           child: Center(
             child: Column(
               children: [
-                Text('$value', style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  '$value',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: 4),
-                Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -204,15 +235,24 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     final isActive = child.id == activeChildId;
     return Card(
       child: ListTile(
-        leading: CircleAvatar(child: Text(child.name.isNotEmpty ? child.name[0] : '?')),
+        leading: const IrisAssetIcon(asset: IrisAssets.iconChildProfile),
         title: Row(
           children: [
             Flexible(child: Text(child.name)),
             if (isActive) ...[
               const SizedBox(width: 8),
-              const Icon(Icons.check_circle, size: 16, color: Colors.green),
+              const Icon(
+                Icons.check_circle,
+                size: 16,
+                color: IrisColors.success,
+              ),
               const SizedBox(width: 2),
-              Text('Đang dùng', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.green)),
+              Text(
+                'Đang dùng',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: IrisColors.success),
+              ),
             ],
           ],
         ),
@@ -226,11 +266,20 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
           onSelected: (value) => _handleMenuAction(value, child),
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'view', child: Text('Xem hồ sơ')),
-            const PopupMenuItem(value: 'history', child: Text('Lịch sử đánh giá')),
+            const PopupMenuItem(
+              value: 'history',
+              child: Text('Lịch sử đánh giá'),
+            ),
             if (child.status == 'active')
-              const PopupMenuItem(value: 'archive', child: Text('Lưu trữ hồ sơ'))
+              const PopupMenuItem(
+                value: 'archive',
+                child: Text('Lưu trữ hồ sơ'),
+              )
             else
-              const PopupMenuItem(value: 'unarchive', child: Text('Khôi phục hồ sơ')),
+              const PopupMenuItem(
+                value: 'unarchive',
+                child: Text('Khôi phục hồ sơ'),
+              ),
             const PopupMenuItem(value: 'delete', child: Text('Xoá hồ sơ')),
           ],
         ),
@@ -238,15 +287,25 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
     );
   }
 
-  Widget _buildList(List<_ChildSummary> summaries, String emptyMessage, String? activeChildId) {
+  Widget _buildList(
+    List<_ChildSummary> summaries,
+    String emptyMessage,
+    String? activeChildId,
+  ) {
     final filtered = _applySearchAndFilter(summaries);
     if (filtered.isEmpty) {
-      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(emptyMessage)));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(emptyMessage),
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: filtered.length,
-      itemBuilder: (context, index) => _buildChildTile(filtered[index], activeChildId),
+      itemBuilder: (context, index) =>
+          _buildChildTile(filtered[index], activeChildId),
     );
   }
 
@@ -265,7 +324,10 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
             ),
           ],
           bottom: const TabBar(
-            tabs: [Tab(text: 'Đang quản lý'), Tab(text: 'Đã lưu trữ')],
+            tabs: [
+              Tab(text: 'Đang quản lý'),
+              Tab(text: 'Đã lưu trữ'),
+            ],
           ),
         ),
         body: FutureBuilder<List<_ChildSummary>>(
@@ -278,11 +340,21 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                      const Icon(
+                        Icons.error_outline,
+                        color: IrisColors.danger,
+                        size: 40,
+                      ),
                       const SizedBox(height: 12),
-                      Text('Không tải được dữ liệu tổng quan: ${snapshot.error}', textAlign: TextAlign.center),
+                      Text(
+                        'Không tải được dữ liệu tổng quan: ${snapshot.error}',
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 12),
-                      OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                      OutlinedButton(
+                        onPressed: _reload,
+                        child: const Text('Thử lại'),
+                      ),
                     ],
                   ),
                 ),
@@ -292,14 +364,26 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
               return const Center(child: CircularProgressIndicator());
             }
             final all = snapshot.data!;
-            final active = all.where((s) => s.child.status == 'active').toList();
-            final archived = all.where((s) => s.child.status == 'archived').toList();
+            final active = all
+                .where((s) => s.child.status == 'active')
+                .toList();
+            final archived = all
+                .where((s) => s.child.status == 'archived')
+                .toList();
             final total = active.length;
-            final doneCount = active.where((s) => s.doneDomainCount == domains.length).length;
-            final inProgressCount = active
-                .where((s) => s.doneDomainCount > 0 && s.doneDomainCount < domains.length)
+            final doneCount = active
+                .where((s) => s.doneDomainCount == domains.length)
                 .length;
-            final notStartedCount = active.where((s) => s.doneDomainCount == 0).length;
+            final inProgressCount = active
+                .where(
+                  (s) =>
+                      s.doneDomainCount > 0 &&
+                      s.doneDomainCount < domains.length,
+                )
+                .length;
+            final notStartedCount = active
+                .where((s) => s.doneDomainCount == 0)
+                .length;
 
             return Column(
               children: [
@@ -335,14 +419,26 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
                       const SizedBox(width: 8),
                       DropdownButton<_ProgressFilter>(
                         value: _filter,
-                        onChanged: (value) => setState(() => _filter = value ?? _ProgressFilter.all),
+                        onChanged: (value) => setState(
+                          () => _filter = value ?? _ProgressFilter.all,
+                        ),
                         items: const [
-                          DropdownMenuItem(value: _ProgressFilter.all, child: Text('Tất cả')),
                           DropdownMenuItem(
-                              value: _ProgressFilter.notStarted, child: Text('Chưa đánh giá')),
+                            value: _ProgressFilter.all,
+                            child: Text('Tất cả'),
+                          ),
                           DropdownMenuItem(
-                              value: _ProgressFilter.inProgress, child: Text('Đang đánh giá')),
-                          DropdownMenuItem(value: _ProgressFilter.done, child: Text('Đã đánh giá')),
+                            value: _ProgressFilter.notStarted,
+                            child: Text('Chưa đánh giá'),
+                          ),
+                          DropdownMenuItem(
+                            value: _ProgressFilter.inProgress,
+                            child: Text('Đang đánh giá'),
+                          ),
+                          DropdownMenuItem(
+                            value: _ProgressFilter.done,
+                            child: Text('Đã đánh giá'),
+                          ),
                         ],
                       ),
                     ],
@@ -356,8 +452,16 @@ class _MultiChildDashboardPageState extends State<MultiChildDashboardPage> {
                       final activeChildId = activeSnapshot.data;
                       return TabBarView(
                         children: [
-                          _buildList(active, 'Chưa có hồ sơ trẻ nào đang quản lý. Bấm "+" để thêm trẻ.', activeChildId),
-                          _buildList(archived, 'Chưa có hồ sơ nào được lưu trữ.', activeChildId),
+                          _buildList(
+                            active,
+                            'Chưa có hồ sơ trẻ nào đang quản lý. Bấm "+" để thêm trẻ.',
+                            activeChildId,
+                          ),
+                          _buildList(
+                            archived,
+                            'Chưa có hồ sơ nào được lưu trữ.',
+                            activeChildId,
+                          ),
                         ],
                       );
                     },

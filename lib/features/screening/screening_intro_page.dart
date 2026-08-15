@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../domain/models/child.dart';
 import 'assessment_summary_page.dart';
 import 'screening_tool_confirm_page.dart';
@@ -16,7 +19,19 @@ import 'screening_tool_confirm_page.dart';
 class ScreeningIntroPage extends StatelessWidget {
   final Child child;
 
-  const ScreeningIntroPage({super.key, required this.child});
+  /// `true` khi màn này được vào ngay sau khi tạo hồ sơ trẻ (luồng
+  /// onboarding từ `CreateProfilePage`) — khi đó cả 2 nhánh đều kết thúc
+  /// thẳng ở `HomePage` (xoá back-stack) thay vì tiếp tục vào Bước 4 (tổng
+  /// hợp hồ sơ & đề xuất hướng đánh giá) như luồng gọi từ
+  /// `ProfileDetailPage._openScreening()`. Không đổi logic bài sàng lọc,
+  /// chỉ đổi điểm đến điều hướng.
+  final bool isOnboarding;
+
+  const ScreeningIntroPage({
+    super.key,
+    required this.child,
+    this.isOnboarding = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,18 +54,35 @@ class ScreeningIntroPage extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const IrisMascot(
+              asset: IrisAssets.mascotWaving,
+              height: IrisSizes.mascotMedium,
+              semanticLabel: 'Gấu IRIS vẫy chào',
+            ),
             FilledButton(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ScreeningToolConfirmPage(child: child)),
+                MaterialPageRoute(
+                  builder: (_) => ScreeningToolConfirmPage(
+                    child: child,
+                    isOnboarding: isOnboarding,
+                  ),
+                ),
               ),
               child: const Text('Có'),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => AssessmentSummaryPage(child: child)),
-              ),
+              onPressed: () {
+                if (isOnboarding) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  return;
+                }
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AssessmentSummaryPage(child: child),
+                  ),
+                );
+              },
               child: const Text('Chưa muốn'),
             ),
           ],

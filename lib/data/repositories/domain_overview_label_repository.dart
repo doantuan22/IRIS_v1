@@ -35,7 +35,9 @@ class DomainOverviewLabelRepository {
   /// Nhãn MỚI NHẤT (theo `computed_at`) cho MỖI lĩnh vực đã từng gắn nhãn
   /// của [childId] — key là `linh_vuc`. Lĩnh vực chưa từng gắn nhãn lần nào
   /// sẽ không xuất hiện trong map trả về (không có giá trị mặc định).
-  Future<Map<String, DomainOverviewLabel>> getLatestForChild(String childId) async {
+  Future<Map<String, DomainOverviewLabel>> getLatestForChild(
+    String childId,
+  ) async {
     final db = await _db.database;
     final rows = await db.query(
       'domain_overview_labels',
@@ -54,20 +56,20 @@ class DomainOverviewLabelRepository {
   }
 
   Map<String, Object?> _toRow(DomainOverviewLabel label) => {
-        'id': label.id,
-        'child_id': label.childId,
-        'linh_vuc': label.linhVuc,
-        'nhan': label.nhan,
-        'ly_do_ngan_gon': label.lyDoNganGon,
-        'computed_at': label.computedAt.toIso8601String(),
-      };
+    'id': label.id,
+    'child_id': label.childId,
+    'linh_vuc': label.linhVuc,
+    'nhan': label.nhan,
+    'ly_do_ngan_gon': label.lyDoNganGon,
+    'computed_at': label.computedAt.toIso8601String(),
+  };
 
   DomainOverviewLabel _fromRow(Map<String, Object?> row) => DomainOverviewLabel(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        linhVuc: row['linh_vuc'] as String,
-        nhan: row['nhan'] as String,
-        lyDoNganGon: row['ly_do_ngan_gon'] as String?,
-        computedAt: DateTime.parse(row['computed_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    linhVuc: row['linh_vuc'] as String,
+    nhan: row['nhan'] as String,
+    lyDoNganGon: row['ly_do_ngan_gon'] as String?,
+    computedAt: DateTime.parse(row['computed_at'] as String),
+  );
 }

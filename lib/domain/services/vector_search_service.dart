@@ -10,7 +10,10 @@ class VectorSearchService {
   final ProfileChunkRepository _profileChunkRepository;
   final ExpertKnowledgeRepository _expertKnowledgeRepository;
 
-  VectorSearchService(this._profileChunkRepository, this._expertKnowledgeRepository);
+  VectorSearchService(
+    this._profileChunkRepository,
+    this._expertKnowledgeRepository,
+  );
 
   /// Trả 0 (coi như không liên quan) thay vì ném lỗi khi 2 vector khác chiều
   /// dài — dữ liệu embedding không đồng nhất/corrupt (VD đổi model embedding
@@ -38,13 +41,16 @@ class VectorSearchService {
     int topK = 8,
   }) async {
     final chunks = await _profileChunkRepository.getForChild(childId);
-    final scored = chunks
-        .map((chunk) => ScoredProfileChunk(
-              chunk: chunk,
-              similarity: cosineSimilarity(chunk.embedding, queryEmbedding),
-            ))
-        .toList()
-      ..sort((a, b) => b.similarity.compareTo(a.similarity));
+    final scored =
+        chunks
+            .map(
+              (chunk) => ScoredProfileChunk(
+                chunk: chunk,
+                similarity: cosineSimilarity(chunk.embedding, queryEmbedding),
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.similarity.compareTo(a.similarity));
     return scored.take(topK).toList();
   }
 
@@ -57,14 +63,19 @@ class VectorSearchService {
     List<double> queryEmbedding, {
     int topK = 3,
   }) async {
-    final chunks = await _expertKnowledgeRepository.query(ageInMonths: ageMonths);
-    final scored = chunks
-        .map((chunk) => ScoredExpertChunk(
-              chunk: chunk,
-              similarity: cosineSimilarity(chunk.embedding, queryEmbedding),
-            ))
-        .toList()
-      ..sort((a, b) => b.similarity.compareTo(a.similarity));
+    final chunks = await _expertKnowledgeRepository.query(
+      ageInMonths: ageMonths,
+    );
+    final scored =
+        chunks
+            .map(
+              (chunk) => ScoredExpertChunk(
+                chunk: chunk,
+                similarity: cosineSimilarity(chunk.embedding, queryEmbedding),
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.similarity.compareTo(a.similarity));
     return scored.take(topK).toList();
   }
 }

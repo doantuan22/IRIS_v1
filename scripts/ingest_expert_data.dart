@@ -28,7 +28,8 @@ import 'package:uuid/uuid.dart';
 /// `path_provider`, chỉ tồn tại khi chạy trong Flutter engine thật).
 ///
 /// ĐỂ NẠP DỮ LIỆU VÀO APP THẬT: dùng nút "Debug: Nạp dữ liệu tham khảo"
-/// trong `ProfileDetailPage` (chỉ hiện ở debug mode) — nút đó đọc đúng file
+/// trong `ChildDebugPage` (vào qua icon debug — chỉ hiện ở debug mode — trên
+/// `ProfileDetailPage`) — nút đó đọc đúng file
 /// JSON này qua `rootBundle` và insert thẳng vào database thật của app đang
 /// chạy qua `ExpertKnowledgeRepository`. Script này chỉ dùng để test nhanh
 /// logic parse/gọi API trên desktop (xem `test/ingest_expert_data_test.dart`),

@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/domains.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../domain/models/child.dart';
 import 'domain_hub_page.dart';
 import 'overview/overview_portrait_page.dart';
-
-/// Icon minh hoạ cho từng lĩnh vực — chỉ phục vụ hiển thị (Material icon có
-/// sẵn), không ảnh hưởng logic/schema.
-const Map<String, IconData> _domainIcons = {
-  'nhan_thuc': Icons.psychology_outlined,
-  'cam_xuc': Icons.mood_outlined,
-  'giac_quan': Icons.visibility_outlined,
-  'quan_he_xa_hoi': Icons.groups_outlined,
-  'ngon_ngu': Icons.record_voice_over_outlined,
-  'sinh_hoc': Icons.favorite_outline,
-  'sinh_hoat_ca_nhan': Icons.self_improvement_outlined,
-};
 
 /// Bước 5 — Danh sách 7 lĩnh vực đánh giá. Mỗi item hiện trạng thái đơn
 /// giản dựa trên việc đã có bản ghi `assessments` (content_type='mo_ta')
@@ -49,7 +39,10 @@ class _DomainListPageState extends State<DomainListPage> {
 
   Future<Set<String>> _loadDomainsWithDescription() async {
     final all = await _assessmentRepository.getForChild(widget.child.id);
-    return all.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet();
+    return all
+        .where((a) => a.contentType == 'mo_ta')
+        .map((a) => a.linhVuc)
+        .toSet();
   }
 
   @override
@@ -81,18 +74,30 @@ class _DomainListPageState extends State<DomainListPage> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  IrisSpacing.md,
+                  IrisSpacing.md,
+                  IrisSpacing.md,
+                  IrisSpacing.xs,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Tiến độ: $doneCount/$total lĩnh vực'),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(value: total == 0 ? 0 : doneCount / total),
+                    const SizedBox(height: IrisSpacing.xs),
+                    LinearProgressIndicator(
+                      value: total == 0 ? 0 : doneCount / total,
+                    ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  IrisSpacing.md,
+                  0,
+                  IrisSpacing.md,
+                  IrisSpacing.xs,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -105,44 +110,61 @@ class _DomainListPageState extends State<DomainListPage> {
                     else ...[
                       Row(
                         children: [
-                          const Icon(Icons.celebration_outlined, color: Colors.green),
-                          const SizedBox(width: 8),
-                          const Expanded(child: Text('Bạn đã hoàn thành đánh giá cả 7 lĩnh vực!')),
+                          const Icon(
+                            Icons.celebration_rounded,
+                            color: IrisColors.success,
+                          ),
+                          const SizedBox(width: IrisSpacing.xs),
+                          const Expanded(
+                            child: Text(
+                              'Bạn đã hoàn thành đánh giá cả 7 lĩnh vực!',
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => OverviewPortraitPage(child: widget.child)),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                OverviewPortraitPage(child: widget.child),
+                          ),
                         ),
                         icon: const Icon(Icons.auto_awesome_outlined),
                         label: const Text('Xem Chân dung toàn cảnh'),
                       ),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: IrisSpacing.xs),
                     Text(
                       'Bạn không cần hoàn thành tất cả 7 lĩnh vực trong cùng một phiên. '
                       'Hãy đánh giá theo nhịp độ phù hợp của bạn và bé.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
                     ),
                   ],
                 ),
               ),
               Expanded(
                 child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: IrisSpacing.page,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                    mainAxisSpacing: IrisSpacing.sm,
+                    crossAxisSpacing: IrisSpacing.sm,
                     childAspectRatio: 1.1,
                   ),
                   itemCount: domains.length,
                   itemBuilder: (context, index) {
                     final domain = domains[index];
-                    final hasDescription = domainsWithDescription.contains(domain.code);
+                    final hasDescription = domainsWithDescription.contains(
+                      domain.code,
+                    );
+                    final accent = IrisDomainStyle.colorOf(domain.code);
                     return Card(
+                      color: IrisDomainStyle.softColorOf(domain.code),
                       child: InkWell(
+                        borderRadius: IrisRadii.cardBorder,
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -156,26 +178,28 @@ class _DomainListPageState extends State<DomainListPage> {
                           _reload();
                         },
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(IrisSpacing.sm),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                _domainIcons[domain.code] ?? Icons.circle_outlined,
-                                size: 36,
-                                color: hasDescription ? Colors.green : null,
+                              IrisDomainIcon(
+                                domainCode: domain.code,
+                                completed: hasDescription,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: IrisSpacing.xs),
                               Text(
                                 domain.label,
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                hasDescription ? 'Đã có mô tả' : 'Chưa có mô tả',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall,
+                              const SizedBox(height: IrisSpacing.xxs),
+                              IrisStatusBadge(
+                                label: hasDescription
+                                    ? 'Đã có mô tả'
+                                    : 'Chưa có mô tả',
+                                color: hasDescription
+                                    ? IrisColors.success
+                                    : accent,
                               ),
                             ],
                           ),
@@ -202,20 +226,27 @@ class _NextDomainCard extends StatelessWidget {
   final Domain domain;
   final VoidCallback onContinue;
 
-  const _NextDomainCard({required this.child, required this.domain, required this.onContinue});
+  const _NextDomainCard({
+    required this.child,
+    required this.domain,
+    required this.onContinue,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: IrisSpacing.card,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.lightbulb_outline),
-                const SizedBox(width: 8),
+                IrisIconChip(
+                  icon: Icons.lightbulb_rounded,
+                  color: IrisDomainStyle.colorOf(domain.code),
+                ),
+                const SizedBox(width: IrisSpacing.sm),
                 Expanded(
                   child: Text(
                     'Gợi ý: tiếp tục lĩnh vực "${domain.label}"',

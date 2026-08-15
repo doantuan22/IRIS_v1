@@ -54,17 +54,32 @@ class ChildRepository {
 
   Future<void> update(Child child) async {
     final db = await _db.database;
-    await db.update('children', _toRow(child), where: 'id = ?', whereArgs: [child.id]);
+    await db.update(
+      'children',
+      _toRow(child),
+      where: 'id = ?',
+      whereArgs: [child.id],
+    );
   }
 
   Future<void> archive(String id) async {
     final db = await _db.database;
-    await db.update('children', {'status': 'archived'}, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+      'children',
+      {'status': 'archived'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<void> unarchive(String id) async {
     final db = await _db.database;
-    await db.update('children', {'status': 'active'}, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+      'children',
+      {'status': 'active'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   /// Xoá hồ sơ trẻ. `PRAGMA foreign_keys = ON` (bật trong [AppDatabase]) chặn
@@ -81,18 +96,41 @@ class ChildRepository {
   Future<void> delete(String id) async {
     final db = await _db.database;
 
-    final videoRows = await db.query('videos', columns: ['file_path'], where: 'child_id = ?', whereArgs: [id]);
-    final filePaths = videoRows.map((row) => row['file_path'] as String).toList();
+    final videoRows = await db.query(
+      'videos',
+      columns: ['file_path'],
+      where: 'child_id = ?',
+      whereArgs: [id],
+    );
+    final filePaths = videoRows
+        .map((row) => row['file_path'] as String)
+        .toList();
 
     await db.transaction((txn) async {
       await txn.delete('screenings', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('assessments', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('history_logs', where: 'child_id = ?', whereArgs: [id]);
-      await txn.delete('profile_chunks', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete(
+        'profile_chunks',
+        where: 'child_id = ?',
+        whereArgs: [id],
+      );
       await txn.delete('videos', where: 'child_id = ?', whereArgs: [id]);
-      await txn.delete('ai_conversations', where: 'child_id = ?', whereArgs: [id]);
-      await txn.delete('domain_overview_labels', where: 'child_id = ?', whereArgs: [id]);
-      await txn.delete('overview_summaries', where: 'child_id = ?', whereArgs: [id]);
+      await txn.delete(
+        'ai_conversations',
+        where: 'child_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'domain_overview_labels',
+        where: 'child_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'overview_summaries',
+        where: 'child_id = ?',
+        whereArgs: [id],
+      );
       await txn.delete('children', where: 'id = ?', whereArgs: [id]);
     });
 
@@ -102,26 +140,26 @@ class ChildRepository {
   }
 
   Map<String, Object?> _toRow(Child child) => {
-        'id': child.id,
-        'name': child.name,
-        'dob': child.dob,
-        'age_years': child.ageYears,
-        'gender': child.gender,
-        'nguoi_danh_gia': child.nguoiDanhGia,
-        'vai_tro': child.vaiTro,
-        'status': child.status,
-        'created_at': child.createdAt.toIso8601String(),
-      };
+    'id': child.id,
+    'name': child.name,
+    'dob': child.dob,
+    'age_years': child.ageYears,
+    'gender': child.gender,
+    'nguoi_danh_gia': child.nguoiDanhGia,
+    'vai_tro': child.vaiTro,
+    'status': child.status,
+    'created_at': child.createdAt.toIso8601String(),
+  };
 
   Child _fromRow(Map<String, Object?> row) => Child(
-        id: row['id'] as String,
-        name: row['name'] as String,
-        dob: row['dob'] as String?,
-        ageYears: row['age_years'] as int?,
-        gender: row['gender'] as String?,
-        nguoiDanhGia: row['nguoi_danh_gia'] as String?,
-        vaiTro: row['vai_tro'] as String?,
-        status: row['status'] as String? ?? 'active',
-        createdAt: DateTime.parse(row['created_at'] as String),
-      );
+    id: row['id'] as String,
+    name: row['name'] as String,
+    dob: row['dob'] as String?,
+    ageYears: row['age_years'] as int?,
+    gender: row['gender'] as String?,
+    nguoiDanhGia: row['nguoi_danh_gia'] as String?,
+    vaiTro: row['vai_tro'] as String?,
+    status: row['status'] as String? ?? 'active',
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
 }

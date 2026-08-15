@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_theme.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../domain/models/child.dart';
@@ -33,9 +34,9 @@ class _ChildListPageState extends State<ChildListPage> {
   }
 
   Future<void> _openCreateProfile() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CreateProfilePage()),
-    );
+    final created = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const CreateProfilePage()));
     if (created == true) _reload();
   }
 
@@ -48,7 +49,9 @@ class _ChildListPageState extends State<ChildListPage> {
           IconButton(
             onPressed: () async {
               await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MultiChildDashboardPage()),
+                MaterialPageRoute(
+                  builder: (_) => const MultiChildDashboardPage(),
+                ),
               );
               _reload();
             },
@@ -70,11 +73,21 @@ class _ChildListPageState extends State<ChildListPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const Icon(
+                      Icons.error_outline,
+                      color: IrisColors.danger,
+                      size: 40,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Không tải được danh sách hồ sơ: ${snapshot.error}', textAlign: TextAlign.center),
+                    Text(
+                      'Không tải được danh sách hồ sơ: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                    OutlinedButton(
+                      onPressed: _reload,
+                      child: const Text('Thử lại'),
+                    ),
                   ],
                 ),
               ),
@@ -91,13 +104,19 @@ class _ChildListPageState extends State<ChildListPage> {
             itemBuilder: (context, index) {
               final child = children[index];
               return ListTile(
-                leading: CircleAvatar(child: Text(child.name.isNotEmpty ? child.name[0] : '?')),
+                leading: CircleAvatar(
+                  child: Text(child.name.isNotEmpty ? child.name[0] : '?'),
+                ),
                 title: Text(child.name),
-                subtitle: Text('${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}'),
+                subtitle: Text(
+                  '${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}',
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ProfileDetailPage(child: child)),
+                    MaterialPageRoute(
+                      builder: (_) => ProfileDetailPage(child: child),
+                    ),
                   );
                   _reload();
                 },

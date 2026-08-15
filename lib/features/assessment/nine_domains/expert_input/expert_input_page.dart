@@ -28,7 +28,9 @@ class ExpertInputPage extends StatefulWidget {
 }
 
 class _ExpertInputPageState extends State<ExpertInputPage> {
-  final _expertKnowledgeRepository = ExpertKnowledgeRepository(AppDatabase.instance);
+  final _expertKnowledgeRepository = ExpertKnowledgeRepository(
+    AppDatabase.instance,
+  );
   late Future<List<ExpertKnowledgeChunk>> _chunksFuture;
 
   @override
@@ -45,7 +47,11 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
     );
   }
 
-  void _openDetail(BuildContext context, List<ExpertKnowledgeChunk> chunks, String section) {
+  void _openDetail(
+    BuildContext context,
+    List<ExpertKnowledgeChunk> chunks,
+    String section,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExpertDetailPage(
@@ -61,7 +67,9 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.linhVucLabel} — Thông tin từ bác sĩ')),
+      appBar: AppBar(
+        title: Text('${widget.linhVucLabel} — Thông tin từ bác sĩ'),
+      ),
       body: FutureBuilder<List<ExpertKnowledgeChunk>>(
         future: _chunksFuture,
         builder: (context, snapshot) {
@@ -110,7 +118,10 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
                             Text(
                               'Nội dung dưới đây trình bày theo góc nhìn chuyên môn y khoa mang tính minh hoạ '
                               'cho bản demo, không phải ý kiến trực tiếp từ một bác sĩ cụ thể.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).hintColor,
+                                  ),
                             ),
                           ],
                         ),
@@ -132,13 +143,15 @@ class _ExpertInputPageState extends State<ExpertInputPage> {
                 _NavTile(
                   icon: Icons.timeline_outlined,
                   title: 'Mốc phát triển',
-                  subtitle: 'Biểu hiện thường gặp theo mốc phát triển của độ tuổi',
+                  subtitle:
+                      'Biểu hiện thường gặp theo mốc phát triển của độ tuổi',
                   onTap: () => _openDetail(context, chunks, 'moc_phat_trien'),
                 ),
                 _NavTile(
                   icon: Icons.flag_outlined,
                   title: 'Dấu hiệu cần lưu ý',
-                  subtitle: 'Những điểm nên tiếp tục quan sát hoặc trao đổi thêm',
+                  subtitle:
+                      'Những điểm nên tiếp tục quan sát hoặc trao đổi thêm',
                   onTap: () => _openDetail(context, chunks, 'dau_hieu_luu_y'),
                 ),
                 _NavTile(

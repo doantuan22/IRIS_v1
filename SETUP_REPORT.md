@@ -1358,6 +1358,69 @@ Phạm vi:
      - *Test 4*: Nút "Lưu" CHỈ tồn tại ở màn Mô tả biểu hiện, KHÔNG tồn tại ở 3 màn tham khảo $\rightarrow$ PASS.
    - **Kết quả kiểm thử toàn dự án**:
      - `flutter analyze`: **0 issues found** (sạch 100%).
+
+## 31. Làm mới UI toàn ứng dụng theo `IRIS_STYLE_GUIDE.md` — 15/08/2026
+
+### Design system tập trung
+
+- [iris_theme.dart](lib/core/theme/iris_theme.dart) là nguồn duy nhất cho màu, typography, radius, spacing, kích thước, shadow, theme Material 3 và mapping accent của 7 lĩnh vực.
+- [iris_assets.dart](lib/core/theme/iris_assets.dart) tập trung toàn bộ đường dẫn mascot/icon; [iris_ui.dart](lib/core/widgets/iris_ui.dart) chứa các component tái sử dụng: asset icon, mascot, icon chip, status badge, info banner và domain icon.
+- [app.dart](lib/app.dart) áp `IrisTheme.light` cho toàn ứng dụng. `pubspec.yaml` đã khai báo hai thư mục asset local `assets/images/mascot/` và `assets/images/icons/`.
+- Các component dùng chung đã được đồng bộ qua theme: button dạng pill, card bo 20 px, badge, input field, bottom navigation, progress indicator, dialog, snackbar, tab và chat bubble AI có shadow mềm.
+
+### Mapping accent đúng 7 lĩnh vực hiện hành
+
+| Mã lĩnh vực | Màu accent |
+|---|---|
+| `nhan_thuc` | `#4C7CF3` |
+| `cam_xuc` | `#F45B69` |
+| `giac_quan` | `#36B6D9` |
+| `quan_he_xa_hoi` | `#8B7CF6` |
+| `ngon_ngu` | `#20C4B0` |
+| `sinh_hoc` | `#F2994A` |
+| `sinh_hoat_ca_nhan` | `#6AAF72` |
+
+Mapping trên được dùng chung tại lưới lĩnh vực, tiến độ, hub, dashboard và nhãn/chi tiết Chân dung toàn cảnh; không thêm lĩnh vực thứ 8 hoặc thứ 9.
+
+### Asset ảnh sinh mới
+
+Tất cả ảnh là PNG local có alpha, không gọi dịch vụ sinh ảnh khi app chạy.
+
+- Mascot tại `assets/images/mascot/`: `iris_bear_waving.png`, `iris_bear_shield.png`, `iris_bear_clipboard.png`, `iris_bear_thumbs_up.png`, `iris_bear_pointing.png`.
+- Icon chức năng tại `assets/images/icons/`: `screening_shield.png`, `assessment_clipboard.png`, `video_camera.png`, `history_clock.png`, `expert_stethoscope.png`, `ai_chat.png`, `child_profile.png`, `overview_portrait.png`.
+- Vị trí dùng chính: Home/hồ sơ nhanh, sàng lọc, AI safety/chat, tóm tắt tạo hồ sơ, quay video, lịch sử, dashboard nhiều trẻ, kết nối chuyên gia và Chân dung toàn cảnh.
+- Chế độ sinh: công cụ image generation tích hợp. Prompt mascot giữ một nhân vật gấu beige 2D, áo xanh `#3566E8` có chữ `IRIS`, chỉ thay hành động theo từng pose. Prompt icon dùng flat rounded duotone, màu chính + sắc độ sáng, một biểu tượng chức năng rõ ràng trên nền vuông bo góc pastel.
+- Hai script build-time [extract_generated_cutout.py](scripts/extract_generated_cutout.py) và [resize_generated_assets.py](scripts/resize_generated_assets.py) chỉ hậu xử lý alpha/kích thước asset; app Android không phụ thuộc các script này lúc runtime.
+
+### Nhóm màn hình đã áp style
+
+- Trang chủ và bottom nav 4 tab; Tài khoản; Hỏi đáp AI.
+- Tạo/xem hồ sơ trẻ và dashboard nhiều trẻ.
+- Sàng lọc, xác nhận công cụ, bảng câu hỏi, kết quả và tổng hợp.
+- Danh sách 7 lĩnh vực, hub đúng 4 phần, Mô tả, So sánh, Chia sẻ phụ huynh và Thông tin bác sĩ.
+- Chân dung toàn cảnh 7 lĩnh vực; Lịch sử.
+- Luồng quay video hiện hành: Chuẩn bị quay → Quay video → Xem lại/gửi; không có màn chọn tình huống.
+- Kết nối chuyên gia/trung tâm và trang chi tiết.
+
+Không thay đổi thứ tự màn hình, navigation, nội dung chữ hoặc logic nghiệp vụ. Các cảnh báo an toàn vẫn nguyên văn, gồm “Sàng lọc không phải là chẩn đoán” và “không phải kết luận chẩn đoán y khoa”. Không phục hồi `Chân dung biểu hiện` cấp lĩnh vực, màn chọn tình huống quay video, hoặc lĩnh vực Hành vi/Ứng xử. `OverviewTierCalculator` và toàn bộ ngưỡng giữ nguyên.
+
+Trong lúc verify, emulator phát hiện callback `_reload()` của Chân dung toàn cảnh trả về `Future` bên trong `setState`, gây màn đỏ ở chế độ debug. Callback đã được đổi sang block đồng bộ; đây là sửa lỗi vòng đời UI, không thay đổi phép tính tier hay luồng dữ liệu.
+
+### Ảnh chụp thật trên emulator
+
+Ảnh được chụp từ emulator Android 1080×2400 và lưu tại `artifacts/ui_refresh/`. Riêng dữ liệu đủ 7/7 dùng để mở Chân dung toàn cảnh là dữ liệu mẫu chỉ chèn vào database của emulator, không nằm trong source/app seed.
+
+- Home/tài khoản/AI: [Home](artifacts/ui_refresh/01_home.png), [Tài khoản](artifacts/ui_refresh/02_account.png), [AI chat](artifacts/ui_refresh/03_ai_chat.png).
+- Lĩnh vực và hub 4 phần: [Lưới 7 màu](artifacts/ui_refresh/04_domain_list.png), [Hub](artifacts/ui_refresh/05_domain_hub.png), [Mô tả](artifacts/ui_refresh/06_description.png), [So sánh](artifacts/ui_refresh/07_comparison.png), [Chia sẻ phụ huynh](artifacts/ui_refresh/08_parent_share.png), [Thông tin bác sĩ](artifacts/ui_refresh/09_doctor_info.png).
+- Hồ sơ/dashboard/sàng lọc: [Dashboard nhiều trẻ](artifacts/ui_refresh/10_dashboard.png), [Chi tiết hồ sơ](artifacts/ui_refresh/11_profile_detail.png), [Sàng lọc](artifacts/ui_refresh/12_screening_intro.png).
+- Lịch sử/video/chuyên gia: [Lịch sử](artifacts/ui_refresh/13_history.png), [Chuẩn bị quay](artifacts/ui_refresh/14_video_preparation.png), [Camera](artifacts/ui_refresh/15_video_capture.png), [Kết nối chuyên gia](artifacts/ui_refresh/16_expert_connect.png).
+- Hoàn thành 7 lĩnh vực/overview: [Tiến độ 7/7](artifacts/ui_refresh/17_domain_complete.png), [Overview đầu trang](artifacts/ui_refresh/18_overview_top.png), [7 nhãn và cảnh báo an toàn](artifacts/ui_refresh/19_overview_domains.png).
+
+### Kết quả xác minh cuối
+
+- `flutter analyze`: **No issues found**.
+- `flutter test`: **104 test passed**, 4 test được suite đánh dấu skip, **All tests passed**.
+- `flutter build apk --debug --dart-define-from-file=dart_define.json`: build thành công tại `build/app/outputs/flutter-apk/app-debug.apk`.
      - `flutter test`: **99/99 PASS** (100% test thành công).
 
 29. **Audit Bảo Mật API Key, Build Release APK & Xác Thực Toàn Diện Cloud AI Thật (NVIDIA & Groq)**
@@ -1414,7 +1477,29 @@ Phạm vi:
    - **Kết quả kiểm thử toàn dự án**:
      - `flutter analyze`: **0 issues found** (sạch 100%).
 
+## Nối lại luồng sau khi tạo hồ sơ trẻ (xoá màn trung gian trùng HomePage)
 
+**Vấn đề**: sau khi `CreateProfilePage` lưu hồ sơ thành công, luồng cũ đi qua `CreateProfileSummaryPage` ("Tạo hồ sơ thành công!" + nút "Xem hồ sơ") rồi dừng ở `ProfileDetailPage` — 1 màn hiện tên/tuổi/người đánh giá/vai trò + badge "Chưa sàng lọc" + 6 nút chức năng + 3 nút debug, **trùng lặp hoàn toàn** `HomePage` (đã xây theo mô hình active child ở đợt trước) và không nên là điểm dừng sau khi tạo hồ sơ.
 
+**1. Audit trước khi xoá** (tìm theo chuỗi text đặc trưng "Đánh giá 7 lĩnh vực", "Video quan sát", "Debug: xem dữ liệu sàng lọc thô" → xác định đúng file là [profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart)). Toàn bộ nơi điều hướng `Navigator.push(...) => ProfileDetailPage(...)` trong code (không tính test):
+
+| Nơi gọi | Mục đích | Kết luận |
+|---|---|---|
+| `CreateProfilePage` → `CreateProfileSummaryPage` → nút "Xem hồ sơ" | Sau khi tạo hồ sơ — **đây là luồng cần sửa** | Cắt bỏ khỏi luồng này |
+| [child_list_page.dart](lib/features/child_profile/child_list_page.dart) — tap vào 1 hồ sơ trong danh sách | Xem chi tiết hồ sơ đã có sẵn (Bước 1 — điểm vào cũ, hiện không còn là `home` của app nhưng vẫn còn dùng trong `test/future_builder_error_test.dart`) | Hợp lệ — **giữ nguyên** |
+| [multi_child_dashboard_page.dart](lib/features/multi_child_dashboard/multi_child_dashboard_page.dart) — menu ⋮ "Xem hồ sơ" | Xem chi tiết 1 hồ sơ từ màn Quản lý nhiều trẻ (lối vào thật từ `HomePage` → tab Tài khoản → "Đổi tài khoản") | Hợp lệ — **giữ nguyên** |
+
+→ Kết luận audit: `ProfileDetailPage` **đang được dùng hợp lệ ở nơi khác** ("Xem hồ sơ" từ Dashboard/danh sách hồ sơ) nên **KHÔNG xoá file** — chỉ sửa điều hướng sau khi tạo hồ sơ để không còn trỏ tới màn này nữa. `ScreeningIntroPage`/`ScreeningToolConfirmPage`/`ScreeningQuestionnairePage`/`ScreeningResultPage` gọi từ `ProfileDetailPage._openScreening()` cũng giữ nguyên logic, không đổi gì cho luồng đó.
+
+**2. Xử lý**:
+- [create_profile_page.dart](lib/features/child_profile/create_profile/create_profile_page.dart): sau `_activeChildService.setActiveChildId(created.id)` (đã có sẵn từ đợt trước — xác nhận không cần thêm), đổi đích `pushReplacement` từ `CreateProfileSummaryPage` sang thẳng `ScreeningIntroPage(child: created, isOnboarding: true)`. Dùng `pushReplacement` (không phải `push`) để người dùng không back được về form tạo hồ sơ đã nộp.
+- **`CreateProfileSummaryPage` bị xoá hẳn** (`lib/features/child_profile/create_profile/create_profile_summary_page.dart`) — sau khi đổi đích của `CreateProfilePage`, đây là nơi gọi DUY NHẤT tới trang này (đã grep xác nhận), nên trang trở thành dead code hoàn toàn nếu giữ lại. Đây không phải màn trong ảnh (không audit theo yêu cầu, không có 6 nút/badge/nút debug) nhưng bị xoá do là hệ quả trực tiếp của yêu cầu #3 ("sau khi lưu hồ sơ, điều hướng tới màn hỏi sàng lọc").
+- Thêm tham số `isOnboarding` (mặc định `false`, không đổi hành vi/logic bài sàng lọc hay màn kết quả) chạy xuyên suốt `ScreeningIntroPage` → `ScreeningToolConfirmPage` → `ScreeningQuestionnairePage` → `ScreeningResultPage`, chỉ đổi **điểm đến điều hướng** ở 2 nút cuối:
+  - `ScreeningIntroPage` — nút "Chưa muốn": nếu `isOnboarding == true` thì `Navigator.popUntil((route) => route.isFirst)` (về thẳng `HomePage`, xoá back-stack) thay vì `push(AssessmentSummaryPage)` (Bước 4 — vẫn giữ nguyên cho luồng gọi từ `ProfileDetailPage`).
+  - `ScreeningResultPage` — nút "Tiếp tục": nếu `isOnboarding == true` thì `popUntil((route) => route.isFirst)` thay vì `pushReplacement(AssessmentSummaryPage)`.
+  - Cơ chế `popUntil((route) => route.isFirst)` tái dùng đúng pattern đã có sẵn ở `MultiChildDashboardPage._selectAsActive()` (không phát minh cơ chế mới) — `HomePage` luôn là route `home:` gốc của `MaterialApp` (`lib/app.dart`) nên `route.isFirst` luôn trỏ đúng về `HomePage`, dù `CreateProfilePage` được mở từ đâu (lần đầu mở app chưa có hồ sơ, hoặc từ tab Tài khoản → "Tạo hồ sơ trẻ mới", hoặc từ `MultiChildDashboardPage`).
+- **3 nút debug** ("Debug: xem dữ liệu sàng lọc thô", "Debug: xem dữ liệu đánh giá thô", "Debug: Nạp dữ liệu tham khảo") — vẫn hữu ích cho dev/kiểm thử nên **không bỏ hẳn**, chuyển sang trang riêng mới [child_debug_page.dart](lib/features/child_profile/profile_detail/child_debug_page.dart) (`ChildDebugPage`), chỉ vào được qua 1 icon 🐞 trên `AppBar` của `ProfileDetailPage` **guard bằng `kDebugMode`** (trước đó 2/3 nút hiện cho MỌI người dùng, không có guard — đã sửa luôn thành cả 3 đều chỉ hiện ở debug build). Không mất khả năng debug nào, chỉ không còn hiện giữa danh sách nút chức năng chính cho người dùng thường.
+
+**3. Kết quả**: `flutter analyze` — 0 issues. `flutter test` — toàn bộ PASS (xem [screening_flow_test.dart](test/screening_flow_test.dart) đã viết lại 3 test: nhánh "Có" → xem kết quả → Trang chủ đúng active child + không back được; nhánh "Chưa muốn" → thẳng Trang chủ + không back được; và xác nhận lối vào "Xem hồ sơ" từ Dashboard tới `ProfileDetailPage` vẫn hoạt động đúng, luồng sàng lọc gọi từ đó vẫn vào Bước 4 như cũ, không bị ảnh hưởng).
 
 

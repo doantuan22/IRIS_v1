@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/iris_theme.dart';
 import '../../../../data/local/database.dart';
 import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
@@ -28,7 +29,9 @@ class ComparisonVideoPage extends StatefulWidget {
 }
 
 class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
-  final _expertKnowledgeRepository = ExpertKnowledgeRepository(AppDatabase.instance);
+  final _expertKnowledgeRepository = ExpertKnowledgeRepository(
+    AppDatabase.instance,
+  );
   late Future<List<ExpertKnowledgeChunk>> _chunksFuture;
 
   @override
@@ -68,8 +71,12 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
           }
 
           final chunks = snapshot.data!;
-          final thuongGap = chunks.where((c) => c.phanLoai == 'thuong_gap').toList();
-          final canQuanSat = chunks.where((c) => c.phanLoai == 'can_quan_sat').toList();
+          final thuongGap = chunks
+              .where((c) => c.phanLoai == 'thuong_gap')
+              .toList();
+          final canQuanSat = chunks
+              .where((c) => c.phanLoai == 'can_quan_sat')
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -91,14 +98,14 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
                 _ComparisonSection(
                   title: 'Biểu hiện thường gặp',
                   icon: Icons.check_circle,
-                  color: Colors.green,
+                  color: IrisColors.success,
                   items: thuongGap,
                 ),
                 const SizedBox(height: 20),
                 _ComparisonSection(
                   title: 'Cần quan sát thêm',
                   icon: Icons.warning_amber_rounded,
-                  color: Colors.orange,
+                  color: IrisColors.warning,
                   items: canQuanSat,
                 ),
                 const SizedBox(height: 12),
@@ -123,10 +130,10 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage> {
               Text(
                 'Thông tin này chỉ mang tính tham khảo.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).hintColor,
+                ),
               ),
             ],
           );

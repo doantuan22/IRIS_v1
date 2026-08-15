@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/iris_theme.dart';
 import '../../../../domain/models/child.dart';
 import '../../../../domain/models/expert_knowledge_chunk.dart';
 
@@ -43,7 +44,9 @@ class ComparisonDetailPage extends StatelessWidget {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Table(
-                    border: TableBorder.all(color: Theme.of(context).dividerColor),
+                    border: TableBorder.all(
+                      color: Theme.of(context).dividerColor,
+                    ),
                     columnWidths: const {
                       0: FixedColumnWidth(280),
                       1: FixedColumnWidth(96),
@@ -52,7 +55,9 @@ class ComparisonDetailPage extends StatelessWidget {
                     children: [
                       TableRow(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                         ),
                         children: [
                           _HeaderCell('Tiêu chí'),
@@ -79,8 +84,10 @@ class ComparisonDetailPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: IrisRadii.inputBorder,
                   ),
                   child: const Text(
                     'Thông tin này chỉ giúp đối chiếu với trẻ cùng độ tuổi, không dùng để tự chẩn đoán.',
@@ -116,7 +123,9 @@ class _MarkCell extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Center(
-        child: checked ? const Icon(Icons.check, color: Colors.green) : const SizedBox.shrink(),
+        child: checked
+            ? const Icon(Icons.check, color: IrisColors.success)
+            : const SizedBox.shrink(),
       ),
     );
   }

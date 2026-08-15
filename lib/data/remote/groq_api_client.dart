@@ -30,9 +30,9 @@ class GroqApiClient {
 
   /// [timeout] cho phép ghi đè trong test (mặc định 30 giây khi dùng thật).
   GroqApiClient({http.Client? client, Duration? timeout})
-      : _client = client ?? http.Client(),
-        _timeout = timeout ?? _groqTimeout,
-        _isCustomClient = client != null;
+    : _client = client ?? http.Client(),
+      _timeout = timeout ?? _groqTimeout,
+      _isCustomClient = client != null;
 
   Future<String> generate({
     required String systemPrompt,
@@ -46,21 +46,23 @@ class GroqApiClient {
 
     final http.Response response;
     try {
-      response = await _client.post(
-        Uri.parse(ApiConfig.groqGenerationEndpoint),
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.groqApiKey}',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'model': ApiConfig.groqModelFast,
-          'messages': [
-            {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': userQuestion},
-          ],
-        }),
-      ).timeout(_timeout);
+      response = await _client
+          .post(
+            Uri.parse(ApiConfig.groqGenerationEndpoint),
+            headers: {
+              'Authorization': 'Bearer ${ApiConfig.groqApiKey}',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({
+              'model': ApiConfig.groqModelFast,
+              'messages': [
+                {'role': 'system', 'content': systemPrompt},
+                {'role': 'user', 'content': userQuestion},
+              ],
+            }),
+          )
+          .timeout(_timeout);
     } on TimeoutException {
       throw GroqApiException(
         'Hết thời gian chờ khi gọi Groq API (quá ${_timeout.inSeconds} giây)',
@@ -77,7 +79,8 @@ class GroqApiClient {
 
     final Map<String, dynamic> decoded;
     try {
-      decoded = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      decoded =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
       throw GroqApiException('Không parse được response Groq API: $e');
     }
@@ -88,7 +91,9 @@ class GroqApiClient {
     }
 
     final firstChoice = choices.first;
-    final message = firstChoice is Map<String, dynamic> ? firstChoice['message'] : null;
+    final message = firstChoice is Map<String, dynamic>
+        ? firstChoice['message']
+        : null;
     if (message is! Map<String, dynamic> || message['content'] is! String) {
       throw GroqApiException('Groq API trả về định dạng message không hợp lệ');
     }

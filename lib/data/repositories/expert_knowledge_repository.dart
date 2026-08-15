@@ -102,20 +102,21 @@ class ExpertKnowledgeRepository {
   }
 
   Map<String, Object?> _toRow(ExpertKnowledgeChunk chunk) => {
-        'id': chunk.id,
-        'content': chunk.content,
-        'content_type': chunk.contentType,
-        'phan_loai': chunk.phanLoai,
-        'nhom_tre': chunk.nhomTre,
-        'boi_canh': chunk.boiCanh,
-        'linh_vuc': chunk.linhVuc,
-        'do_tuoi_thang_min': chunk.doTuoiThangMin,
-        'do_tuoi_thang_max': chunk.doTuoiThangMax,
-        'nguon_tai_lieu': chunk.nguonTaiLieu,
-        'embedding': encodeEmbedding(chunk.embedding),
-      };
+    'id': chunk.id,
+    'content': chunk.content,
+    'content_type': chunk.contentType,
+    'phan_loai': chunk.phanLoai,
+    'nhom_tre': chunk.nhomTre,
+    'boi_canh': chunk.boiCanh,
+    'linh_vuc': chunk.linhVuc,
+    'do_tuoi_thang_min': chunk.doTuoiThangMin,
+    'do_tuoi_thang_max': chunk.doTuoiThangMax,
+    'nguon_tai_lieu': chunk.nguonTaiLieu,
+    'embedding': encodeEmbedding(chunk.embedding),
+  };
 
-  ExpertKnowledgeChunk _fromRow(Map<String, Object?> row) => ExpertKnowledgeChunk(
+  ExpertKnowledgeChunk _fromRow(Map<String, Object?> row) =>
+      ExpertKnowledgeChunk(
         id: row['id'] as String,
         content: row['content'] as String,
         contentType: row['content_type'] as String,

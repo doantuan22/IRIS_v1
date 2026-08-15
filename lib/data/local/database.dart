@@ -66,21 +66,29 @@ class AppDatabase {
       // các dòng cũ tự động nhận giá trị NULL cho 2 cột mới.
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await db.execute('ALTER TABLE children ADD COLUMN nguoi_danh_gia TEXT');
+          await db.execute(
+            'ALTER TABLE children ADD COLUMN nguoi_danh_gia TEXT',
+          );
           await db.execute('ALTER TABLE children ADD COLUMN vai_tro TEXT');
         }
         // Version 3 — thêm cột `phan_loai` vào `expert_knowledge_chunks` cho
         // dữ liệu tham khảo đã có sẵn từ trước; `ALTER TABLE ADD COLUMN`
         // không đụng dữ liệu dòng cũ, chỉ nhận NULL cho cột mới.
         if (oldVersion < 3) {
-          await db.execute('ALTER TABLE expert_knowledge_chunks ADD COLUMN phan_loai TEXT');
+          await db.execute(
+            'ALTER TABLE expert_knowledge_chunks ADD COLUMN phan_loai TEXT',
+          );
         }
         // Version 4 — thêm cột `nhom_tre`/`boi_canh` vào
         // `expert_knowledge_chunks` (dùng cho content_type='chia_se_phu_huynh')
         // cho dữ liệu tham khảo đã có sẵn từ trước; không đụng dữ liệu dòng cũ.
         if (oldVersion < 4) {
-          await db.execute('ALTER TABLE expert_knowledge_chunks ADD COLUMN nhom_tre TEXT');
-          await db.execute('ALTER TABLE expert_knowledge_chunks ADD COLUMN boi_canh TEXT');
+          await db.execute(
+            'ALTER TABLE expert_knowledge_chunks ADD COLUMN nhom_tre TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE expert_knowledge_chunks ADD COLUMN boi_canh TEXT',
+          );
         }
         // Version 5 — thêm 2 bảng MỚI cho "Chân dung toàn cảnh"
         // (`domain_overview_labels`, `overview_summaries`); không đụng tới
@@ -98,22 +106,30 @@ class AppDatabase {
           final tableNames = tables.map((r) => r['name'] as String).toSet();
           if (tableNames.contains('assessments')) {
             try {
-              await db.execute("DELETE FROM assessments WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+              await db.execute(
+                "DELETE FROM assessments WHERE linh_vuc IN ('hanh_vi', 'ung_xu')",
+              );
             } catch (_) {}
           }
           if (tableNames.contains('profile_chunks')) {
             try {
-              await db.execute("DELETE FROM profile_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+              await db.execute(
+                "DELETE FROM profile_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')",
+              );
             } catch (_) {}
           }
           if (tableNames.contains('domain_overview_labels')) {
             try {
-              await db.execute("DELETE FROM domain_overview_labels WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+              await db.execute(
+                "DELETE FROM domain_overview_labels WHERE linh_vuc IN ('hanh_vi', 'ung_xu')",
+              );
             } catch (_) {}
           }
           if (tableNames.contains('expert_knowledge_chunks')) {
             try {
-              await db.execute("DELETE FROM expert_knowledge_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')");
+              await db.execute(
+                "DELETE FROM expert_knowledge_chunks WHERE linh_vuc IN ('hanh_vi', 'ung_xu')",
+              );
             } catch (_) {}
           }
         }
@@ -125,12 +141,16 @@ class AppDatabase {
           final tableNames = tables.map((r) => r['name'] as String).toSet();
           if (tableNames.contains('expert_knowledge_chunks')) {
             try {
-              await db.execute("DELETE FROM expert_knowledge_chunks WHERE content_type = 'chan_dung'");
+              await db.execute(
+                "DELETE FROM expert_knowledge_chunks WHERE content_type = 'chan_dung'",
+              );
             } catch (_) {}
           }
           if (tableNames.contains('overview_summaries')) {
             try {
-              await db.execute('ALTER TABLE overview_summaries ADD COLUMN mo_ta_tong_hop TEXT');
+              await db.execute(
+                'ALTER TABLE overview_summaries ADD COLUMN mo_ta_tong_hop TEXT',
+              );
             } catch (_) {}
           }
         }

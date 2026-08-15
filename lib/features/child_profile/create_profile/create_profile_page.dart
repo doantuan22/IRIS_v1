@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/local/database.dart';
 import '../../../data/repositories/child_repository.dart';
 import '../../../domain/services/active_child_service.dart';
-import 'create_profile_summary_page.dart';
+import '../../screening/screening_intro_page.dart';
 
 enum _AgeInputMode { dob, ageYears }
 
@@ -66,7 +66,9 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
     final ageError = _validateAgeInput();
     if (!(_formKey.currentState?.validate() ?? false) || ageError != null) {
       if (ageError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ageError)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(ageError)));
       }
       return;
     }
@@ -75,7 +77,9 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
     try {
       final created = await _childRepository.create(
         name: _nameController.text.trim(),
-        dob: _ageInputMode == _AgeInputMode.dob ? _selectedDob?.toIso8601String() : null,
+        dob: _ageInputMode == _AgeInputMode.dob
+            ? _selectedDob?.toIso8601String()
+            : null,
         ageYears: _ageInputMode == _AgeInputMode.ageYears
             ? int.parse(_ageYearsController.text.trim())
             : null,
@@ -90,11 +94,16 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
       // tạo thêm hồ sơ mới từ tab "Tài khoản"), không phân biệt ngữ cảnh gọi.
       await _activeChildService.setActiveChildId(created.id);
       if (mounted) {
-        // `result: true` báo ngay cho màn gọi (VD ChildListPage) làm mới danh
-        // sách trong lúc người dùng đang xem màn tóm tắt — không đợi họ bấm
-        // quay lại hết ngăn xếp mới refresh.
+        // Vào thẳng màn hỏi sàng lọc (Bước 3) thay vì màn chi tiết hồ sơ —
+        // `pushReplacement` để người dùng không back được về form tạo hồ sơ
+        // đã nộp. `result: true` báo ngay cho màn gọi (VD
+        // MultiChildDashboardPage) làm mới danh sách trong lúc người dùng
+        // tiếp tục luồng sàng lọc — không đợi họ quay lại hết ngăn xếp.
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => CreateProfileSummaryPage(child: created)),
+          MaterialPageRoute(
+            builder: (_) =>
+                ScreeningIntroPage(child: created, isOnboarding: true),
+          ),
           result: true,
         );
       }
@@ -115,11 +124,15 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Tên trẻ *'),
-              validator: (value) =>
-                  (value == null || value.trim().isEmpty) ? 'Vui lòng nhập tên' : null,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Vui lòng nhập tên'
+                  : null,
             ),
             const SizedBox(height: 16),
-            const Text('Cách nhập tuổi *', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Cách nhập tuổi *',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             RadioGroup<_AgeInputMode>(
               groupValue: _ageInputMode,
               onChanged: (mode) => setState(() => _ageInputMode = mode!),
@@ -161,7 +174,10 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Giới tính', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Giới tính',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               emptySelectionAllowed: true,
@@ -171,8 +187,9 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                 ButtonSegment(value: 'khac', label: Text('Khác')),
               ],
               selected: _gender == null ? const {} : {_gender!},
-              onSelectionChanged: (selection) =>
-                  setState(() => _gender = selection.isEmpty ? null : selection.first),
+              onSelectionChanged: (selection) => setState(
+                () => _gender = selection.isEmpty ? null : selection.first,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -186,7 +203,10 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
               items: const [
                 DropdownMenuItem(value: 'Phụ huynh', child: Text('Phụ huynh')),
                 DropdownMenuItem(value: 'Giáo viên', child: Text('Giáo viên')),
-                DropdownMenuItem(value: 'Chuyên viên', child: Text('Chuyên viên')),
+                DropdownMenuItem(
+                  value: 'Chuyên viên',
+                  child: Text('Chuyên viên'),
+                ),
               ],
               onChanged: (value) => setState(() => _vaiTro = value),
             ),

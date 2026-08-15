@@ -12,11 +12,11 @@ const String tierChuyenMonSom = 'chuyen_mon_som';
 /// Tên hiển thị cho người dùng, đúng 3 tên đã chốt — dùng hàm này ở MỌI nơi
 /// hiển thị [tier], không tự viết lại chuỗi.
 String tierDisplayLabel(String tier) => switch (tier) {
-      tierThuongGap => 'Trong giới hạn thường gặp',
-      tierCanTheoDoi => 'Có điểm cần theo dõi',
-      tierChuyenMonSom => 'Nên tìm đánh giá chuyên môn sớm',
-      _ => tier,
-    };
+  tierThuongGap => 'Trong giới hạn thường gặp',
+  tierCanTheoDoi => 'Có điểm cần theo dõi',
+  tierChuyenMonSom => 'Nên tìm đánh giá chuyên môn sớm',
+  _ => tier,
+};
 
 /// Model kết quả tổng hợp "Chân dung toàn cảnh", ánh xạ tới bảng
 /// `overview_summaries`. Mỗi lần tổng hợp thành công tạo 1 dòng MỚI — bản

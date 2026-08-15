@@ -40,18 +40,18 @@ class HistoryLogRepository {
   }
 
   Map<String, Object?> _toRow(HistoryLog log) => {
-        'id': log.id,
-        'child_id': log.childId,
-        'event_type': log.eventType,
-        'description': log.description,
-        'event_date': log.eventDate.toIso8601String(),
-      };
+    'id': log.id,
+    'child_id': log.childId,
+    'event_type': log.eventType,
+    'description': log.description,
+    'event_date': log.eventDate.toIso8601String(),
+  };
 
   HistoryLog _fromRow(Map<String, Object?> row) => HistoryLog(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        eventType: row['event_type'] as String,
-        description: row['description'] as String?,
-        eventDate: DateTime.parse(row['event_date'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    eventType: row['event_type'] as String,
+    description: row['description'] as String?,
+    eventDate: DateTime.parse(row['event_date'] as String),
+  );
 }

@@ -41,20 +41,20 @@ class AiConversationRepository {
   }
 
   Map<String, Object?> _toRow(AiConversation conversation) => {
-        'id': conversation.id,
-        'child_id': conversation.childId,
-        'question': conversation.question,
-        'answer': conversation.answer,
-        'state': conversation.state,
-        'created_at': conversation.createdAt.toIso8601String(),
-      };
+    'id': conversation.id,
+    'child_id': conversation.childId,
+    'question': conversation.question,
+    'answer': conversation.answer,
+    'state': conversation.state,
+    'created_at': conversation.createdAt.toIso8601String(),
+  };
 
   AiConversation _fromRow(Map<String, Object?> row) => AiConversation(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        question: row['question'] as String,
-        answer: row['answer'] as String,
-        state: row['state'] as int,
-        createdAt: DateTime.parse(row['created_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    question: row['question'] as String,
+    answer: row['answer'] as String,
+    state: row['state'] as int,
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
 }

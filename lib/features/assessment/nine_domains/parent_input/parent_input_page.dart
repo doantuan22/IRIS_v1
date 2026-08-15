@@ -31,7 +31,9 @@ class ParentInputPage extends StatefulWidget {
 }
 
 class _ParentInputPageState extends State<ParentInputPage> {
-  final _expertKnowledgeRepository = ExpertKnowledgeRepository(AppDatabase.instance);
+  final _expertKnowledgeRepository = ExpertKnowledgeRepository(
+    AppDatabase.instance,
+  );
   late Future<List<ExpertKnowledgeChunk>> _chunksFuture;
 
   @override
@@ -51,7 +53,9 @@ class _ParentInputPageState extends State<ParentInputPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.linhVucLabel} — Góc nhìn từ phụ huynh')),
+      appBar: AppBar(
+        title: Text('${widget.linhVucLabel} — Góc nhìn từ phụ huynh'),
+      ),
       body: FutureBuilder<List<ExpertKnowledgeChunk>>(
         future: _chunksFuture,
         builder: (context, snapshot) {
@@ -71,7 +75,9 @@ class _ParentInputPageState extends State<ParentInputPage> {
           }
 
           final chunks = snapshot.data!;
-          final binhThuong = chunks.where((c) => c.nhomTre == 'binh_thuong').toList();
+          final binhThuong = chunks
+              .where((c) => c.nhomTre == 'binh_thuong')
+              .toList();
           final asd = chunks.where((c) => c.nhomTre == 'asd').toList();
 
           return DefaultTabController(
@@ -171,10 +177,10 @@ class _QuoteList extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: Text(
                       '— ${chunk.nguonTaiLieu}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: Theme.of(context).hintColor,
+                      ),
                     ),
                   ),
                 ],

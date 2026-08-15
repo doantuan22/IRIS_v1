@@ -31,7 +31,9 @@ class ParentContextPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text('$linhVucLabel — Kinh nghiệm theo tình huống'),
-          bottom: TabBar(tabs: _contexts.map((c) => Tab(text: c.label)).toList()),
+          bottom: TabBar(
+            tabs: _contexts.map((c) => Tab(text: c.label)).toList(),
+          ),
         ),
         body: Column(
           children: [
@@ -48,7 +50,9 @@ class ParentContextPage extends StatelessWidget {
                   Text(
                     'Tổng hợp góc nhìn thực tế phụ huynh chia sẻ theo từng bối cảnh khác nhau, '
                     'giúp hình dung biểu hiện của trẻ trong đời sống hằng ngày.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
                 ],
               ),
@@ -56,7 +60,13 @@ class ParentContextPage extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: _contexts
-                    .map((c) => _ContextList(items: chunks.where((chunk) => chunk.boiCanh == c.code).toList()))
+                    .map(
+                      (c) => _ContextList(
+                        items: chunks
+                            .where((chunk) => chunk.boiCanh == c.code)
+                            .toList(),
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -102,10 +112,10 @@ class _ContextList extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '— ${chunk.nguonTaiLieu}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
                 ],
               ],

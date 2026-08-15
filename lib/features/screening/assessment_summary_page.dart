@@ -40,10 +40,19 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
   late final Future<_SummaryData> _summaryFuture = _load();
 
   Future<_SummaryData> _load() async {
-    final hasScreening = await _screeningRepository.hasScreening(widget.child.id);
-    final latestScreening = await _screeningRepository.getLatestForChild(widget.child.id);
-    final assessments = await _assessmentRepository.getForChild(widget.child.id);
-    final doneDomains = assessments.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet();
+    final hasScreening = await _screeningRepository.hasScreening(
+      widget.child.id,
+    );
+    final latestScreening = await _screeningRepository.getLatestForChild(
+      widget.child.id,
+    );
+    final assessments = await _assessmentRepository.getForChild(
+      widget.child.id,
+    );
+    final doneDomains = assessments
+        .where((a) => a.contentType == 'mo_ta')
+        .map((a) => a.linhVuc)
+        .toSet();
     return _SummaryData(
       hasScreening: hasScreening,
       latestScreening: latestScreening,
@@ -103,7 +112,10 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
             padding: const EdgeInsets.all(24),
             children: [
               // Khối 1 — thông tin trẻ.
-              Text('Tổng hợp hồ sơ ${widget.child.name}', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Tổng hợp hồ sơ ${widget.child.name}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 4),
               Text('Độ tuổi: ${formatAgeLabel(widget.child)}'),
               const SizedBox(height: 16),
@@ -114,12 +126,17 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Sàng lọc', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Sàng lọc',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       Text(data.hasScreening ? 'Đã sàng lọc' : 'Chưa sàng lọc'),
                       if (data.hasScreening && screening != null) ...[
                         const SizedBox(height: 4),
-                        Text('Kết quả sàng lọc gần nhất: ${screening.score ?? "(không có điểm)"}'),
+                        Text(
+                          'Kết quả sàng lọc gần nhất: ${screening.score ?? "(không có điểm)"}',
+                        ),
                         if (screening.toolName != null) ...[
                           const SizedBox(height: 4),
                           Text('Công cụ: ${screening.toolName}'),
@@ -130,7 +147,9 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                         ],
                       ],
                       const SizedBox(height: 4),
-                      Text('Người đánh giá: ${widget.child.nguoiDanhGia ?? "Chưa cập nhật"}'),
+                      Text(
+                        'Người đánh giá: ${widget.child.nguoiDanhGia ?? "Chưa cập nhật"}',
+                      ),
                     ],
                   ),
                 ),
@@ -143,9 +162,14 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Đánh giá 7 lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Đánh giá 7 lĩnh vực',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
-                      Text('Đã có mô tả cho ${data.doneDomainCount}/$total lĩnh vực'),
+                      Text(
+                        'Đã có mô tả cho ${data.doneDomainCount}/$total lĩnh vực',
+                      ),
                     ],
                   ),
                 ),
@@ -158,7 +182,10 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Đề xuất hướng đánh giá', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Đề xuất hướng đánh giá',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       Text(_buildSuggestion(data, ageMonths)),
                     ],

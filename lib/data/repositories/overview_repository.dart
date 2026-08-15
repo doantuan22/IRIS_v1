@@ -30,7 +30,11 @@ const int _topChunksPerGroup = 3;
 /// dang); [insufficientData] khi ĐÃ đủ 7/7 nhãn nhưng quá nhiều lĩnh vực
 /// `'chua_du_du_lieu'` (xem `overview_tier_calculator.dart`); [computed] khi
 /// đã tính và lưu `overview_summaries` thành công.
-enum OverviewComputationStatus { insufficientLabels, insufficientData, computed }
+enum OverviewComputationStatus {
+  insufficientLabels,
+  insufficientData,
+  computed,
+}
 
 class OverviewComputationResult {
   final OverviewComputationStatus status;
@@ -52,11 +56,12 @@ class OverviewComputationResult {
     this.summary,
   });
 
-  factory OverviewComputationResult.insufficientLabels({required int soLinhVucDaGanNhan}) =>
-      OverviewComputationResult._(
-        status: OverviewComputationStatus.insufficientLabels,
-        soLinhVucDaGanNhan: soLinhVucDaGanNhan,
-      );
+  factory OverviewComputationResult.insufficientLabels({
+    required int soLinhVucDaGanNhan,
+  }) => OverviewComputationResult._(
+    status: OverviewComputationStatus.insufficientLabels,
+    soLinhVucDaGanNhan: soLinhVucDaGanNhan,
+  );
 
   factory OverviewComputationResult.insufficientData({required int soThieu}) =>
       OverviewComputationResult._(
@@ -64,12 +69,14 @@ class OverviewComputationResult {
         soThieu: soThieu,
       );
 
-  factory OverviewComputationResult.computed({required OverviewSummary summary, required int soThieu}) =>
-      OverviewComputationResult._(
-        status: OverviewComputationStatus.computed,
-        summary: summary,
-        soThieu: soThieu,
-      );
+  factory OverviewComputationResult.computed({
+    required OverviewSummary summary,
+    required int soThieu,
+  }) => OverviewComputationResult._(
+    status: OverviewComputationStatus.computed,
+    summary: summary,
+    soThieu: soThieu,
+  );
 }
 
 /// Gộp pipeline "Chân dung toàn cảnh": [labelAllDomains] gắn nhãn TỪNG lĩnh
@@ -99,16 +106,21 @@ class OverviewRepository {
     OverviewSummaryRepository? summaryRepository,
     HistoryLogRepository? historyLogRepository,
     PromptBuilder? promptBuilder,
-  })  : _assessmentRepository = assessmentRepository ?? AssessmentRepository(db),
-        _expertKnowledgeRepository = expertKnowledgeRepository ?? ExpertKnowledgeRepository(db),
-        _vectorSearchService = vectorSearchService ??
-            VectorSearchService(ProfileChunkRepository(db), ExpertKnowledgeRepository(db)),
-        _nvidiaApiClient = nvidiaApiClient ?? NvidiaApiClient(),
-        _groqApiClient = groqApiClient ?? GroqApiClient(),
-        _labelRepository = labelRepository ?? DomainOverviewLabelRepository(db),
-        _summaryRepository = summaryRepository ?? OverviewSummaryRepository(db),
-        _historyLogRepository = historyLogRepository ?? HistoryLogRepository(db),
-        _promptBuilder = promptBuilder ?? PromptBuilder();
+  }) : _assessmentRepository = assessmentRepository ?? AssessmentRepository(db),
+       _expertKnowledgeRepository =
+           expertKnowledgeRepository ?? ExpertKnowledgeRepository(db),
+       _vectorSearchService =
+           vectorSearchService ??
+           VectorSearchService(
+             ProfileChunkRepository(db),
+             ExpertKnowledgeRepository(db),
+           ),
+       _nvidiaApiClient = nvidiaApiClient ?? NvidiaApiClient(),
+       _groqApiClient = groqApiClient ?? GroqApiClient(),
+       _labelRepository = labelRepository ?? DomainOverviewLabelRepository(db),
+       _summaryRepository = summaryRepository ?? OverviewSummaryRepository(db),
+       _historyLogRepository = historyLogRepository ?? HistoryLogRepository(db),
+       _promptBuilder = promptBuilder ?? PromptBuilder();
 
   /// Gắn nhãn cho ĐỦ 7/7 lĩnh vực của [child], theo đúng thứ tự
   /// `domains`. Gọi tuần tự (không song song) để không vượt rate limit
@@ -129,12 +141,25 @@ class OverviewRepository {
   ///   'so_sanh' theo đúng lĩnh vực + độ tuổi, tách theo `phan_loai`, gọi
   ///   Groq với prompt ép JSON thuần, parse + validate (fallback
   ///   [labelChuaDuDuLieu] nếu sai định dạng — KHÔNG crash), rồi lưu.
-  Future<DomainOverviewLabel> labelDomain(Child child, String linhVuc, String linhVucLabel) async {
-    final assessments = await _assessmentRepository.getForChild(child.id, linhVuc: linhVuc);
-    final descriptions = assessments.where((a) => a.contentType == 'mo_ta').toList();
+  Future<DomainOverviewLabel> labelDomain(
+    Child child,
+    String linhVuc,
+    String linhVucLabel,
+  ) async {
+    final assessments = await _assessmentRepository.getForChild(
+      child.id,
+      linhVuc: linhVuc,
+    );
+    final descriptions = assessments
+        .where((a) => a.contentType == 'mo_ta')
+        .toList();
 
     if (descriptions.isEmpty) {
-      return _labelRepository.save(childId: child.id, linhVuc: linhVuc, nhan: labelChuaDuDuLieu);
+      return _labelRepository.save(
+        childId: child.id,
+        linhVuc: linhVuc,
+        nhan: labelChuaDuDuLieu,
+      );
     }
 
     final moTaText = descriptions.map((a) => '- ${a.content}').join('\n');
@@ -150,13 +175,24 @@ class OverviewRepository {
         ageInMonths: ageMonths,
         contentType: 'so_sanh',
       );
-      final scored = chunks
-          .map((c) => (chunk: c, similarity: _vectorSearchService.cosineSimilarity(c.embedding, queryEmbedding)))
-          .toList()
-        ..sort((a, b) => b.similarity.compareTo(a.similarity));
+      final scored =
+          chunks
+              .map(
+                (c) => (
+                  chunk: c,
+                  similarity: _vectorSearchService.cosineSimilarity(
+                    c.embedding,
+                    queryEmbedding,
+                  ),
+                ),
+              )
+              .toList()
+            ..sort((a, b) => b.similarity.compareTo(a.similarity));
 
-      final binhThuongChunks =
-          scored.where((s) => s.chunk.phanLoai == 'binh_thuong').take(_topChunksPerGroup).toList();
+      final binhThuongChunks = scored
+          .where((s) => s.chunk.phanLoai == 'binh_thuong')
+          .take(_topChunksPerGroup)
+          .toList();
       final roiLoanChunks = scored
           .where((s) => s.chunk.phanLoai == 'roi_loan_pho_tu_ky')
           .take(_topChunksPerGroup)
@@ -178,7 +214,8 @@ class OverviewRepository {
 
       final rawResponse = await _groqApiClient.generate(
         systemPrompt: systemPrompt,
-        userQuestion: 'Hãy trả lời đúng định dạng JSON duy nhất theo yêu cầu ở trên.',
+        userQuestion:
+            'Hãy trả lời đúng định dạng JSON duy nhất theo yêu cầu ở trên.',
       );
 
       final parsed = _parseLabelResponse(rawResponse);
@@ -189,7 +226,9 @@ class OverviewRepository {
       // tổng hợp, fallback về 'chua_du_du_lieu' giống trường hợp AI trả sai
       // định dạng.
       // ignore: avoid_print
-      print('Lỗi khi gắn nhãn lĩnh vực "$linhVuc" cho trẻ ${child.id}, fallback "$labelChuaDuDuLieu": $e');
+      print(
+        'Lỗi khi gắn nhãn lĩnh vực "$linhVuc" cho trẻ ${child.id}, fallback "$labelChuaDuDuLieu": $e',
+      );
       nhan = labelChuaDuDuLieu;
       lyDoNganGon = 'Không gắn nhãn được do lỗi hệ thống, cần thử lại.';
     }
@@ -213,14 +252,20 @@ class OverviewRepository {
     for (final domain in domains) {
       final label = latest[domain.code];
       if (label == null) {
-        return OverviewComputationResult.insufficientLabels(soLinhVucDaGanNhan: latest.length);
+        return OverviewComputationResult.insufficientLabels(
+          soLinhVucDaGanNhan: latest.length,
+        );
       }
       orderedLabels.add(label);
     }
 
-    final tierResult = calculateOverviewTier(orderedLabels.map((l) => l.nhan).toList());
+    final tierResult = calculateOverviewTier(
+      orderedLabels.map((l) => l.nhan).toList(),
+    );
     if (tierResult.isInsufficientData) {
-      return OverviewComputationResult.insufficientData(soThieu: tierResult.soThieu);
+      return OverviewComputationResult.insufficientData(
+        soThieu: tierResult.soThieu,
+      );
     }
 
     // Sinh đoạn văn xuôi mô tả tổng hợp (Groq) — nếu lỗi (mạng, timeout...),
@@ -243,19 +288,26 @@ class OverviewRepository {
       await _historyLogRepository.add(
         childId: child.id,
         eventType: 'tong_quan',
-        description: 'Tổng hợp Chân dung toàn cảnh — mức: ${tierDisplayLabel(tierResult.tier!)}',
+        description:
+            'Tổng hợp Chân dung toàn cảnh — mức: ${tierDisplayLabel(tierResult.tier!)}',
       );
     } catch (_) {
       // Lịch sử là dữ liệu phụ trợ — lỗi ở đây không được làm mất kết quả
       // tổng hợp đã lưu ở trên (cùng cách xử lý đã dùng ở DescriptionPage).
     }
 
-    return OverviewComputationResult.computed(summary: summary, soThieu: tierResult.soThieu);
+    return OverviewComputationResult.computed(
+      summary: summary,
+      soThieu: tierResult.soThieu,
+    );
   }
 
   /// Sinh lại đoạn mô tả tổng hợp cho 1 bản ghi [summary] đã có sẵn (dùng khi thử lại
   /// riêng bước gọi AI mà không cần tính lại tier).
-  Future<OverviewSummary?> generateAndSaveSummaryDescription(Child child, OverviewSummary summary) async {
+  Future<OverviewSummary?> generateAndSaveSummaryDescription(
+    Child child,
+    OverviewSummary summary,
+  ) async {
     final latest = await _labelRepository.getLatestForChild(child.id);
     final orderedLabels = <DomainOverviewLabel>[];
     for (final domain in domains) {
@@ -297,7 +349,11 @@ class OverviewRepository {
           .toList();
       buffer.writeln('### Lĩnh vực: ${domain.label}');
       buffer.writeln(
-        '- Đánh giá tổng quan lĩnh vực: ${label.nhan == labelThuongGap ? "Thường gặp" : label.nhan == labelCanTheoDoi ? "Cần theo dõi" : "Chưa đủ dữ liệu"}${label.lyDoNganGon != null ? " (${label.lyDoNganGon})" : ""}',
+        '- Đánh giá tổng quan lĩnh vực: ${label.nhan == labelThuongGap
+            ? "Thường gặp"
+            : label.nhan == labelCanTheoDoi
+            ? "Cần theo dõi"
+            : "Chưa đủ dữ liệu"}${label.lyDoNganGon != null ? " (${label.lyDoNganGon})" : ""}',
       );
       if (domainAssessments.isEmpty) {
         buffer.writeln('- Mô tả người dùng: (chưa có)');
@@ -329,7 +385,8 @@ class OverviewRepository {
 
       final response = await _groqApiClient.generate(
         systemPrompt: systemPrompt,
-        userQuestion: 'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
+        userQuestion:
+            'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
       );
       final trimmed = response.trim();
       return trimmed.isNotEmpty ? trimmed : null;
@@ -350,7 +407,9 @@ class OverviewRepository {
       final start = raw.indexOf('{');
       final end = raw.lastIndexOf('}');
       if (start == -1 || end == -1 || end < start) {
-        throw const FormatException('Không tìm thấy JSON object trong phản hồi');
+        throw const FormatException(
+          'Không tìm thấy JSON object trong phản hồi',
+        );
       }
       final decoded = jsonDecode(raw.substring(start, end + 1));
       if (decoded is! Map<String, dynamic>) {
@@ -364,7 +423,9 @@ class OverviewRepository {
       return (nhan: nhan, lyDoNganGon: lyDo is String ? lyDo : null);
     } catch (e) {
       // ignore: avoid_print
-      print('Lỗi parse phản hồi gắn nhãn từ AI, fallback "$labelChuaDuDuLieu": $e — raw: $raw');
+      print(
+        'Lỗi parse phản hồi gắn nhãn từ AI, fallback "$labelChuaDuDuLieu": $e — raw: $raw',
+      );
       return (
         nhan: labelChuaDuDuLieu,
         lyDoNganGon: 'Không xác định được nhãn từ phản hồi AI (sai định dạng).',

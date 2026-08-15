@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -78,9 +81,9 @@ class _HomePageState extends State<HomePage> {
     final destination = existing.isEmpty
         ? const CreateProfilePage()
         : const MultiChildDashboardPage();
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => destination),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => destination));
     _redirectingNoActiveChild = false;
     _reloadActiveChild();
   }
@@ -91,15 +94,21 @@ class _HomePageState extends State<HomePage> {
       future: _activeChildFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final activeChild = snapshot.data;
         if (activeChild == null) {
           // Chưa có active child — điều hướng thẳng vào tạo hồ sơ (nếu thật
           // sự chưa có hồ sơ nào) hoặc màn chọn hồ sơ (nếu còn hồ sơ khác),
           // thay vì hiện Trang chủ rỗng. Xem `_redirectWhenNoActiveChild()`.
-          WidgetsBinding.instance.addPostFrameCallback((_) => _redirectWhenNoActiveChild());
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _redirectWhenNoActiveChild(),
+          );
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final tabs = [
@@ -115,10 +124,26 @@ class _HomePageState extends State<HomePage> {
             selectedIndex: _tabIndex,
             onDestinationSelected: (index) => setState(() => _tabIndex = index),
             destinations: const [
-              NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Trang chủ'),
-              NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Hỏi đáp'),
-              NavigationDestination(icon: Icon(Icons.notifications_outlined), selectedIcon: Icon(Icons.notifications), label: 'Thông báo'),
-              NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Tài khoản'),
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Trang chủ',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.chat_bubble_outline),
+                selectedIcon: Icon(Icons.chat_bubble),
+                label: 'Hỏi đáp',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.notifications_outlined),
+                selectedIcon: Icon(Icons.notifications),
+                label: 'Thông báo',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Tài khoản',
+              ),
             ],
           ),
         );
@@ -166,7 +191,9 @@ class _HomeTabContentState extends State<_HomeTabContent> {
 
   Future<void> _openScreening() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ScreeningIntroPage(child: widget.child)),
+      MaterialPageRoute(
+        builder: (_) => ScreeningIntroPage(child: widget.child),
+      ),
     );
     _reload();
   }
@@ -181,15 +208,18 @@ class _HomeTabContentState extends State<_HomeTabContent> {
         builder: (context, snapshot) {
           final hasScreening = snapshot.data;
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: IrisSpacing.page,
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: IrisSpacing.card,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(child.name, style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        child.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(formatAgeLabel(child)),
                     ],
@@ -200,24 +230,37 @@ class _HomeTabContentState extends State<_HomeTabContent> {
               if (hasScreening == false) ...[
                 FilledButton.icon(
                   onPressed: _openScreening,
-                  icon: const Icon(Icons.fact_check_outlined),
+                  icon: const IrisAssetIcon(
+                    asset: IrisAssets.iconScreening,
+                    size: IrisSizes.iconMedium,
+                  ),
                   label: const Text('Sàng lọc'),
                 ),
                 const SizedBox(height: 8),
               ],
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DomainListPage(child: child)),
+                  MaterialPageRoute(
+                    builder: (_) => DomainListPage(child: child),
+                  ),
                 ),
-                icon: const Icon(Icons.checklist_outlined),
+                icon: const IrisAssetIcon(
+                  asset: IrisAssets.iconAssessment,
+                  size: IrisSizes.iconMedium,
+                ),
                 label: const Text('Đánh giá 7 lĩnh vực'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => VideoPreparationPage(child: child)),
+                  MaterialPageRoute(
+                    builder: (_) => VideoPreparationPage(child: child),
+                  ),
                 ),
-                icon: const Icon(Icons.videocam_outlined),
+                icon: const IrisAssetIcon(
+                  asset: IrisAssets.iconVideo,
+                  size: IrisSizes.iconMedium,
+                ),
                 label: const Text('Quay video quan sát'),
               ),
               const SizedBox(height: 8),
@@ -225,15 +268,23 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => HistoryPage(child: child)),
                 ),
-                icon: const Icon(Icons.history),
+                icon: const IrisAssetIcon(
+                  asset: IrisAssets.iconHistory,
+                  size: IrisSizes.iconMedium,
+                ),
                 label: const Text('Lịch sử'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ExpertConnectPage(child: child)),
+                  MaterialPageRoute(
+                    builder: (_) => ExpertConnectPage(child: child),
+                  ),
                 ),
-                icon: const Icon(Icons.groups_outlined),
+                icon: const IrisAssetIcon(
+                  asset: IrisAssets.iconExpert,
+                  size: IrisSizes.iconMedium,
+                ),
                 label: const Text('Kết nối chuyên gia/trung tâm'),
               ),
             ],
@@ -266,16 +317,16 @@ class _AccountTab extends StatelessWidget {
   const _AccountTab({required this.child, required this.onChanged});
 
   Future<void> _changeAccount(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MultiChildDashboardPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const MultiChildDashboardPage()));
     onChanged();
   }
 
   Future<void> _createProfile(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CreateProfilePage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreateProfilePage()));
     onChanged();
   }
 
@@ -289,8 +340,14 @@ class _AccountTab extends StatelessWidget {
           'Toàn bộ dữ liệu sàng lọc, đánh giá, video sẽ bị xoá vĩnh viễn.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
-          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xoá')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Xoá'),
+          ),
         ],
       ),
     );
@@ -310,9 +367,9 @@ class _AccountTab extends StatelessWidget {
     } else {
       await ActiveChildService().clearActiveChildId();
       if (!context.mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CreateProfilePage()),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const CreateProfilePage()));
     }
     onChanged();
   }
@@ -322,19 +379,26 @@ class _AccountTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Tài khoản')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: IrisSpacing.page,
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: IrisSpacing.card,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(child.name, style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    child.name,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 4),
-                  Text('${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}'),
+                  Text(
+                    '${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}',
+                  ),
                   const SizedBox(height: 4),
-                  Text('Người đánh giá: ${child.nguoiDanhGia ?? "Chưa cập nhật"}'),
+                  Text(
+                    'Người đánh giá: ${child.nguoiDanhGia ?? "Chưa cập nhật"}',
+                  ),
                   const SizedBox(height: 4),
                   Text('Vai trò: ${child.vaiTro ?? "Chưa cập nhật"}'),
                 ],
@@ -355,7 +419,7 @@ class _AccountTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            style: OutlinedButton.styleFrom(foregroundColor: IrisColors.danger),
             onPressed: () => _deleteAccount(context),
             icon: const Icon(Icons.delete_outline),
             label: const Text('Xoá tài khoản'),

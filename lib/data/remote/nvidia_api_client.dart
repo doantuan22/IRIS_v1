@@ -29,9 +29,9 @@ class NvidiaApiClient {
 
   /// [timeout] cho phép ghi đè trong test (mặc định 15 giây khi dùng thật).
   NvidiaApiClient({http.Client? client, Duration? timeout})
-      : _client = client ?? http.Client(),
-        _timeout = timeout ?? _nvidiaTimeout,
-        _isCustomClient = client != null;
+    : _client = client ?? http.Client(),
+      _timeout = timeout ?? _nvidiaTimeout,
+      _isCustomClient = client != null;
 
   Future<List<double>> embed(String text) async {
     if (!_isCustomClient && !ApiConfig.hasNvidiaApiKey) {
@@ -42,20 +42,22 @@ class NvidiaApiClient {
 
     final http.Response response;
     try {
-      response = await _client.post(
-        Uri.parse(ApiConfig.nvidiaEmbeddingEndpoint),
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.nvidiaApiKey}',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'input': [text],
-          'model': ApiConfig.nvidiaEmbeddingModel,
-          'input_type': 'query',
-          'encoding_format': 'float',
-        }),
-      ).timeout(_timeout);
+      response = await _client
+          .post(
+            Uri.parse(ApiConfig.nvidiaEmbeddingEndpoint),
+            headers: {
+              'Authorization': 'Bearer ${ApiConfig.nvidiaApiKey}',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({
+              'input': [text],
+              'model': ApiConfig.nvidiaEmbeddingModel,
+              'input_type': 'query',
+              'encoding_format': 'float',
+            }),
+          )
+          .timeout(_timeout);
     } on TimeoutException {
       throw NvidiaApiException(
         'Hết thời gian chờ khi gọi NVIDIA embedding API (quá ${_timeout.inSeconds} giây)',
@@ -72,19 +74,27 @@ class NvidiaApiClient {
 
     final Map<String, dynamic> decoded;
     try {
-      decoded = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      decoded =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      throw NvidiaApiException('Không parse được response NVIDIA embedding API: $e');
+      throw NvidiaApiException(
+        'Không parse được response NVIDIA embedding API: $e',
+      );
     }
 
     final data = decoded['data'];
     if (data is! List || data.isEmpty) {
-      throw NvidiaApiException('NVIDIA embedding API không trả về dữ liệu embedding');
+      throw NvidiaApiException(
+        'NVIDIA embedding API không trả về dữ liệu embedding',
+      );
     }
 
     final firstEntry = data.first;
-    if (firstEntry is! Map<String, dynamic> || firstEntry['embedding'] is! List) {
-      throw NvidiaApiException('NVIDIA embedding API trả về định dạng embedding không hợp lệ');
+    if (firstEntry is! Map<String, dynamic> ||
+        firstEntry['embedding'] is! List) {
+      throw NvidiaApiException(
+        'NVIDIA embedding API trả về định dạng embedding không hợp lệ',
+      );
     }
 
     return (firstEntry['embedding'] as List)

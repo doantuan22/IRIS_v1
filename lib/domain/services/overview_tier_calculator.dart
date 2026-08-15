@@ -51,24 +51,22 @@ class OverviewTierResult {
   factory OverviewTierResult.insufficientData({
     required int soCanTheoDoi,
     required int soThieu,
-  }) =>
-      OverviewTierResult._(
-        status: OverviewTierStatus.insufficientData,
-        soCanTheoDoi: soCanTheoDoi,
-        soThieu: soThieu,
-      );
+  }) => OverviewTierResult._(
+    status: OverviewTierStatus.insufficientData,
+    soCanTheoDoi: soCanTheoDoi,
+    soThieu: soThieu,
+  );
 
   factory OverviewTierResult.computed({
     required String tier,
     required int soCanTheoDoi,
     required int soThieu,
-  }) =>
-      OverviewTierResult._(
-        status: OverviewTierStatus.computed,
-        tier: tier,
-        soCanTheoDoi: soCanTheoDoi,
-        soThieu: soThieu,
-      );
+  }) => OverviewTierResult._(
+    status: OverviewTierStatus.computed,
+    tier: tier,
+    soCanTheoDoi: soCanTheoDoi,
+    soThieu: soThieu,
+  );
 
   bool get isInsufficientData => status == OverviewTierStatus.insufficientData;
 }
@@ -84,7 +82,10 @@ OverviewTierResult calculateOverviewTier(List<String> labels) {
   final soCanTheoDoi = labels.where((l) => l == labelCanTheoDoi).length;
 
   if (soThieu >= nguongThieuDuLieuToiThieu) {
-    return OverviewTierResult.insufficientData(soCanTheoDoi: soCanTheoDoi, soThieu: soThieu);
+    return OverviewTierResult.insufficientData(
+      soCanTheoDoi: soCanTheoDoi,
+      soThieu: soThieu,
+    );
   }
 
   final String tier;
@@ -95,5 +96,9 @@ OverviewTierResult calculateOverviewTier(List<String> labels) {
   } else {
     tier = tierChuyenMonSom;
   }
-  return OverviewTierResult.computed(tier: tier, soCanTheoDoi: soCanTheoDoi, soThieu: soThieu);
+  return OverviewTierResult.computed(
+    tier: tier,
+    soCanTheoDoi: soCanTheoDoi,
+    soThieu: soThieu,
+  );
 }

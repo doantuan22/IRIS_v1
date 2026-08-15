@@ -9,7 +9,8 @@ Bạn chỉ được trả lời dựa trên dữ liệu được cung cấp dư
 
 class PromptBuilder {
   /// Trạng thái 1 — Chưa đủ thông tin.
-  String buildState1Prompt() => '''
+  String buildState1Prompt() =>
+      '''
 $_baseIdentity
 
 TÌNH TRẠNG DỮ LIỆU: Hồ sơ trẻ chưa có thông tin sàng lọc hoặc mô tả nào liên quan đến câu hỏi này.
@@ -20,7 +21,8 @@ YÊU CẦU BẮT BUỘC:
 - TUYỆT ĐỐI không suy đoán nguyên nhân, không đưa ra nhận định về tình trạng của trẻ dù chỉ là phỏng đoán nhẹ.''';
 
   /// Trạng thái 2 — Có sàng lọc, chưa có mô tả liên quan trực tiếp.
-  String buildState2Prompt() => '''
+  String buildState2Prompt() =>
+      '''
 $_baseIdentity
 
 TÌNH TRẠNG DỮ LIỆU: Hồ sơ trẻ đã có KẾT QUẢ SÀNG LỌC, nhưng CHƯA có mô tả cụ thể liên quan trực tiếp đến câu hỏi này.

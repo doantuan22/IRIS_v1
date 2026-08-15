@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_theme.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/video_repository.dart';
 import '../../domain/models/child.dart';
@@ -35,10 +36,10 @@ class _VideoListPageState extends State<VideoListPage> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'reviewed' => '🟢 Đã có nhận xét',
-        'pending' => '🟡 Đang chờ chuyên gia',
-        _ => 'Chưa gửi',
-      };
+    'reviewed' => '🟢 Đã có nhận xét',
+    'pending' => '🟡 Đang chờ chuyên gia',
+    _ => 'Chưa gửi',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +55,21 @@ class _VideoListPageState extends State<VideoListPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const Icon(
+                      Icons.error_outline,
+                      color: IrisColors.danger,
+                      size: 40,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Không tải được danh sách video: ${snapshot.error}', textAlign: TextAlign.center),
+                    Text(
+                      'Không tải được danh sách video: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                    OutlinedButton(
+                      onPressed: _reload,
+                      child: const Text('Thử lại'),
+                    ),
                   ],
                 ),
               ),
@@ -80,8 +91,10 @@ class _VideoListPageState extends State<VideoListPage> {
             itemCount: videos.length,
             itemBuilder: (context, index) {
               final video = videos[index];
-              final hasSituation = video.situation != null && video.situation!.trim().isNotEmpty;
-              final dateStr = '${video.recordedAt.day}/${video.recordedAt.month}/${video.recordedAt.year}';
+              final hasSituation =
+                  video.situation != null && video.situation!.trim().isNotEmpty;
+              final dateStr =
+                  '${video.recordedAt.day}/${video.recordedAt.month}/${video.recordedAt.year}';
 
               return ListTile(
                 leading: const CircleAvatar(
@@ -92,12 +105,16 @@ class _VideoListPageState extends State<VideoListPage> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  hasSituation ? '$dateStr • ${_statusLabel(video.status)}' : _statusLabel(video.status),
+                  hasSituation
+                      ? '$dateStr • ${_statusLabel(video.status)}'
+                      : _statusLabel(video.status),
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => VideoDetailPage(video: video)),
+                    MaterialPageRoute(
+                      builder: (_) => VideoDetailPage(video: video),
+                    ),
                   );
                   _reload();
                 },
@@ -109,7 +126,9 @@ class _VideoListPageState extends State<VideoListPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => VideoPreparationPage(child: widget.child)),
+            MaterialPageRoute(
+              builder: (_) => VideoPreparationPage(child: widget.child),
+            ),
           );
           _reload();
         },

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/domains.dart';
+import '../../../core/theme/iris_assets.dart';
+import '../../../core/theme/iris_theme.dart';
+import '../../../core/widgets/iris_ui.dart';
 import '../../../data/local/database.dart';
 import '../../../data/repositories/assessment_repository.dart';
 import '../../../data/repositories/domain_overview_label_repository.dart';
@@ -16,17 +19,17 @@ const String _disclaimerText =
     'không phải kết luận chẩn đoán y khoa.';
 
 String _domainLabelDisplayText(String? nhan) => switch (nhan) {
-      labelThuongGap => 'Thường gặp',
-      labelCanTheoDoi => 'Cần theo dõi',
-      labelChuaDuDuLieu => 'Chưa đủ dữ liệu',
-      _ => 'Chưa có nhãn',
-    };
+  labelThuongGap => 'Thường gặp',
+  labelCanTheoDoi => 'Cần theo dõi',
+  labelChuaDuDuLieu => 'Chưa đủ dữ liệu',
+  _ => 'Chưa có nhãn',
+};
 
 Color _domainLabelColor(BuildContext context, String? nhan) => switch (nhan) {
-      labelThuongGap => Colors.green,
-      labelCanTheoDoi => Colors.orange,
-      _ => Theme.of(context).hintColor,
-    };
+  labelThuongGap => IrisColors.success,
+  labelCanTheoDoi => IrisColors.warning,
+  _ => Theme.of(context).hintColor,
+};
 
 /// Trạng thái đã tải xong dữ liệu cần cho màn hình — tách khỏi `Future` gốc
 /// để `build()` chỉ cần switch theo 1 kiểu dữ liệu duy nhất.
@@ -35,7 +38,11 @@ class _LoadedState {
   final Map<String, DomainOverviewLabel> labels;
   final OverviewSummary? summary;
 
-  const _LoadedState({required this.doneDomainCount, required this.labels, this.summary});
+  const _LoadedState({
+    required this.doneDomainCount,
+    required this.labels,
+    this.summary,
+  });
 
   bool get isComplete => doneDomainCount >= domains.length;
 }
@@ -72,20 +79,34 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
   }
 
   void _reload() {
-    setState(() => _stateFuture = _load());
+    setState(() {
+      _stateFuture = _load();
+    });
   }
 
   Future<_LoadedState> _load() async {
-    final assessments = await _assessmentRepository.getForChild(widget.child.id);
-    final doneDomains = assessments.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet();
+    final assessments = await _assessmentRepository.getForChild(
+      widget.child.id,
+    );
+    final doneDomains = assessments
+        .where((a) => a.contentType == 'mo_ta')
+        .map((a) => a.linhVuc)
+        .toSet();
 
     if (doneDomains.length < domains.length) {
-      return _LoadedState(doneDomainCount: doneDomains.length, labels: const {});
+      return _LoadedState(
+        doneDomainCount: doneDomains.length,
+        labels: const {},
+      );
     }
 
     final labels = await _labelRepository.getLatestForChild(widget.child.id);
     final summary = await _summaryRepository.getLatestForChild(widget.child.id);
-    return _LoadedState(doneDomainCount: doneDomains.length, labels: labels, summary: summary);
+    return _LoadedState(
+      doneDomainCount: doneDomains.length,
+      labels: labels,
+      summary: summary,
+    );
   }
 
   Future<void> _compute() async {
@@ -111,7 +132,8 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
     if (_generatingDescription) return;
     setState(() => _generatingDescription = true);
     try {
-      final updated = await _overviewRepository.generateAndSaveSummaryDescription(widget.child, summary);
+      final updated = await _overviewRepository
+          .generateAndSaveSummaryDescription(widget.child, summary);
       if (updated != null && mounted) {
         _reload();
       }
@@ -134,11 +156,21 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const Icon(
+                      Icons.error_outline,
+                      color: IrisColors.danger,
+                      size: 40,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Không tải được dữ liệu: ${snapshot.error}', textAlign: TextAlign.center),
+                    Text(
+                      'Không tải được dữ liệu: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    OutlinedButton(onPressed: _reload, child: const Text('Thử lại')),
+                    OutlinedButton(
+                      onPressed: _reload,
+                      child: const Text('Thử lại'),
+                    ),
                   ],
                 ),
               ),
@@ -157,7 +189,10 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 _buildReady(state),
               if (_computeError != null) ...[
                 const SizedBox(height: 16),
-                Text(_computeError!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _computeError!,
+                  style: const TextStyle(color: IrisColors.danger),
+                ),
               ],
               const SizedBox(height: 24),
               // Dòng cảnh báo LUÔN hiển thị, bất kể trạng thái ở trên —
@@ -175,7 +210,10 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tiến độ mô tả: $doneCount/$total lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Tiến độ mô tả: $doneCount/$total lĩnh vực',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         LinearProgressIndicator(value: total == 0 ? 0 : doneCount / total),
         const SizedBox(height: 16),
@@ -197,7 +235,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Đã có đủ mô tả cho cả 7 lĩnh vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh.'),
+          const Text(
+            'Đã có đủ mô tả cho cả 7 lĩnh vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh.',
+          ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _computing ? null : _compute,
@@ -223,7 +263,16 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Mức tổng quan', style: Theme.of(context).textTheme.titleSmall),
+                Row(
+                  children: [
+                    const IrisAssetIcon(asset: IrisAssets.iconOverview),
+                    const SizedBox(width: IrisSpacing.sm),
+                    Text(
+                      'Mức tổng quan',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(
                   tierDisplayLabel(summary.tier),
@@ -232,7 +281,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 const SizedBox(height: 4),
                 Text(
                   '${summary.soLinhVucCanTheoDoi}/${domains.length} lĩnh vực cần theo dõi',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).hintColor,
+                  ),
                 ),
               ],
             ),
@@ -248,15 +299,24 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.auto_awesome, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Chân dung biểu hiện', style: Theme.of(context).textTheme.titleMedium),
+                      const IrisMascot(
+                        asset: IrisAssets.mascotPointing,
+                        height: IrisSizes.iconChip,
+                        semanticLabel: 'Gấu IRIS chỉ dẫn',
+                      ),
+                      const SizedBox(width: IrisSpacing.xs),
+                      Text(
+                        'Chân dung biểu hiện',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
                     summary.moTaTongHop!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.5),
                   ),
                 ],
               ),
@@ -286,7 +346,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: OutlinedButton.icon(
-                      onPressed: _generatingDescription ? null : () => _retryDescription(summary),
+                      onPressed: _generatingDescription
+                          ? null
+                          : () => _retryDescription(summary),
                       icon: _generatingDescription
                           ? const SizedBox(
                               width: 16,
@@ -302,15 +364,21 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
             ),
           ),
         const SizedBox(height: 20),
-        Text('Chi tiết theo lĩnh vực', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Chi tiết theo lĩnh vực',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         Card(
           child: Column(
             children: domains.map((domain) {
               final label = state.labels[domain.code];
               return ListTile(
+                leading: IrisDomainIcon(domainCode: domain.code),
                 title: Text(domain.label),
-                subtitle: label?.lyDoNganGon != null ? Text(label!.lyDoNganGon!) : null,
+                subtitle: label?.lyDoNganGon != null
+                    ? Text(label!.lyDoNganGon!)
+                    : null,
                 trailing: Text(
                   _domainLabelDisplayText(label?.nhan),
                   style: TextStyle(
@@ -337,7 +405,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => ExpertConnectPage(child: widget.child)),
+              MaterialPageRoute(
+                builder: (_) => ExpertConnectPage(child: widget.child),
+              ),
             ),
             icon: const Icon(Icons.support_agent_outlined),
             label: const Text('Kết nối chuyên gia/trung tâm'),
@@ -352,14 +422,19 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: IrisRadii.inputBorder,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.info_outline, size: 20),
           const SizedBox(width: 8),
-          Expanded(child: Text(_disclaimerText, style: Theme.of(context).textTheme.bodySmall)),
+          Expanded(
+            child: Text(
+              _disclaimerText,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
         ],
       ),
     );

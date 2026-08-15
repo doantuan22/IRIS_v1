@@ -48,7 +48,9 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
       if (!mounted) return;
       setState(() => _playerController = controller);
     } catch (e) {
-      if (mounted) setState(() => _playerError = 'Không phát lại được video: $e');
+      if (mounted) {
+        setState(() => _playerError = 'Không phát lại được video: $e');
+      }
     }
   }
 
@@ -85,21 +87,27 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
         _sent = true;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã gửi video cho chuyên gia (mô phỏng trong phạm vi thiết bị).')),
+        const SnackBar(
+          content: Text(
+            'Đã gửi video cho chuyên gia (mô phỏng trong phạm vi thiết bị).',
+          ),
+        ),
       );
     } catch (e) {
       if (mounted) {
         setState(() => _sending = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không gửi được video: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Không gửi được video: $e')));
       }
     }
   }
 
   void _recordAnother() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => VideoPreparationPage(child: widget.child)),
+      MaterialPageRoute(
+        builder: (_) => VideoPreparationPage(child: widget.child),
+      ),
     );
   }
 
@@ -166,10 +174,16 @@ class _VideoReviewPageState extends State<VideoReviewPage> {
             child: IconButton(
               iconSize: 48,
               color: Colors.white70,
-              icon: Icon(controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle),
+              icon: Icon(
+                controller.value.isPlaying
+                    ? Icons.pause_circle
+                    : Icons.play_circle,
+              ),
               onPressed: () {
                 setState(() {
-                  controller.value.isPlaying ? controller.pause() : controller.play();
+                  controller.value.isPlaying
+                      ? controller.pause()
+                      : controller.play();
                 });
               },
             ),

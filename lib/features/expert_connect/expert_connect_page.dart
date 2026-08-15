@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/iris_assets.dart';
+import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -13,7 +16,11 @@ class _NeedInfo {
   final String description;
   final IconData icon;
 
-  const _NeedInfo({required this.title, required this.description, required this.icon});
+  const _NeedInfo({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
 }
 
 const Map<_NeedLevel, _NeedInfo> _needInfo = {
@@ -26,12 +33,14 @@ const Map<_NeedLevel, _NeedInfo> _needInfo = {
   ),
   _NeedLevel.monitor: _NeedInfo(
     title: 'Có dấu hiệu cần theo dõi',
-    description: 'Hồ sơ đã có một số dữ liệu sàng lọc/đánh giá. Nên gặp chuyên gia để được đánh giá chuyên sâu hơn.',
+    description:
+        'Hồ sơ đã có một số dữ liệu sàng lọc/đánh giá. Nên gặp chuyên gia để được đánh giá chuyên sâu hơn.',
     icon: Icons.visibility_outlined,
   ),
   _NeedLevel.detailed: _NeedInfo(
     title: 'Đã có kết quả đánh giá đầy đủ hơn',
-    description: 'Hồ sơ đã có khá đầy đủ dữ liệu đánh giá. Có thể tham khảo các dịch vụ can thiệp/hỗ trợ cụ thể dưới đây.',
+    description:
+        'Hồ sơ đã có khá đầy đủ dữ liệu đánh giá. Có thể tham khảo các dịch vụ can thiệp/hỗ trợ cụ thể dưới đây.',
     icon: Icons.fact_check_outlined,
   ),
 };
@@ -69,7 +78,8 @@ const List<_ProviderInfo> _providers = [
   ),
   _ProviderInfo(
     name: 'Phòng khám Nhi khoa - Phát triển An Khang',
-    description: 'Phòng khám nhi / phát triển trẻ nhỏ — khám & tư vấn trẻ 0-10 tuổi',
+    description:
+        'Phòng khám nhi / phát triển trẻ nhỏ — khám & tư vấn trẻ 0-10 tuổi',
     rating: 4.4,
     reviewCount: 96,
     distanceKm: 2.5,
@@ -136,10 +146,17 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
   /// bán) cho mức "đầy đủ hơn" là lựa chọn tự chọn hợp lý, không có sẵn
   /// trong tài liệu gốc.
   Future<_NeedLevel> _determineNeedLevel() async {
-    final hasScreening = await _screeningRepository.hasScreening(widget.child.id);
-    final assessments = await _assessmentRepository.getForChild(widget.child.id);
-    final doneDomainCount =
-        assessments.where((a) => a.contentType == 'mo_ta').map((a) => a.linhVuc).toSet().length;
+    final hasScreening = await _screeningRepository.hasScreening(
+      widget.child.id,
+    );
+    final assessments = await _assessmentRepository.getForChild(
+      widget.child.id,
+    );
+    final doneDomainCount = assessments
+        .where((a) => a.contentType == 'mo_ta')
+        .map((a) => a.linhVuc)
+        .toSet()
+        .length;
     final videos = await _videoRepository.getForChild(widget.child.id);
     final hasReviewedVideo = videos.any((v) => v.status == 'reviewed');
 
@@ -159,9 +176,11 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final info = _needInfo[snapshot.data!]!;
-          final visibleProviders = _showMore ? _providers : _providers.take(4).toList();
+          final visibleProviders = _showMore
+              ? _providers
+              : _providers.take(4).toList();
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: IrisSpacing.page,
             children: [
               Card(
                 child: Padding(
@@ -169,13 +188,16 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(info.icon, size: 32),
-                      const SizedBox(width: 12),
+                      const IrisAssetIcon(asset: IrisAssets.iconExpert),
+                      const SizedBox(width: IrisSpacing.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(info.title, style: Theme.of(context).textTheme.titleMedium),
+                            Text(
+                              info.title,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
                             const SizedBox(height: 4),
                             Text(info.description),
                           ],
@@ -186,9 +208,14 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Đơn vị/dịch vụ đề xuất', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Đơn vị/dịch vụ đề xuất',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
-              ...visibleProviders.map((provider) => _ProviderCard(provider: provider)),
+              ...visibleProviders.map(
+                (provider) => _ProviderCard(provider: provider),
+              ),
               if (!_showMore && _providers.length > 4)
                 Center(
                   child: TextButton(
@@ -200,10 +227,10 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
               Text(
                 'Đây là danh sách minh hoạ, chưa phải dữ liệu đơn vị/chuyên gia thật.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).hintColor,
+                ),
               ),
             ],
           );
@@ -221,25 +248,35 @@ class _ProviderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: IrisSpacing.sm),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: IrisSpacing.card,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(provider.icon, size: 32),
-            const SizedBox(width: 12),
+            IrisIconChip(icon: provider.icon, color: IrisColors.primary),
+            const SizedBox(width: IrisSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(provider.name, style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    provider.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 4),
-                  Text(provider.description, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    provider.description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: IrisColors.warning,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${provider.rating} (${provider.reviewCount} đánh giá)',
@@ -248,7 +285,10 @@ class _ProviderCard extends StatelessWidget {
                       const SizedBox(width: 12),
                       const Icon(Icons.place_outlined, size: 16),
                       const SizedBox(width: 4),
-                      Text('${provider.distanceKm} km', style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        '${provider.distanceKm} km',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ],

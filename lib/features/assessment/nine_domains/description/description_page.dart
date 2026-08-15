@@ -11,14 +11,19 @@ import '../../../../domain/models/child.dart';
 /// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiện ở đầu Mô tả biểu
 /// hiện để người dùng hiểu đang mô tả về khía cạnh nào.
 const Map<String, String> _domainIntroTextTemp = {
-  'nhan_thuc': 'Khả năng của trẻ trong việc hiểu, ghi nhớ, suy luận và giải quyết vấn đề phù hợp với độ tuổi.',
+  'nhan_thuc':
+      'Khả năng của trẻ trong việc hiểu, ghi nhớ, suy luận và giải quyết vấn đề phù hợp với độ tuổi.',
   'cam_xuc': 'Cách trẻ nhận biết, thể hiện và điều tiết cảm xúc của bản thân.',
-  'giac_quan': 'Cách trẻ tiếp nhận và phản ứng với các kích thích giác quan (âm thanh, ánh sáng, xúc giác...).',
+  'giac_quan':
+      'Cách trẻ tiếp nhận và phản ứng với các kích thích giác quan (âm thanh, ánh sáng, xúc giác...).',
   'quan_he_xa_hoi':
       'Khả năng của trẻ trong việc tương tác, giao tiếp, ứng xử, tuân thủ quy tắc và thích nghi với các tình huống xã hội.',
-  'ngon_ngu': 'Khả năng hiểu và sử dụng ngôn ngữ để giao tiếp với người xung quanh.',
-  'sinh_hoc': 'Các yếu tố phát triển thể chất và sinh học liên quan đến sự phát triển chung của trẻ.',
-  'sinh_hoat_ca_nhan': 'Khả năng tự thực hiện các hoạt động sinh hoạt cá nhân hàng ngày phù hợp với độ tuổi.',
+  'ngon_ngu':
+      'Khả năng hiểu và sử dụng ngôn ngữ để giao tiếp với người xung quanh.',
+  'sinh_hoc':
+      'Các yếu tố phát triển thể chất và sinh học liên quan đến sự phát triển chung của trẻ.',
+  'sinh_hoat_ca_nhan':
+      'Khả năng tự thực hiện các hoạt động sinh hoạt cá nhân hàng ngày phù hợp với độ tuổi.',
 };
 
 /// Mô tả biểu hiện: dữ liệu riêng của trẻ do người dùng nhập, lưu vào bảng
@@ -71,7 +76,10 @@ class _DescriptionPageState extends State<DescriptionPage> {
   }
 
   Future<List<Assessment>> _loadDescriptions() async {
-    final all = await _assessmentRepository.getForChild(widget.child.id, linhVuc: widget.linhVuc);
+    final all = await _assessmentRepository.getForChild(
+      widget.child.id,
+      linhVuc: widget.linhVuc,
+    );
     return all.where((a) => a.contentType == 'mo_ta').toList();
   }
 
@@ -102,7 +110,8 @@ class _DescriptionPageState extends State<DescriptionPage> {
       await _historyLogRepository.add(
         childId: widget.child.id,
         eventType: 'danh_gia',
-        description: 'Đánh giá ${widget.linhVucLabel} — đã nhập mô tả biểu hiện',
+        description:
+            'Đánh giá ${widget.linhVucLabel} — đã nhập mô tả biểu hiện',
       );
     } catch (_) {
       // Không chặn luồng chính vì lịch sử là dữ liệu phụ trợ.
@@ -120,7 +129,9 @@ class _DescriptionPageState extends State<DescriptionPage> {
       _saving = false;
       _pendingEmbedContent = embedSucceeded ? null : content;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snackBarMessage)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(snackBarMessage)));
   }
 
   /// Gọi NVIDIA embed + lưu `profile_chunks` cho [content]. Trả `true` nếu
@@ -155,9 +166,15 @@ class _DescriptionPageState extends State<DescriptionPage> {
       _retrying = false;
       if (succeeded) _pendingEmbedContent = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(succeeded ? 'Đã xử lý xong cho AI.' : 'Vẫn chưa xử lý được cho AI, thử lại sau.'),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          succeeded
+              ? 'Đã xử lý xong cho AI.'
+              : 'Vẫn chưa xử lý được cho AI, thử lại sau.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -168,8 +185,11 @@ class _DescriptionPageState extends State<DescriptionPage> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            _domainIntroTextTemp[widget.linhVuc] ?? 'Mô tả biểu hiện của trẻ trong lĩnh vực này.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).hintColor),
+            _domainIntroTextTemp[widget.linhVuc] ??
+                'Mô tả biểu hiện của trẻ trong lĩnh vực này.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).hintColor,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -199,7 +219,9 @@ class _DescriptionPageState extends State<DescriptionPage> {
             alignment: Alignment.centerRight,
             child: Text(
               '${_contentController.text.length} ký tự',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).hintColor,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -209,7 +231,10 @@ class _DescriptionPageState extends State<DescriptionPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ghi nhận đơn giản', style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    'Ghi nhận đơn giản',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 4),
                   const Text(
                     'Bạn không cần kiến thức chuyên môn. Chỉ cần mô tả những gì bạn thấy trong cuộc sống hàng ngày.',
@@ -258,12 +283,14 @@ class _DescriptionPageState extends State<DescriptionPage> {
               }
               return Column(
                 children: descriptions
-                    .map((a) => Card(
-                          child: ListTile(
-                            title: Text(a.content),
-                            subtitle: Text(a.createdAt.toString()),
-                          ),
-                        ))
+                    .map(
+                      (a) => Card(
+                        child: ListTile(
+                          title: Text(a.content),
+                          subtitle: Text(a.createdAt.toString()),
+                        ),
+                      ),
+                    )
                     .toList(),
               );
             },

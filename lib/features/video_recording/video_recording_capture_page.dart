@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+
+import '../../core/theme/iris_theme.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -22,7 +24,8 @@ class VideoRecordingCapturePage extends StatefulWidget {
   const VideoRecordingCapturePage({super.key, required this.child});
 
   @override
-  State<VideoRecordingCapturePage> createState() => _VideoRecordingCapturePageState();
+  State<VideoRecordingCapturePage> createState() =>
+      _VideoRecordingCapturePageState();
 }
 
 class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
@@ -43,20 +46,29 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        setState(() => _errorMessage = 'Không tìm thấy camera nào trên thiết bị.');
+        setState(
+          () => _errorMessage = 'Không tìm thấy camera nào trên thiết bị.',
+        );
         return;
       }
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      final controller = CameraController(camera, ResolutionPreset.medium, enableAudio: true);
+      final controller = CameraController(
+        camera,
+        ResolutionPreset.medium,
+        enableAudio: true,
+      );
       await controller.initialize();
       if (!mounted) return;
       setState(() => _controller = controller);
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Không mở được camera (có thể do quyền camera/micro bị từ chối): $e');
+        setState(
+          () => _errorMessage =
+              'Không mở được camera (có thể do quyền camera/micro bị từ chối): $e',
+        );
       }
     }
   }
@@ -78,9 +90,9 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không bắt đầu quay được: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Không bắt đầu quay được: $e')));
       }
     }
   }
@@ -99,10 +111,8 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => VideoReviewPage(
-            child: widget.child,
-            filePath: savedPath,
-          ),
+          builder: (_) =>
+              VideoReviewPage(child: widget.child, filePath: savedPath),
         ),
       );
     } catch (e) {
@@ -155,12 +165,16 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: IrisColors.danger,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: IrisColors.danger),
               ),
               const SizedBox(height: 16),
               OutlinedButton(
@@ -192,8 +206,10 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: _isRecording ? Colors.red.withValues(alpha: 0.8) : Colors.black54,
-                borderRadius: BorderRadius.circular(20),
+                color: _isRecording
+                    ? IrisColors.danger.withValues(alpha: 0.8)
+                    : IrisColors.cameraOverlay,
+                borderRadius: IrisRadii.cardBorder,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -211,7 +227,10 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
                   ],
                   Text(
                     _isRecording ? _formatDuration(_elapsed) : 'Tối đa 3 phút',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -227,10 +246,12 @@ class _VideoRecordingCapturePageState extends State<VideoRecordingCapturePage> {
                 ? const CircularProgressIndicator(color: Colors.white)
                 : FloatingActionButton.large(
                     onPressed: _isRecording ? _stopRecording : _startRecording,
-                    backgroundColor: _isRecording ? Colors.red : Colors.white,
+                    backgroundColor: _isRecording
+                        ? IrisColors.danger
+                        : IrisColors.surface,
                     child: Icon(
                       _isRecording ? Icons.stop : Icons.fiber_manual_record,
-                      color: _isRecording ? Colors.white : Colors.red,
+                      color: _isRecording ? Colors.white : IrisColors.danger,
                       size: 36,
                     ),
                   ),

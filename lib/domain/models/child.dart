@@ -41,7 +41,9 @@ int childAgeInMonths(Child child) {
   if (child.ageYears != null) {
     return child.ageYears! * 12;
   }
-  throw StateError('Child ${child.id} không có dob lẫn ageYears để tính tuổi theo tháng');
+  throw StateError(
+    'Child ${child.id} không có dob lẫn ageYears để tính tuổi theo tháng',
+  );
 }
 
 /// Nhãn tuổi hiển thị trên UI, VD "3 tuổi 2 tháng" / "8 tháng tuổi".

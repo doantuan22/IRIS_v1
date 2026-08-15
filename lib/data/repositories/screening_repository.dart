@@ -63,32 +63,33 @@ class ScreeningRepository {
   /// thái riêng.
   Future<bool> hasScreening(String childId) async {
     final db = await _db.database;
-    final result = Sqflite.firstIntValue(await db.rawQuery(
-      'SELECT COUNT(*) FROM screenings WHERE child_id = ?',
-      [childId],
-    ));
+    final result = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM screenings WHERE child_id = ?', [
+        childId,
+      ]),
+    );
     return (result ?? 0) > 0;
   }
 
   Map<String, Object?> _toRow(Screening screening) => {
-        'id': screening.id,
-        'child_id': screening.childId,
-        'tool_name': screening.toolName,
-        'score': screening.score,
-        'result_summary': screening.resultSummary,
-        'performed_at': screening.performedAt?.toIso8601String(),
-        'created_at': screening.createdAt.toIso8601String(),
-      };
+    'id': screening.id,
+    'child_id': screening.childId,
+    'tool_name': screening.toolName,
+    'score': screening.score,
+    'result_summary': screening.resultSummary,
+    'performed_at': screening.performedAt?.toIso8601String(),
+    'created_at': screening.createdAt.toIso8601String(),
+  };
 
   Screening _fromRow(Map<String, Object?> row) => Screening(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        toolName: row['tool_name'] as String?,
-        score: row['score'] as String?,
-        resultSummary: row['result_summary'] as String?,
-        performedAt: row['performed_at'] == null
-            ? null
-            : DateTime.parse(row['performed_at'] as String),
-        createdAt: DateTime.parse(row['created_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    toolName: row['tool_name'] as String?,
+    score: row['score'] as String?,
+    resultSummary: row['result_summary'] as String?,
+    performedAt: row['performed_at'] == null
+        ? null
+        : DateTime.parse(row['performed_at'] as String),
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
 }

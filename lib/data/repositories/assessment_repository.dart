@@ -35,7 +35,10 @@ class AssessmentRepository {
     return assessment;
   }
 
-  Future<List<Assessment>> getForChild(String childId, {String? linhVuc}) async {
+  Future<List<Assessment>> getForChild(
+    String childId, {
+    String? linhVuc,
+  }) async {
     final db = await _db.database;
     final rows = await db.query(
       'assessments',
@@ -47,24 +50,24 @@ class AssessmentRepository {
   }
 
   Map<String, Object?> _toRow(Assessment assessment) => {
-        'id': assessment.id,
-        'child_id': assessment.childId,
-        'linh_vuc': assessment.linhVuc,
-        'content_type': assessment.contentType,
-        'content': assessment.content,
-        'nguon': assessment.nguon,
-        'performed_by': assessment.performedBy,
-        'created_at': assessment.createdAt.toIso8601String(),
-      };
+    'id': assessment.id,
+    'child_id': assessment.childId,
+    'linh_vuc': assessment.linhVuc,
+    'content_type': assessment.contentType,
+    'content': assessment.content,
+    'nguon': assessment.nguon,
+    'performed_by': assessment.performedBy,
+    'created_at': assessment.createdAt.toIso8601String(),
+  };
 
   Assessment _fromRow(Map<String, Object?> row) => Assessment(
-        id: row['id'] as String,
-        childId: row['child_id'] as String,
-        linhVuc: row['linh_vuc'] as String,
-        contentType: row['content_type'] as String,
-        content: row['content'] as String,
-        nguon: row['nguon'] as String?,
-        performedBy: row['performed_by'] as String?,
-        createdAt: DateTime.parse(row['created_at'] as String),
-      );
+    id: row['id'] as String,
+    childId: row['child_id'] as String,
+    linhVuc: row['linh_vuc'] as String,
+    contentType: row['content_type'] as String,
+    content: row['content'] as String,
+    nguon: row['nguon'] as String?,
+    performedBy: row['performed_by'] as String?,
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
 }

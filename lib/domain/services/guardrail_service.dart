@@ -25,11 +25,20 @@ class GuardrailService {
       (c) => ['phu_huynh', 'giao_vien', 'chuyen_gia'].contains(c.chunk.nguon),
     );
     if (hasRelevantDescription) {
-      return (state: AiState.hasProfessionalAssessment, groundingChunks: relevant);
+      return (
+        state: AiState.hasProfessionalAssessment,
+        groundingChunks: relevant,
+      );
     }
     if (hasScreeningResult) {
-      return (state: AiState.hasScreening, groundingChunks: <ScoredProfileChunk>[]);
+      return (
+        state: AiState.hasScreening,
+        groundingChunks: <ScoredProfileChunk>[],
+      );
     }
-    return (state: AiState.insufficientData, groundingChunks: <ScoredProfileChunk>[]);
+    return (
+      state: AiState.insufficientData,
+      groundingChunks: <ScoredProfileChunk>[],
+    );
   }
 }

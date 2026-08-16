@@ -14,6 +14,7 @@ import '../child_profile/create_profile/create_profile_page.dart';
 import '../expert_connect/expert_connect_page.dart';
 import '../history/history_page.dart';
 import '../multi_child_dashboard/multi_child_dashboard_page.dart';
+import '../screening/screening_history_list_page.dart';
 import '../screening/screening_intro_page.dart';
 import '../video_recording/video_preparation_page.dart';
 
@@ -406,6 +407,19 @@ class _AccountTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const ScreeningHistoryListPage(),
+              ),
+            ),
+            icon: const IrisAssetIcon(
+              asset: IrisAssets.iconScreening,
+              size: IrisSizes.iconMedium,
+            ),
+            label: const Text('Lịch sử sàng lọc'),
+          ),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => _changeAccount(context),
             icon: const Icon(Icons.swap_horiz),

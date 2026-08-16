@@ -114,16 +114,16 @@ void main() {
       AppDatabase.debugPathOverride = dbPath;
       final db = await AppDatabase.instance.database;
 
-      // 1. Xác nhận version DB là 7
-      expect(await db.getVersion(), 7);
+      // 1. Xác nhận version DB là 9 (sau khi có migration v9)
+      expect(await db.getVersion(), 9);
 
-      // 2. Xác nhận expert_knowledge_chunks đã xoá sạch chan_dung, giữ nguyên các loại khác
+      // 2. Xác nhận expert_knowledge_chunks đã xoá sạch chan_dung, chia_se_phu_huynh, bac_si, giữ nguyên so_sanh
       final expertRepo = ExpertKnowledgeRepository(AppDatabase.instance);
       final allChunks = await expertRepo.getAll();
-      expect(allChunks, hasLength(2));
+      expect(allChunks, hasLength(1));
       expect(allChunks.any((c) => c.contentType == 'chan_dung'), isFalse);
+      expect(allChunks.any((c) => c.contentType == 'bac_si'), isFalse);
       expect(allChunks.any((c) => c.contentType == 'so_sanh'), isTrue);
-      expect(allChunks.any((c) => c.contentType == 'bac_si'), isTrue);
 
       // 3. Xác nhận overview_summaries cũ còn nguyên dữ liệu, moTaTongHop là null
       final summaryRepo = OverviewSummaryRepository(AppDatabase.instance);

@@ -62,6 +62,7 @@ Future<SoSanhIngestOutcome> ingestValidSoSanhEntries(
     ...report.fieldIssues.map((i) => i.entryId).whereType<String>(),
     ...report.ageRangeIssues.map((i) => i.entryId).whereType<String>(),
     ...report.duplicateIssues.map((i) => i.entryId).whereType<String>(),
+    ...report.unexpectedLinhVucIssues.map((i) => i.entryId).whereType<String>(),
   };
   final validEntries =
       soSanhEntries.where((e) => !invalidIds.contains(e['id']?.toString())).toList();

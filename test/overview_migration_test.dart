@@ -96,7 +96,7 @@ void main() {
       // CREATE TABLE chạy trùng — đúng cách sqflite chỉ chạy onUpgrade 1 lần
       // dựa theo version đã lưu, không phải test lại logic sqflite, chỉ xác
       // nhận version cuối cùng đã được nâng cấp.
-      expect(db.getVersion(), completion(7));
+      expect(db.getVersion(), completion(9));
 
       // ignore: avoid_print
       print(

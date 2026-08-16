@@ -10,6 +10,8 @@ import 'tables/expert_knowledge_chunks_table.dart';
 import 'tables/history_logs_table.dart';
 import 'tables/overview_summaries_table.dart';
 import 'tables/profile_chunks_table.dart';
+import 'tables/screening_domain_scores_table.dart';
+import 'tables/screening_responses_table.dart';
 import 'tables/screenings_table.dart';
 import 'tables/videos_table.dart';
 
@@ -43,7 +45,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 9,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -58,6 +60,8 @@ class AppDatabase {
         await db.execute(aiConversationsTableCreate);
         await db.execute(domainOverviewLabelsTableCreate);
         await db.execute(overviewSummariesTableCreate);
+        await db.execute(screeningResponsesTableCreate);
+        await db.execute(screeningDomainScoresTableCreate);
       },
       // Version 2 — thêm 2 cột `nguoi_danh_gia`/`vai_tro` vào `children` cho
       // hồ sơ trẻ đã tồn tại từ trước (cài mới đã có sẵn 2 cột này qua
@@ -150,6 +154,26 @@ class AppDatabase {
             try {
               await db.execute(
                 'ALTER TABLE overview_summaries ADD COLUMN mo_ta_tong_hop TEXT',
+              );
+            } catch (_) {}
+          }
+        }
+        // Version 8 — thêm 2 bảng `screening_responses` và `screening_domain_scores`
+        // cho bộ sàng lọc 50 câu 7 lĩnh vực chính thức. Bảng `screenings` cũ giữ nguyên.
+        if (oldVersion < 8) {
+          await db.execute(screeningResponsesTableCreate);
+          await db.execute(screeningDomainScoresTableCreate);
+        }
+        // Version 9 — xoá dữ liệu `chia_se_phu_huynh` và `bac_si` khỏi `expert_knowledge_chunks`
+        // rút gọn mỗi lĩnh vực chỉ còn 2 phần: Mô tả biểu hiện & So sánh với trẻ cùng độ tuổi.
+        if (oldVersion < 9) {
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = 'expert_knowledge_chunks'",
+          );
+          if (tables.isNotEmpty) {
+            try {
+              await db.execute(
+                "DELETE FROM expert_knowledge_chunks WHERE content_type IN ('chia_se_phu_huynh', 'bac_si')",
               );
             } catch (_) {}
           }

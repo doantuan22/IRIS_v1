@@ -65,6 +65,7 @@ class VectorSearchService {
   }) async {
     final chunks = await _expertKnowledgeRepository.query(
       ageInMonths: ageMonths,
+      contentType: 'so_sanh',
     );
     final scored =
         chunks

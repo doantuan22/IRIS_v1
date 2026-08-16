@@ -4,6 +4,9 @@ import '../scripts/validate_so_sanh_data.dart';
 
 /// Test logic validate dữ liệu `so_sanh` (không gọi API, không cần database)
 /// — xem `validateSoSanhData` trong `scripts/validate_so_sanh_data.dart`.
+///
+/// Cấu trúc đối xứng đã chốt: 7 linh_vuc × 3 dải tuổi (15-23, 24-47, 48-60) ×
+/// 2 phan_loai (binh_thuong, roi_loan_pho_tu_ky).
 void main() {
   Map<String, dynamic> entry({
     required String id,
@@ -11,7 +14,7 @@ void main() {
     String? linhVuc = 'ngon_ngu',
     String? phanLoai = 'binh_thuong',
     int? min = 15,
-    int? max = 17,
+    int? max = 23,
     String content = placeholderContent,
     String? nguon = '[Chưa có nguồn]',
   }) => {
@@ -25,21 +28,42 @@ void main() {
         'nguon_tai_lieu': nguon,
       };
 
-  test('dữ liệu hợp lệ, không gap: không có lỗi cấu trúc, không có gap', () {
-    final entries = [
-      entry(id: 'a', min: 15, max: 17),
-      entry(id: 'b', min: 18, max: 23),
-    ];
+  /// Sinh đủ 42 entry hợp lệ (7 linh_vuc × 3 dải × 2 phan_loai) để làm nền
+  /// cho các test chỉ muốn kiểm tra 1 khía cạnh cụ thể.
+  List<Map<String, dynamic>> fullValidDataset() {
+    final entries = <Map<String, dynamic>>[];
+    for (final linhVuc in expectedLinhVucs) {
+      for (final phanLoai in expectedPhanLoais) {
+        for (final band in expectedAgeBands) {
+          entries.add(
+            entry(
+              id: 'so_sanh_${linhVuc}_${phanLoai}_${band.$1}_${band.$2}',
+              linhVuc: linhVuc,
+              phanLoai: phanLoai,
+              min: band.$1,
+              max: band.$2,
+            ),
+          );
+        }
+      }
+    }
+    return entries;
+  }
 
-    final report = validateSoSanhData(entries);
+  test('42 entry đúng cấu trúc (7 linh_vuc x 3 dải x 2 phan_loai): hợp lệ, không lỗi', () {
+    final report = validateSoSanhData(fullValidDataset());
 
     expect(report.isStructurallyValid, true);
     expect(report.fieldIssues, isEmpty);
     expect(report.ageRangeIssues, isEmpty);
     expect(report.duplicateIssues, isEmpty);
-    expect(report.gapMessages, isEmpty);
+    expect(report.unexpectedLinhVucIssues, isEmpty);
+    expect(report.bandMismatchMessages, isEmpty);
+
+    final text = report.buildReport();
+    expect(text, contains('Tổng cộng: 42 entry'));
     // ignore: avoid_print
-    print('PASS: dữ liệu hợp lệ liên tục không bị báo lỗi/gap');
+    print('PASS: bộ dữ liệu 42 entry đúng cấu trúc mới không bị báo lỗi');
   });
 
   test('thiếu/rỗng trường bắt buộc bị phát hiện', () {
@@ -72,8 +96,8 @@ void main() {
 
   test('trùng (linh_vuc, content_type, phan_loai, min, max) bị phát hiện', () {
     final entries = [
-      entry(id: 'first', min: 15, max: 17),
-      entry(id: 'second-duplicate', min: 15, max: 17),
+      entry(id: 'first', min: 15, max: 23),
+      entry(id: 'second-duplicate', min: 15, max: 23),
     ];
 
     final report = validateSoSanhData(entries);
@@ -85,51 +109,92 @@ void main() {
     print('PASS: entry trùng khoá bị phát hiện, entry gốc không bị báo lỗi');
   });
 
-  test('phát hiện khoảng trống tuổi (age gap) giữa 2 dải không liền kề', () {
+  test('linh_vuc đã gỡ (hanh_vi/ung_xu) bị phát hiện là linh_vuc lạ', () {
     final entries = [
-      entry(id: 'band-1', min: 15, max: 17),
-      // Thiếu dải 18-23 — nhảy thẳng sang 24-29.
-      entry(id: 'band-3', min: 24, max: 29),
+      entry(id: 'hanh-vi-1', linhVuc: 'hanh_vi'),
+      entry(id: 'ung-xu-1', linhVuc: 'ung_xu'),
     ];
 
     final report = validateSoSanhData(entries);
 
-    expect(report.isStructurallyValid, true); // gap chỉ là cảnh báo, không phải lỗi cấu trúc
-    expect(report.gapMessages.length, 1);
-    expect(report.gapMessages.first, contains('linh_vuc=ngon_ngu'));
-    expect(report.gapMessages.first, contains('phan_loai=binh_thuong'));
-    expect(report.gapMessages.first, contains('18'));
-    expect(report.gapMessages.first, contains('23'));
+    expect(report.isStructurallyValid, false);
+    expect(report.unexpectedLinhVucIssues.length, 2);
+    expect(report.unexpectedLinhVucIssues.any((i) => i.entryId == 'hanh-vi-1'), true);
+    expect(report.unexpectedLinhVucIssues.any((i) => i.entryId == 'ung-xu-1'), true);
     // ignore: avoid_print
-    print('PASS: gap tuổi giữa 2 dải không liền kề được phát hiện đúng khoảng thiếu');
+    print('PASS: linh_vuc đã gỡ (hanh_vi/ung_xu) bị phát hiện đúng');
   });
 
-  test('không báo gap giả khi 2 nhóm phan_loai khác nhau có dải tuổi khác hệ', () {
-    // roi_loan_pho_tu_ky dùng hệ dải tuổi khác binh_thuong — không được lẫn
-    // gap của nhóm này vào nhóm kia.
+  test('thiếu 1 trong 3 dải mong đợi của 1 nhóm (linh_vuc, phan_loai) bị phát hiện', () {
     final entries = [
-      entry(id: 'bt-1', phanLoai: 'binh_thuong', min: 15, max: 17),
-      entry(id: 'bt-2', phanLoai: 'binh_thuong', min: 18, max: 23),
-      entry(id: 'asd-1', phanLoai: 'roi_loan_pho_tu_ky', min: 15, max: 23),
-      entry(id: 'asd-2', phanLoai: 'roi_loan_pho_tu_ky', min: 24, max: 47),
+      entry(id: 'band-1', min: 15, max: 23),
+      // Thiếu dải 24-47 và 48-60 cho ngon_ngu/binh_thuong.
     ];
 
     final report = validateSoSanhData(entries);
 
-    expect(report.isStructurallyValid, true);
-    expect(report.gapMessages, isEmpty);
+    expect(report.isStructurallyValid, false);
+    expect(
+      report.bandMismatchMessages.any(
+        (m) => m.contains('linh_vuc=ngon_ngu') && m.contains('phan_loai=binh_thuong') && m.contains('24-47'),
+      ),
+      true,
+    );
+    expect(
+      report.bandMismatchMessages.any(
+        (m) => m.contains('linh_vuc=ngon_ngu') && m.contains('phan_loai=binh_thuong') && m.contains('48-60'),
+      ),
+      true,
+    );
     // ignore: avoid_print
-    print('PASS: 2 nhóm phan_loai với 2 hệ dải tuổi khác nhau không tạo gap giả');
+    print('PASS: thiếu dải tuổi mong đợi bị phát hiện đúng nhóm');
+  });
+
+  test('dải tuổi lạ (không thuộc 15-23/24-47/48-60) bị phát hiện', () {
+    final entries = [entry(id: 'legacy-band', linhVuc: 'quan_he_xa_hoi', phanLoai: 'binh_thuong', min: 48, max: 71)];
+
+    final report = validateSoSanhData(entries);
+
+    expect(report.isStructurallyValid, false);
+    expect(
+      report.bandMismatchMessages.any((m) => m.contains('có dải lạ 48-71')),
+      true,
+    );
+    // ignore: avoid_print
+    print('PASS: dải tuổi lạ ngoài 3 dải mong đợi bị phát hiện');
+  });
+
+  test('không còn phân biệt 2 hệ dải tuổi khác nhau — cả 2 phan_loai dùng chung 3 dải', () {
+    final entries = [
+      entry(id: 'bt-1', phanLoai: 'binh_thuong', min: 15, max: 23),
+      entry(id: 'bt-2', phanLoai: 'binh_thuong', min: 24, max: 47),
+      entry(id: 'bt-3', phanLoai: 'binh_thuong', min: 48, max: 60),
+      entry(id: 'asd-1', phanLoai: 'roi_loan_pho_tu_ky', min: 15, max: 23),
+      entry(id: 'asd-2', phanLoai: 'roi_loan_pho_tu_ky', min: 24, max: 47),
+      entry(id: 'asd-3', phanLoai: 'roi_loan_pho_tu_ky', min: 48, max: 60),
+    ];
+
+    final report = validateSoSanhData(entries);
+
+    expect(report.isStructurallyValid, false); // vẫn thiếu 6 linh_vuc còn lại
+    // Nhưng riêng nhóm ngon_ngu (linh_vuc mặc định của helper entry()) với cả
+    // 2 phan_loai đã đủ đúng 3 dải, không bị báo lệch dải.
+    expect(
+      report.bandMismatchMessages.where((m) => m.contains('linh_vuc=ngon_ngu')),
+      isEmpty,
+    );
+    // ignore: avoid_print
+    print('PASS: 2 phan_loai dùng chung đúng 3 dải tuổi không bị báo lệch giả');
   });
 
   test('báo cáo tổng hợp phân biệt đúng placeholder vs nội dung thật theo (linh_vuc, phan_loai)', () {
     final entries = [
-      entry(id: 'placeholder-1', linhVuc: 'quan_he_xa_hoi', min: 15, max: 17),
+      entry(id: 'placeholder-1', linhVuc: 'quan_he_xa_hoi', min: 15, max: 23),
       entry(
         id: 'real-1',
         linhVuc: 'quan_he_xa_hoi',
-        min: 18,
-        max: 23,
+        min: 24,
+        max: 47,
         content: 'Nội dung thật đã biên soạn, không phải placeholder.',
       ),
     ];

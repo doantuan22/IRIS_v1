@@ -1,0 +1,509 @@
+{
+  "meta": {
+    "bo_cau_hoi_id": "sang_loc_50_cau_7_linh_vuc_v1",
+    "phien_ban": "1.0",
+    "nguon": "Bản tổng hợp từ PEP-3, Vineland-II và khung chấm điểm IRIS",
+    "luu_y_khong_chan_doan": "Đây là bản sàng lọc/thử nghiệm để rà soát mức độ biểu hiện và định hướng hỗ trợ. Không dùng tổng điểm hoặc các mức mô tả để kết luận/chẩn đoán rối loạn phổ tự kỷ hay thay thế đánh giá chuyên môn.",
+    "tong_so_cau": 50,
+    "thang_diem": [
+      {
+        "gia_tri": 0,
+        "nhan": "Không / Hiếm khi",
+        "y_nghia": "Biểu hiện không xuất hiện hoặc rất ít",
+        "cach_hieu": "Không tạo thành mẫu khó khăn đáng chú ý trong sinh hoạt thường ngày."
+      },
+      {
+        "gia_tri": 1,
+        "nhan": "Thỉnh thoảng / Không ổn định",
+        "y_nghia": "Biểu hiện có xuất hiện nhưng không ổn định",
+        "cach_hieu": "Có thể thấy ở một số tình huống, nhưng chưa phải kiểu hành vi rõ rệt và ổn định."
+      },
+      {
+        "gia_tri": 2,
+        "nhan": "Thường xuyên / Rõ rệt",
+        "y_nghia": "Biểu hiện thường xuyên hoặc ảnh hưởng đáng kể",
+        "cach_hieu": "Lặp lại ở nhiều tình huống hoặc ảnh hưởng giao tiếp, học, chơi, sinh hoạt hay an toàn."
+      },
+      {
+        "gia_tri": "N/A",
+        "nhan": "N/A",
+        "y_nghia": "Không tính điểm",
+        "cach_hieu": "Chỉ dùng khi câu chưa phù hợp tuổi/mức phát triển hoặc thực sự chưa có cơ hội quan sát."
+      }
+    ],
+    "cong_thuc": {
+      "diem_linh_vuc_phan_tram": "Tổng điểm lĩnh vực đạt được / (Số câu hợp lệ trong lĩnh vực x 2) x 100",
+      "diem_toan_bai_phan_tram": "Tổng điểm đạt được / (Số câu hợp lệ x 2) x 100",
+      "ghi_chu": "N/A không tính điểm và không tính vào mẫu số."
+    },
+    "muc_mo_ta": [
+      {
+        "muc": 1,
+        "ten": "Mức 1 - Ít biểu hiện",
+        "phan_tram_min": 0,
+        "phan_tram_max": 33,
+        "y_nghia": "Ít biểu hiện khó khăn được ghi nhận trong bộ câu hỏi hiện tại."
+      },
+      {
+        "muc": 2,
+        "ten": "Mức 2 - Có biểu hiện cần theo dõi",
+        "phan_tram_min": 34,
+        "phan_tram_max": 66,
+        "y_nghia": "Một số khó khăn xuất hiện khá rõ ở một hoặc nhiều lĩnh vực."
+      },
+      {
+        "muc": 3,
+        "ten": "Mức 3 - Nhiều biểu hiện khó khăn",
+        "phan_tram_min": 67,
+        "phan_tram_max": 100,
+        "y_nghia": "Nhiều biểu hiện được ghi nhận thường xuyên/rõ rệt; nên cân nhắc trao đổi với chuyên gia phù hợp."
+      }
+    ]
+  },
+  "linh_vuc_tong_hop": [
+    {
+      "linh_vuc": "nhan_thuc",
+      "ten_hien_thi": "Nhận thức",
+      "so_cau": 7,
+      "diem_toi_da": 14
+    },
+    {
+      "linh_vuc": "cam_xuc",
+      "ten_hien_thi": "Cảm xúc",
+      "so_cau": 6,
+      "diem_toi_da": 12
+    },
+    {
+      "linh_vuc": "giac_quan",
+      "ten_hien_thi": "Giác quan",
+      "so_cau": 5,
+      "diem_toi_da": 10
+    },
+    {
+      "linh_vuc": "quan_he_xa_hoi",
+      "ten_hien_thi": "Quan hệ xã hội",
+      "so_cau": 8,
+      "diem_toi_da": 16
+    },
+    {
+      "linh_vuc": "ngon_ngu",
+      "ten_hien_thi": "Ngôn ngữ",
+      "so_cau": 8,
+      "diem_toi_da": 16
+    },
+    {
+      "linh_vuc": "sinh_hoc",
+      "ten_hien_thi": "Sinh học",
+      "so_cau": 10,
+      "diem_toi_da": 20
+    },
+    {
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "ten_hien_thi": "Sinh hoạt cá nhân",
+      "so_cau": 6,
+      "diem_toi_da": 12
+    }
+  ],
+  "cau_hoi": [
+    {
+      "id": "sl50_q01",
+      "stt": 1,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Ghi nhớ",
+      "noi_dung": "Trẻ thường quên vị trí của đồ chơi/đồ vật quen thuộc hoặc khó nhớ nơi vừa cất đồ.",
+      "goi_y_quan_sat": "Quan sát trong sinh hoạt thường ngày; cân nhắc mức phát triển và mức hỗ trợ cần thiết."
+    },
+    {
+      "id": "sl50_q02",
+      "stt": 2,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Giải quyết vấn đề",
+      "noi_dung": "Trẻ gặp khó khăn khi tìm một vật bị che/giấu hoặc giải quyết một vấn đề đơn giản phù hợp với tuổi.",
+      "goi_y_quan_sat": "Có thể quan sát qua tìm đồ vật, ghép hình, thử cách khác khi cách đầu tiên không hiệu quả."
+    },
+    {
+      "id": "sl50_q03",
+      "stt": 3,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Chú ý",
+      "noi_dung": "Trẻ khó duy trì chú ý đủ lâu để hoàn thành một hoạt động hoặc nghe một câu chuyện ngắn phù hợp với tuổi.",
+      "goi_y_quan_sat": "Đánh giá khả năng giữ chú ý, không chỉ sự thích/không thích một hoạt động cụ thể."
+    },
+    {
+      "id": "sl50_q04",
+      "stt": 4,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Trí nhớ làm việc",
+      "noi_dung": "Trẻ gặp khó khăn khi nhớ và thực hiện một chuỗi 2 bước sau khi được hướng dẫn.",
+      "goi_y_quan_sat": "Ví dụ: lấy đồ vật rồi đặt vào chỗ được yêu cầu; dùng N/A nếu nhiệm vụ chưa phù hợp tuổi."
+    },
+    {
+      "id": "sl50_q05",
+      "stt": 5,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Tư duy biểu tượng",
+      "noi_dung": "Trẻ ít hoặc khó chơi giả vờ, dùng một đồ vật để đại diện cho đồ vật khác trong trò chơi.",
+      "goi_y_quan_sat": "Ví dụ: dùng hộp làm ô tô/nhà, cho búp bê ăn, giả vờ gọi điện."
+    },
+    {
+      "id": "sl50_q06",
+      "stt": 6,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Khái niệm cơ bản",
+      "noi_dung": "Trẻ gặp khó khăn khi nhận biết/phân biệt các khái niệm cơ bản phù hợp tuổi như màu sắc, hình dạng, số lượng hoặc thời gian.",
+      "goi_y_quan_sat": "Chỉ chấm những khái niệm phù hợp với tuổi/mức phát triển; nếu chưa phù hợp chọn N/A."
+    },
+    {
+      "id": "sl50_q07",
+      "stt": 7,
+      "linh_vuc": "nhan_thuc",
+      "tieu_linh_vuc": "Lập kế hoạch & dự đoán",
+      "noi_dung": "Trẻ gặp khó khăn khi dự đoán điều có thể xảy ra và sắp xếp các bước đơn giản để đạt một mục tiêu.",
+      "goi_y_quan_sat": "Quan sát khi trẻ chuẩn bị hoạt động, giải quyết việc thường ngày hoặc lựa chọn cách làm."
+    },
+    {
+      "id": "sl50_q08",
+      "stt": 8,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Biểu đạt cảm xúc",
+      "noi_dung": "Trẻ gặp khó khăn trong việc thể hiện cảm xúc của mình bằng nét mặt, cử chỉ hoặc lời nói.",
+      "goi_y_quan_sat": "Xem xét khả năng biểu đạt vui, buồn, sợ, khó chịu và nhu cầu được hỗ trợ."
+    },
+    {
+      "id": "sl50_q09",
+      "stt": 9,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Nhận biết cảm xúc người khác",
+      "noi_dung": "Trẻ khó nhận biết người khác đang vui, buồn, sợ, khó chịu hoặc thích/không thích điều gì.",
+      "goi_y_quan_sat": "Quan sát phản ứng trước nét mặt, giọng nói và tình huống xã hội quen thuộc."
+    },
+    {
+      "id": "sl50_q10",
+      "stt": 10,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Đáp ứng tình cảm",
+      "noi_dung": "Trẻ ít đáp lại nụ cười, sự vui mừng hoặc sự gần gũi tình cảm của người thân.",
+      "goi_y_quan_sat": "Ví dụ: ít cười đáp, ít thể hiện vui khi người thân đến gần hoặc ít đáp ứng ôm ấp."
+    },
+    {
+      "id": "sl50_q11",
+      "stt": 11,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Đồng cảm",
+      "noi_dung": "Trẻ ít thể hiện sự quan tâm hoặc đồng cảm khi người khác vui, buồn, đau hoặc cần giúp đỡ.",
+      "goi_y_quan_sat": "Có thể biểu hiện bằng hành động, lời nói hoặc chủ động giúp đỡ."
+    },
+    {
+      "id": "sl50_q12",
+      "stt": 12,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Mức độ cảm xúc",
+      "noi_dung": "Cường độ cảm xúc của trẻ thường không tương xứng với tình huống (quá mạnh, quá nhẹ hoặc thay đổi đột ngột).",
+      "goi_y_quan_sat": "Chấm theo tần suất và mức ảnh hưởng đến học, chơi, sinh hoạt hoặc tương tác."
+    },
+    {
+      "id": "sl50_q13",
+      "stt": 13,
+      "linh_vuc": "cam_xuc",
+      "tieu_linh_vuc": "Điều hòa cảm xúc",
+      "noi_dung": "Trẻ khó tự bình tĩnh khi bị từ chối, thất vọng hoặc khi kế hoạch thay đổi.",
+      "goi_y_quan_sat": "Quan sát thời gian hồi phục, mức cần người lớn hỗ trợ và ảnh hưởng đến hoạt động tiếp theo."
+    },
+    {
+      "id": "sl50_q14",
+      "stt": 14,
+      "linh_vuc": "giac_quan",
+      "tieu_linh_vuc": "Thính giác",
+      "noi_dung": "Trẻ phản ứng quá mức với những âm thanh thông thường (ví dụ: sợ, bịt tai, bỏ tránh hoặc rất khó chịu).",
+      "goi_y_quan_sat": "Phân biệt với phản ứng hợp lý trước âm thanh thực sự quá lớn hoặc gây đau."
+    },
+    {
+      "id": "sl50_q15",
+      "stt": 15,
+      "linh_vuc": "giac_quan",
+      "tieu_linh_vuc": "Định hướng âm thanh",
+      "noi_dung": "Trẻ ít hoặc chậm quay đầu/hướng mắt khi có tiếng gọi tên hay âm thanh quen thuộc.",
+      "goi_y_quan_sat": "Quan sát ở nhiều bối cảnh, khi trẻ không quá tập trung vào hoạt động khác."
+    },
+    {
+      "id": "sl50_q16",
+      "stt": 16,
+      "linh_vuc": "giac_quan",
+      "tieu_linh_vuc": "Xúc giác",
+      "noi_dung": "Trẻ phản ứng rõ rệt với một số cảm giác chạm/chất liệu/quần áo hoặc thường né tránh việc được chạm.",
+      "goi_y_quan_sat": "Chấm khi phản ứng lặp lại và ảnh hưởng mặc đồ, chơi, chăm sóc cá nhân hoặc gần gũi xã hội."
+    },
+    {
+      "id": "sl50_q17",
+      "stt": 17,
+      "linh_vuc": "giac_quan",
+      "tieu_linh_vuc": "Tìm kiếm cảm giác",
+      "noi_dung": "Trẻ thường tìm kiếm kích thích giác quan lặp lại (nhìn sát, xoay/ngắm vật, sờ/ngửi nhiều, tạo âm thanh) đến mức làm gián đoạn hoạt động.",
+      "goi_y_quan_sat": "Chỉ chấm khi hành vi nổi bật, lặp lại và khó chuyển hướng."
+    },
+    {
+      "id": "sl50_q18",
+      "stt": 18,
+      "linh_vuc": "giac_quan",
+      "tieu_linh_vuc": "Nhận biết môi trường",
+      "noi_dung": "Trẻ có lúc ít nhận biết hoặc ít khám phá những gì đang xảy ra xung quanh bằng nhìn, nghe hoặc sờ chạm.",
+      "goi_y_quan_sat": "Ví dụ: nhìn trống rỗng, ít để ý sự kiện xung quanh hoặc ít khám phá môi trường phù hợp tuổi."
+    },
+    {
+      "id": "sl50_q19",
+      "stt": 19,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Khởi xướng tương tác",
+      "noi_dung": "Trẻ khó chủ động bắt đầu tương tác với người khác bằng ánh mắt, cử chỉ, lời nói hoặc hành động.",
+      "goi_y_quan_sat": "Quan sát với người quen và bạn cùng tuổi; không chỉ dựa vào một bối cảnh."
+    },
+    {
+      "id": "sl50_q20",
+      "stt": 20,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Chú ý chung",
+      "noi_dung": "Trẻ ít chia sẻ sự chú ý/sự hứng thú với người khác (ví dụ: chỉ cho xem, mang đồ đến khoe, hướng người khác đến điều mình quan tâm).",
+      "goi_y_quan_sat": "Chú ý hành vi chia sẻ vì mục đích xã hội, không chỉ để nhờ người khác lấy đồ."
+    },
+    {
+      "id": "sl50_q21",
+      "stt": 21,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Quan hệ bạn bè",
+      "noi_dung": "Trẻ ít quan tâm hoặc gặp khó khăn khi tiếp cận, chơi cùng trẻ cùng tuổi.",
+      "goi_y_quan_sat": "Xem xét mức chủ động, duy trì chơi và mức cần người lớn hỗ trợ."
+    },
+    {
+      "id": "sl50_q22",
+      "stt": 22,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Chia sẻ & luân phiên",
+      "noi_dung": "Trẻ gặp khó khăn trong việc chơi luân phiên, chia sẻ hoặc hợp tác với người khác.",
+      "goi_y_quan_sat": "Quan sát trong trò chơi/hoạt động có lượt và khi phải chia sẻ vật dụng."
+    },
+    {
+      "id": "sl50_q23",
+      "stt": 23,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Đọc dấu hiệu xã hội",
+      "noi_dung": "Trẻ khó nhận ra các dấu hiệu xã hội như khoảng cách phù hợp, người khác đang không muốn tiếp tục hoặc các ám hiệu phi ngôn ngữ.",
+      "goi_y_quan_sat": "Dùng N/A nếu yêu cầu này chưa phù hợp tuổi; ưu tiên tình huống quen thuộc."
+    },
+    {
+      "id": "sl50_q24",
+      "stt": 24,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Cung cách ứng xử",
+      "noi_dung": "Trẻ thường cần nhắc nhiều để dùng các cách ứng xử xã hội phù hợp như chào hỏi, cảm ơn, xin lỗi, chờ lượt và không ngắt lời.",
+      "goi_y_quan_sat": "Chấm theo mức cần nhắc và khả năng áp dụng ở nhiều bối cảnh."
+    },
+    {
+      "id": "sl50_q25",
+      "stt": 25,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Điều chỉnh theo bối cảnh",
+      "noi_dung": "Trẻ khó điều chỉnh cách cư xử theo bối cảnh hoặc mức độ quen biết với người đối diện.",
+      "goi_y_quan_sat": "Ví dụ: ứng xử như nhau với người lạ và người thân, khó thay đổi giọng/cách hành xử theo nơi chốn."
+    },
+    {
+      "id": "sl50_q26",
+      "stt": 26,
+      "linh_vuc": "quan_he_xa_hoi",
+      "tieu_linh_vuc": "Tuân thủ & tiếp nhận góp ý",
+      "noi_dung": "Trẻ khó tiếp nhận góp ý, tuân thủ luật chơi/quy tắc nhóm hoặc điều chỉnh hành vi khi tương tác.",
+      "goi_y_quan_sat": "Không chấm dựa trên một lần phản đối đơn lẻ; xem mẫu hành vi lặp lại."
+    },
+    {
+      "id": "sl50_q27",
+      "stt": 27,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Tiếp nhận cơ bản",
+      "noi_dung": "Trẻ thường không phản ứng phù hợp khi được gọi tên hoặc khi nghe các từ/cử chỉ cơ bản như “không”, “có/được”.",
+      "goi_y_quan_sat": "Quan sát hiểu ngôn ngữ, không chỉ khả năng nghe; cân nhắc bối cảnh gây xao nhãng."
+    },
+    {
+      "id": "sl50_q28",
+      "stt": 28,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Làm theo hướng dẫn",
+      "noi_dung": "Trẻ gặp khó khăn khi hiểu và làm theo hướng dẫn gồm 1–2 bước phù hợp với tuổi.",
+      "goi_y_quan_sat": "Ví dụ: “lấy sách và đặt lên bàn”; nếu chưa phù hợp tuổi chọn N/A."
+    },
+    {
+      "id": "sl50_q29",
+      "stt": 29,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Từ vựng biểu đạt",
+      "noi_dung": "Trẻ khó gọi tên người, đồ vật, hành động hoặc sử dụng từ vựng quen thuộc phù hợp với tuổi.",
+      "goi_y_quan_sat": "Quan sát lời nói tự phát và khi được hỏi; không chỉ khả năng lặp lại."
+    },
+    {
+      "id": "sl50_q30",
+      "stt": 30,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Diễn đạt nhu cầu",
+      "noi_dung": "Trẻ gặp khó khăn khi dùng từ/câu để yêu cầu, trả lời hoặc diễn đạt nhu cầu của mình.",
+      "goi_y_quan_sat": "Có thể bao gồm phải kéo tay người lớn thay vì dùng cử chỉ/lời nói phù hợp mức phát triển."
+    },
+    {
+      "id": "sl50_q31",
+      "stt": 31,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Hội thoại hai chiều",
+      "noi_dung": "Trẻ khó duy trì hội thoại hai chiều hoặc thường lạc khỏi/chỉ bám cứng vào một chủ đề.",
+      "goi_y_quan_sat": "Chấm theo khả năng trả lời, hỏi lại, duy trì chủ đề và chuyển chủ đề phù hợp."
+    },
+    {
+      "id": "sl50_q32",
+      "stt": 32,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Ngôn ngữ rập khuôn",
+      "noi_dung": "Trẻ thường nhại lời, lặp lại câu/từ theo khuôn hoặc dùng cách nói khác thường làm giảm hiệu quả giao tiếp.",
+      "goi_y_quan_sat": "Không tính việc lặp lại mang tính học tập thông thường; chú ý mức độ cứng nhắc và không phù hợp bối cảnh."
+    },
+    {
+      "id": "sl50_q33",
+      "stt": 33,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Kể chuyện & trình tự",
+      "noi_dung": "Trẻ gặp khó khăn khi kể lại một trải nghiệm hoặc câu chuyện theo trình tự cơ bản để người khác hiểu.",
+      "goi_y_quan_sat": "Dùng N/A nếu kỹ năng kể chuyện chưa phù hợp tuổi."
+    },
+    {
+      "id": "sl50_q34",
+      "stt": 34,
+      "linh_vuc": "ngon_ngu",
+      "tieu_linh_vuc": "Phát âm & ngữ điệu",
+      "noi_dung": "Cách phát âm, ngữ điệu, nhịp hoặc âm lượng lời nói của trẻ thường khiến người khác khó hiểu hoặc không phù hợp bối cảnh.",
+      "goi_y_quan_sat": "Xem xét độ rõ lời nói và điều tiết giọng; không chấm khác biệt giọng vùng miền."
+    },
+    {
+      "id": "sl50_q35",
+      "stt": 35,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Hành vi - linh hoạt",
+      "noi_dung": "Trẻ khó chuyển từ hoạt động này sang hoạt động khác và thường phản ứng rõ rệt khi thói quen/sinh hoạt bị thay đổi.",
+      "goi_y_quan_sat": "Quan sát mức cần báo trước, hỗ trợ và thời gian thích nghi."
+    },
+    {
+      "id": "sl50_q36",
+      "stt": 36,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Hành vi - lặp lại",
+      "noi_dung": "Trẻ thường có các vận động/hành vi lặp lại hoặc rập khuôn như vẫy tay, đu đưa, xoay người, chạy vòng, xếp đồ theo hàng.",
+      "goi_y_quan_sat": "Chấm khi hành vi dễ quan sát, lặp lại và ảnh hưởng học/chơi/sinh hoạt."
+    },
+    {
+      "id": "sl50_q37",
+      "stt": 37,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Hành vi - sở thích hẹp",
+      "noi_dung": "Trẻ bị cuốn vào một số đồ vật, chủ đề, nghi thức hoặc hoạt động hẹp đến mức khó chuyển sang việc khác.",
+      "goi_y_quan_sat": "Phân biệt sở thích mạnh nhưng linh hoạt với sự tập trung cứng nhắc gây cản trở."
+    },
+    {
+      "id": "sl50_q38",
+      "stt": 38,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Hành vi - hoạt động/chú ý",
+      "noi_dung": "Mức hoạt động và chú ý của trẻ thường khó điều chỉnh, ví dụ quá hiếu động hoặc rất khó tập trung so với trẻ cùng tuổi.",
+      "goi_y_quan_sat": "Quan sát ở ít nhất hai loại hoạt động/bối cảnh nếu có thể."
+    },
+    {
+      "id": "sl50_q39",
+      "stt": 39,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động thô - tư thế/thăng bằng",
+      "noi_dung": "Trẻ gặp khó khăn khi giữ tư thế ngồi/đứng hoặc giữ thăng bằng ở mức phù hợp với tuổi.",
+      "goi_y_quan_sat": "Dùng N/A nếu kỹ năng vận động tương ứng chưa đến mốc tuổi phù hợp."
+    },
+    {
+      "id": "sl50_q40",
+      "stt": 40,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động thô - di chuyển",
+      "noi_dung": "Trẻ gặp khó khăn khi đi, chạy, đổi hướng hoặc lên xuống bậc thang phù hợp với tuổi.",
+      "goi_y_quan_sat": "Xem xét độ vững, phối hợp và mức cần hỗ trợ."
+    },
+    {
+      "id": "sl50_q41",
+      "stt": 41,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động thô - phối hợp",
+      "noi_dung": "Trẻ gặp khó khăn với các kỹ năng vận động toàn thân phù hợp tuổi như nhảy, đá/ném/bắt bóng hoặc phối hợp hai bên cơ thể.",
+      "goi_y_quan_sat": "Chọn N/A nếu chưa có cơ hội thử kỹ năng phù hợp."
+    },
+    {
+      "id": "sl50_q42",
+      "stt": 42,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động tinh - cầm nắm",
+      "noi_dung": "Trẻ gặp khó khăn khi cầm, nhặt hoặc thao tác các vật nhỏ bằng ngón tay phù hợp với tuổi.",
+      "goi_y_quan_sat": "Quan sát dùng ngón cái-ngón trỏ, chuyển vật giữa hai tay, bỏ/lấy vật nhỏ."
+    },
+    {
+      "id": "sl50_q43",
+      "stt": 43,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động tinh - phối hợp tay mắt",
+      "noi_dung": "Trẻ gặp khó khăn trong phối hợp tay–mắt khi xếp ghép, lật trang, mở/vặn đồ vật hoặc dùng kéo đơn giản.",
+      "goi_y_quan_sat": "Chọn nhiệm vụ tương ứng tuổi và cơ hội đã được thực hành."
+    },
+    {
+      "id": "sl50_q44",
+      "stt": 44,
+      "linh_vuc": "sinh_hoc",
+      "tieu_linh_vuc": "Vận động tinh - đồ họa/viết",
+      "noi_dung": "Trẻ gặp khó khăn khi cầm bút để vẽ, tô, sao chép hình/chữ hoặc viết tên phù hợp với tuổi.",
+      "goi_y_quan_sat": "Có thể quan sát qua tô trong hình, sao chép đường/hình, chữ cái và viết tên."
+    },
+    {
+      "id": "sl50_q45",
+      "stt": 45,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "Ăn & uống tự lập",
+      "noi_dung": "Trẻ cần hỗ trợ nhiều hơn mong đợi theo tuổi khi tự ăn/uống bằng cốc, thìa, dĩa hoặc các dụng cụ ăn uống phù hợp.",
+      "goi_y_quan_sat": "Tập trung vào mức tự lập khi ăn/uống; không dùng câu này để đánh giá riêng khó khăn nhai/nuốt."
+    },
+    {
+      "id": "sl50_q46",
+      "stt": 46,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "Vệ sinh cá nhân",
+      "noi_dung": "Trẻ cần hỗ trợ/nhắc nhở nhiều hơn mong đợi theo tuổi khi rửa tay/mặt, đánh răng hoặc tắm rửa.",
+      "goi_y_quan_sat": "Chấm theo mức hỗ trợ thực tế cần thiết để hoàn tất chuỗi hoạt động."
+    },
+    {
+      "id": "sl50_q47",
+      "stt": 47,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "Mặc",
+      "noi_dung": "Trẻ gặp khó khăn khi tự mặc/cởi quần áo, kéo khóa/cài khuy hoặc chọn trang phục phù hợp.",
+      "goi_y_quan_sat": "Dùng N/A với kỹ năng chưa phù hợp tuổi; cân nhắc mức trợ giúp cần thiết."
+    },
+    {
+      "id": "sl50_q48",
+      "stt": 48,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "Đi vệ sinh",
+      "noi_dung": "Trẻ gặp khó khăn trong việc chủ động đi vệ sinh và hoàn tất các bước vệ sinh cá nhân phù hợp với tuổi.",
+      "goi_y_quan_sat": "Chấm theo mức tự chủ ban ngày và mức hỗ trợ/chùi rửa cần thiết; chọn N/A nếu chưa đến giai đoạn phù hợp."
+    },
+    {
+      "id": "sl50_q49",
+      "stt": 49,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "Dọn dẹp & việc nhà",
+      "noi_dung": "Trẻ gặp khó khăn khi cất dọn đồ dùng/chỗ chơi hoặc thực hiện việc nhà đơn giản phù hợp với tuổi.",
+      "goi_y_quan_sat": "Ví dụ: cất đồ chơi, dọn góc học/chơi, phụ việc nhỏ trong nhà."
+    },
+    {
+      "id": "sl50_q50",
+      "stt": 50,
+      "linh_vuc": "sinh_hoat_ca_nhan",
+      "tieu_linh_vuc": "An toàn & tự lập cộng đồng",
+      "noi_dung": "Trẻ gặp khó khăn khi tuân thủ các quy tắc an toàn cơ bản trong nhà/cộng đồng và thực hiện các sinh hoạt thường ngày với mức tự lập phù hợp tuổi.",
+      "goi_y_quan_sat": "Ví dụ: tránh đồ nóng/sắc, nhìn hai phía khi qua đường, tuân thủ tín hiệu/giờ giấc phù hợp tuổi."
+    }
+  ]
+}

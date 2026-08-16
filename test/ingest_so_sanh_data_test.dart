@@ -96,7 +96,7 @@ void main() {
     print('PASS: entry lỗi cấu trúc bị loại trước khi embed, chỉ entry hợp lệ được ghi vào file db thật');
   });
 
-  test('ingest toàn bộ 70 entry hợp lệ từ file JSON thật, đọc lại đúng số dòng theo nhóm', () async {
+  test('ingest toàn bộ 42 entry hợp lệ từ file JSON thật, đọc lại đúng số dòng theo nhóm', () async {
     final jsonFile = File('assets/reference/expert_content_so_sanh.json');
     final entries = (jsonDecode(await jsonFile.readAsString()) as List<dynamic>)
         .cast<Map<String, dynamic>>();
@@ -108,16 +108,17 @@ void main() {
     );
 
     expect(outcome.invalidCount, 0);
-    expect(outcome.ingestResult.success, 70);
+    expect(outcome.ingestResult.success, 42);
 
     await db.close();
     final reopened = await databaseFactory.openDatabase(dbPath);
     final rows = await reopened.query('expert_knowledge_chunks');
-    expect(rows.length, 70);
+    expect(rows.length, 42);
 
     final binhThuongCount = rows.where((r) => r['phan_loai'] == 'binh_thuong').length;
     final roiLoanCount = rows.where((r) => r['phan_loai'] == 'roi_loan_pho_tu_ky').length;
-    expect(binhThuongCount, 7 * 7);
+    // 7 linh_vuc x 3 dải tuổi (đối xứng, đúng như nhau cho cả 2 phan_loai).
+    expect(binhThuongCount, 7 * 3);
     expect(roiLoanCount, 7 * 3);
 
     await reopened.close();
@@ -126,6 +127,6 @@ void main() {
       options: OpenDatabaseOptions(version: 1),
     );
     // ignore: avoid_print
-    print('PASS: ingest đủ 70 entry so_sanh thật từ JSON, đọc lại từ file db thật khớp đúng 49 binh_thuong + 21 roi_loan_pho_tu_ky');
+    print('PASS: ingest đủ 42 entry so_sanh thật từ JSON, đọc lại từ file db thật khớp đúng 21 binh_thuong + 21 roi_loan_pho_tu_ky');
   });
 }

@@ -12,8 +12,6 @@ import 'package:iris_app/data/repositories/expert_knowledge_repository.dart';
 import 'package:iris_app/features/assessment/domain_hub_page.dart';
 import 'package:iris_app/features/assessment/nine_domains/comparison_video/comparison_video_page.dart';
 import 'package:iris_app/features/assessment/nine_domains/description/description_page.dart';
-import 'package:iris_app/features/assessment/nine_domains/expert_input/expert_input_page.dart';
-import 'package:iris_app/features/assessment/nine_domains/parent_input/parent_input_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 Future<void> pumpFrames(WidgetTester tester, {int times = 15}) async {
@@ -61,7 +59,7 @@ void main() {
   });
 
   testWidgets(
-      'Test 1: Từ Hub, vào thẳng "So sánh" khi CHƯA có mô tả nào -> Mở thành công, không crash, không bị chặn',
+      'Test 1: Từ Hub, vào thẳng "So sánh" khi CHƯA có mô tả nào -> Mở thành công, chỉ có đúng 2 thẻ trên Hub',
       (tester) async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Hub', ageYears: 3);
 
@@ -88,14 +86,14 @@ void main() {
     );
     await pumpFrames(tester);
 
-    // Xác nhận giao diện Hub hiển thị đầy đủ 4 thẻ
+    // Xác nhận giao diện Hub hiển thị ĐÚNG 2 thẻ: Mô tả và So sánh (không còn Chia sẻ phụ huynh hay Bác sĩ)
     expect(find.text('Ngôn ngữ — Bé Test Hub'), findsOneWidget);
     expect(find.text('Mô tả biểu hiện của trẻ'), findsOneWidget);
     expect(find.text('Quan trọng'), findsOneWidget);
     expect(find.text('Chưa có ghi nhận nào'), findsOneWidget);
     expect(find.text('So sánh với trẻ cùng độ tuổi'), findsOneWidget);
-    expect(find.text('Chia sẻ từ phụ huynh'), findsOneWidget);
-    expect(find.text('Thông tin từ bác sĩ'), findsOneWidget);
+    expect(find.text('Chia sẻ từ phụ huynh'), findsNothing);
+    expect(find.text('Thông tin từ bác sĩ'), findsNothing);
 
     // Bấm vào thẻ "So sánh với trẻ cùng độ tuổi" khi CHƯA từng mở "Mô tả"
     await tapVisible(tester, find.text('So sánh với trẻ cùng độ tuổi'));
@@ -107,11 +105,11 @@ void main() {
     expect(find.text('Biểu hiện thường gặp'), findsOneWidget);
 
     // ignore: avoid_print
-    print('PASS Test 1: Vào thẳng So sánh khi chưa có mô tả nào thành công, không bị chặn');
+    print('PASS Test 1: Vào thẳng So sánh khi chưa có mô tả thành công, Hub chỉ có đúng 2 thẻ');
   });
 
   testWidgets(
-      'Test 2: Vào từng phần trong 4 phần rồi bấm Back -> Quay đúng về Hub, Hub còn nguyên 4 thẻ',
+      'Test 2: Vào từng phần trong 2 phần rồi bấm Back -> Quay đúng về Hub, Hub còn nguyên 2 thẻ',
       (tester) async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Back', ageYears: 4);
 
@@ -141,34 +139,20 @@ void main() {
     await pumpFrames(tester);
     expect(find.byType(DomainHubPage), findsOneWidget);
 
-    // 3. Vào Chia sẻ phụ huynh -> Back
-    await tapVisible(tester, find.text('Chia sẻ từ phụ huynh'));
-    expect(find.byType(ParentInputPage), findsOneWidget);
-    await tester.pageBack();
-    await pumpFrames(tester);
-    expect(find.byType(DomainHubPage), findsOneWidget);
-
-    // 4. Vào Thông tin từ bác sĩ -> Back
-    await tapVisible(tester, find.text('Thông tin từ bác sĩ'));
-    expect(find.byType(ExpertInputPage), findsOneWidget);
-    await tester.pageBack();
-    await pumpFrames(tester);
-    expect(find.byType(DomainHubPage), findsOneWidget);
-
-    // Xác nhận Hub vẫn nguyên vẹn 4 thẻ
+    // Xác nhận Hub vẫn nguyên vẹn 2 thẻ, không có 2 thẻ đã gỡ
     expect(find.text('Mô tả biểu hiện của trẻ'), findsOneWidget);
     expect(find.text('So sánh với trẻ cùng độ tuổi'), findsOneWidget);
-    expect(find.text('Chia sẻ từ phụ huynh'), findsOneWidget);
-    expect(find.text('Thông tin từ bác sĩ'), findsOneWidget);
+    expect(find.text('Chia sẻ từ phụ huynh'), findsNothing);
+    expect(find.text('Thông tin từ bác sĩ'), findsNothing);
 
     // ignore: avoid_print
-    print('PASS Test 2: Vào từng phần và Back quay lại Hub hoàn toàn ổn định');
+    print('PASS Test 2: Vào từng phần trong 2 phần và Back quay lại Hub hoàn toàn ổn định');
   });
 
   testWidgets(
-      'Test 3: Thử thứ tự ngẫu nhiên (Bác sĩ -> Chia sẻ -> Mô tả & Lưu -> So sánh) -> Hoạt động trơn tru',
+      'Test 3: Luồng Mô tả & Lưu -> So sánh với trẻ cùng độ tuổi -> Hoạt động trơn tru',
       (tester) async {
-    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Random Flow', ageYears: 3);
+    final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Flow', ageYears: 3);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -182,19 +166,7 @@ void main() {
     );
     await pumpFrames(tester);
 
-    // Bước 1: Vào Bác sĩ trước
-    await tapVisible(tester, find.text('Thông tin từ bác sĩ'));
-    expect(find.byType(ExpertInputPage), findsOneWidget);
-    await tester.pageBack();
-    await pumpFrames(tester);
-
-    // Bước 2: Vào Chia sẻ từ phụ huynh
-    await tapVisible(tester, find.text('Chia sẻ từ phụ huynh'));
-    expect(find.byType(ParentInputPage), findsOneWidget);
-    await tester.pageBack();
-    await pumpFrames(tester);
-
-    // Bước 3: Vào Mô tả biểu hiện -> Nhập và Lưu mô tả
+    // Bước 1: Vào Mô tả biểu hiện -> Nhập và Lưu mô tả
     await tapVisible(tester, find.text('Mô tả biểu hiện của trẻ'));
     expect(find.byType(DescriptionPage), findsOneWidget);
 
@@ -215,7 +187,7 @@ void main() {
     // Xác nhận Hub cập nhật trạng thái "Đã có 1 ghi nhận biểu hiện"
     expect(find.text('Đã có 1 ghi nhận biểu hiện'), findsOneWidget);
 
-    // Bước 4: Vào So sánh với trẻ cùng độ tuổi
+    // Bước 2: Vào So sánh với trẻ cùng độ tuổi
     await tapVisible(tester, find.text('So sánh với trẻ cùng độ tuổi'));
     expect(find.byType(ComparisonVideoPage), findsOneWidget);
     await tester.pageBack();
@@ -224,11 +196,11 @@ void main() {
     expect(find.byType(DomainHubPage), findsOneWidget);
 
     // ignore: avoid_print
-    print('PASS Test 3: Thứ tự ngẫu nhiên Bác sĩ -> Chia sẻ -> Mô tả (Lưu) -> So sánh thành công 100%');
+    print('PASS Test 3: Luồng Mô tả (Lưu) -> So sánh thành công 100%');
   });
 
   testWidgets(
-      'Test 4: Xác nhận nút "Lưu" CHỈ tồn tại ở màn Mô tả, KHÔNG tồn tại ở 3 màn tham khảo',
+      'Test 4: Xác nhận nút "Lưu" CHỈ tồn tại ở màn Mô tả, KHÔNG tồn tại ở màn So sánh',
       (tester) async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Buttons', ageYears: 4);
 
@@ -262,39 +234,7 @@ void main() {
     expect(find.text('Lưu & tiếp tục'), findsNothing);
     expect(find.text('Tiếp theo'), findsNothing);
 
-    // 3. Kiểm tra ParentInputPage: KHÔNG CÓ bất kỳ nút Lưu nào
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ParentInputPage(
-          child: child,
-          linhVuc: 'quan_he_xa_hoi',
-          linhVucLabel: 'Quan hệ xã hội',
-        ),
-      ),
-    );
-    await pumpFrames(tester);
-    expect(find.text('Lưu'), findsNothing);
-    expect(find.text('Lưu mô tả'), findsNothing);
-    expect(find.text('Lưu & tiếp tục'), findsNothing);
-    expect(find.text('Tiếp theo'), findsNothing);
-
-    // 4. Kiểm tra ExpertInputPage: KHÔNG CÓ bất kỳ nút Lưu nào
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ExpertInputPage(
-          child: child,
-          linhVuc: 'quan_he_xa_hoi',
-          linhVucLabel: 'Quan hệ xã hội',
-        ),
-      ),
-    );
-    await pumpFrames(tester);
-    expect(find.text('Lưu'), findsNothing);
-    expect(find.text('Lưu mô tả'), findsNothing);
-    expect(find.text('Lưu & tiếp tục'), findsNothing);
-    expect(find.text('Hoàn tất'), findsNothing);
-
     // ignore: avoid_print
-    print('PASS Test 4: Nút Lưu CHỈ tồn tại ở màn Mô tả biểu hiện, không tồn tại ở 3 màn tham khảo');
+    print('PASS Test 4: Nút Lưu CHỈ tồn tại ở màn Mô tả biểu hiện, không tồn tại ở màn So sánh');
   });
 }

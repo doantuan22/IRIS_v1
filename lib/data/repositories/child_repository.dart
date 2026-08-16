@@ -107,6 +107,18 @@ class ChildRepository {
         .toList();
 
     await db.transaction((txn) async {
+      await txn.delete(
+        'screening_responses',
+        where:
+            'screening_id IN (SELECT id FROM screenings WHERE child_id = ?)',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'screening_domain_scores',
+        where:
+            'screening_id IN (SELECT id FROM screenings WHERE child_id = ?)',
+        whereArgs: [id],
+      );
       await txn.delete('screenings', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('assessments', where: 'child_id = ?', whereArgs: [id]);
       await txn.delete('history_logs', where: 'child_id = ?', whereArgs: [id]);

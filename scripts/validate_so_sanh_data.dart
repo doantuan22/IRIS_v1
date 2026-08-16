@@ -4,14 +4,13 @@ import 'dart:io';
 /// Validate dữ liệu `content_type='so_sanh'` (mục "So sánh với trẻ cùng độ
 /// tuổi") trước khi ingest vào `expert_knowledge_chunks`.
 ///
-/// Dữ liệu được tổ chức theo 2 nhóm `phan_loai` với 2 hệ dải tuổi KHÁC NHAU
-/// (đã chốt, không phải migration schema — cột `phan_loai` dùng lại, chỉ là
-/// 2 giá trị mới bên cạnh `thuong_gap`/`can_quan_sat` đã có sẵn cho các entry
-/// `so_sanh` khác):
-///   - `binh_thuong` (biểu hiện thường gặp): 15-17, 18-23, 24-29, 30-35,
-///     36-47, 48-59, 60-71 tháng (7 dải, mốc trên cùng chốt ở 71).
-///   - `roi_loan_pho_tu_ky` (dấu hiệu cần quan sát thêm): 15-23, 24-47,
-///     48-59 tháng (3 dải, mốc trên cùng chốt ở 59).
+/// Cấu trúc ĐỐI XỨNG đã chốt: 7 linh_vuc × 3 dải tuổi × 2 phan_loai.
+/// Cả 2 nhóm `phan_loai` (`binh_thuong`: biểu hiện thường gặp,
+/// `roi_loan_pho_tu_ky`: dấu hiệu cần quan sát thêm) dùng CHUNG đúng 3 dải
+/// tuổi: 15-23, 24-47, 48-60 tháng — không còn 2 hệ dải tuổi khác nhau như
+/// trước. Do dải tuổi cố định, không cần dò "khoảng trống tuổi" (age gap)
+/// phức tạp nữa — chỉ cần so khớp tập hợp dải thực tế với tập hợp dải mong
+/// đợi cho từng (linh_vuc, phan_loai).
 ///
 /// Chạy độc lập (từ thư mục gốc repo):
 ///   dart run scripts/validate_so_sanh_data.dart
@@ -20,6 +19,23 @@ import 'dart:io';
 ///
 /// Logic validate tách khỏi `main()` (`validateSoSanhData`) để test được
 /// bằng dữ liệu giả, không cần đọc file — xem `test/validate_so_sanh_data_test.dart`.
+
+/// 7 lĩnh vực hợp lệ (đã bỏ `hanh_vi`, `ung_xu` — 2 lĩnh vực này bị gỡ khỏi
+/// app ở đợt migration DB version 6).
+const List<String> expectedLinhVucs = [
+  'nhan_thuc',
+  'cam_xuc',
+  'giac_quan',
+  'quan_he_xa_hoi',
+  'ngon_ngu',
+  'sinh_hoc',
+  'sinh_hoat_ca_nhan',
+];
+
+const List<String> expectedPhanLoais = ['binh_thuong', 'roi_loan_pho_tu_ky'];
+
+/// 3 dải tuổi (tháng) dùng chung cho cả 2 phan_loai.
+const List<(int min, int max)> expectedAgeBands = [(15, 23), (24, 47), (48, 60)];
 
 /// 7 trường nội dung bắt buộc, không tính `id` (khoá định danh, không phải
 /// nội dung tham khảo).
@@ -61,22 +77,27 @@ class SoSanhValidationReport {
   final List<ValidationIssue> fieldIssues;
   final List<ValidationIssue> ageRangeIssues;
   final List<ValidationIssue> duplicateIssues;
-  final List<String> gapMessages;
+  final List<ValidationIssue> unexpectedLinhVucIssues;
+  final List<String> bandMismatchMessages;
   final Map<String, GroupSummary> groupSummaries;
 
   const SoSanhValidationReport({
     required this.fieldIssues,
     required this.ageRangeIssues,
     required this.duplicateIssues,
-    required this.gapMessages,
+    required this.unexpectedLinhVucIssues,
+    required this.bandMismatchMessages,
     required this.groupSummaries,
   });
 
-  /// Không có lỗi cấu trúc (thiếu trường / min>max / trùng) — dữ liệu đủ
-  /// điều kiện để ingest. Gap tuổi chỉ là CẢNH BÁO, không chặn ingest, vì có
-  /// thể là do dữ liệu chưa nạp đủ 9 lĩnh vực chứ không phải lỗi cấu trúc.
+  /// Không có lỗi cấu trúc (thiếu trường / min>max / trùng / linh_vuc lạ /
+  /// lệch dải tuổi mong đợi) — dữ liệu đủ điều kiện để ingest.
   bool get isStructurallyValid =>
-      fieldIssues.isEmpty && ageRangeIssues.isEmpty && duplicateIssues.isEmpty;
+      fieldIssues.isEmpty &&
+      ageRangeIssues.isEmpty &&
+      duplicateIssues.isEmpty &&
+      unexpectedLinhVucIssues.isEmpty &&
+      bandMismatchMessages.isEmpty;
 
   String buildReport() {
     final buffer = StringBuffer();
@@ -100,12 +121,20 @@ class SoSanhValidationReport {
       buffer.writeln(issue);
     }
 
-    buffer.writeln('\n4. Khoảng trống tuổi (age gap) phát hiện: ${gapMessages.length}');
-    for (final gap in gapMessages) {
-      buffer.writeln('  - $gap');
+    buffer.writeln('\n4. linh_vuc không nằm trong 7 lĩnh vực hợp lệ: ${unexpectedLinhVucIssues.length}');
+    for (final issue in unexpectedLinhVucIssues) {
+      buffer.writeln(issue);
     }
 
-    buffer.writeln('\n5. Tổng số entry theo (linh_vuc, phan_loai):');
+    buffer.writeln(
+      '\n5. Lệch dải tuổi mong đợi (mỗi linh_vuc × phan_loai phải có đúng 3 dải '
+      '15-23, 24-47, 48-60): ${bandMismatchMessages.length}',
+    );
+    for (final msg in bandMismatchMessages) {
+      buffer.writeln('  - $msg');
+    }
+
+    buffer.writeln('\n6. Tổng số entry theo (linh_vuc, phan_loai):');
     final sortedKeys = groupSummaries.keys.toList()..sort();
     for (final key in sortedKeys) {
       final s = groupSummaries[key]!;
@@ -119,11 +148,12 @@ class SoSanhValidationReport {
     final totalReal = groupSummaries.values.fold<int>(0, (a, s) => a + s.realCount);
     buffer.writeln(
       '\nTổng cộng: ${totalPlaceholder + totalReal} entry — '
-      '$totalPlaceholder placeholder, $totalReal nội dung thật.',
+      '$totalPlaceholder placeholder, $totalReal nội dung thật '
+      '(mong đợi: ${expectedLinhVucs.length * expectedPhanLoais.length * expectedAgeBands.length} entry).',
     );
 
     buffer.writeln(
-      '\nKết luận: ${isStructurallyValid ? 'HỢP LỆ về cấu trúc, sẵn sàng ingest.' : 'CÓ LỖI CẤU TRÚC — xem mục 1-3 ở trên.'}',
+      '\nKết luận: ${isStructurallyValid ? 'HỢP LỆ về cấu trúc, sẵn sàng ingest.' : 'CÓ LỖI CẤU TRÚC — xem mục 1-5 ở trên.'}',
     );
 
     return buffer.toString();
@@ -142,8 +172,10 @@ SoSanhValidationReport validateSoSanhData(List<Map<String, dynamic>> entries) {
   final fieldIssues = <ValidationIssue>[];
   final ageRangeIssues = <ValidationIssue>[];
   final duplicateIssues = <ValidationIssue>[];
+  final unexpectedLinhVucIssues = <ValidationIssue>[];
   final groupSummaries = <String, GroupSummary>{};
-  final groupedForGapCheck = <String, List<(int min, int max, String id)>>{};
+  // (linh_vuc, phan_loai) -> tập hợp dải tuổi thực tế xuất hiện.
+  final actualBandsByGroup = <String, Set<(int min, int max)>>{};
   final seenDupKeys = <String, String>{};
 
   for (final entry in entries) {
@@ -164,6 +196,12 @@ SoSanhValidationReport validateSoSanhData(List<Map<String, dynamic>> entries) {
     if (min != null && max != null && min > max) {
       ageRangeIssues.add(
         ValidationIssue('do_tuoi_thang_min ($min) > do_tuoi_thang_max ($max)', entryId: id),
+      );
+    }
+
+    if (linhVuc != null && !expectedLinhVucs.contains(linhVuc)) {
+      unexpectedLinhVucIssues.add(
+        ValidationIssue('linh_vuc "$linhVuc" không thuộc 7 lĩnh vực hợp lệ', entryId: id),
       );
     }
 
@@ -194,22 +232,30 @@ SoSanhValidationReport validateSoSanhData(List<Map<String, dynamic>> entries) {
       summary.realCount++;
     }
 
-    groupedForGapCheck.putIfAbsent(groupKey, () => []).add((min, max, id));
+    actualBandsByGroup.putIfAbsent(groupKey, () => {}).add((min, max));
   }
 
-  final gapMessages = <String>[];
-  final sortedGroupKeys = groupedForGapCheck.keys.toList()..sort();
-  for (final groupKey in sortedGroupKeys) {
-    final bands = groupedForGapCheck[groupKey]!..sort((a, b) => a.$1.compareTo(b.$1));
-    for (var i = 0; i < bands.length - 1; i++) {
-      final currentMax = bands[i].$2;
-      final nextMin = bands[i + 1].$1;
-      if (nextMin > currentMax + 1) {
-        final parts = groupKey.split('|');
-        gapMessages.add(
-          '(linh_vuc=${parts[0]}, phan_loai=${parts[1]}): thiếu dải tuổi từ '
-          '${currentMax + 1} đến ${nextMin - 1} tháng (giữa dải kết thúc ở '
-          '$currentMax và dải bắt đầu ở $nextMin)',
+  final bandMismatchMessages = <String>[];
+  // Kiểm tra đủ/đúng 3 dải mong đợi cho MỌI tổ hợp (linh_vuc, phan_loai) hợp
+  // lệ, kể cả tổ hợp hiện chưa có entry nào (thiếu hoàn toàn).
+  for (final linhVuc in expectedLinhVucs) {
+    for (final phanLoai in expectedPhanLoais) {
+      final groupKey = '$linhVuc|$phanLoai';
+      final actual = actualBandsByGroup[groupKey] ?? <(int, int)>{};
+      final expected = expectedAgeBands.toSet();
+
+      final missing = expected.difference(actual);
+      final extra = actual.difference(expected);
+
+      for (final band in missing) {
+        bandMismatchMessages.add(
+          '(linh_vuc=$linhVuc, phan_loai=$phanLoai): thiếu dải ${band.$1}-${band.$2} tháng',
+        );
+      }
+      for (final band in extra) {
+        bandMismatchMessages.add(
+          '(linh_vuc=$linhVuc, phan_loai=$phanLoai): có dải lạ ${band.$1}-${band.$2} tháng '
+          '(không thuộc 3 dải mong đợi 15-23/24-47/48-60)',
         );
       }
     }
@@ -219,7 +265,8 @@ SoSanhValidationReport validateSoSanhData(List<Map<String, dynamic>> entries) {
     fieldIssues: fieldIssues,
     ageRangeIssues: ageRangeIssues,
     duplicateIssues: duplicateIssues,
-    gapMessages: gapMessages,
+    unexpectedLinhVucIssues: unexpectedLinhVucIssues,
+    bandMismatchMessages: bandMismatchMessages,
     groupSummaries: groupSummaries,
   );
 }

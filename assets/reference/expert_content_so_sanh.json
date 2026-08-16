@@ -1,71 +1,31 @@
 [
   {
-    "id": "so_sanh_nhan_thuc_binh_thuong_15_17",
+    "id": "so_sanh_nhan_thuc_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "nhan_thuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_nhan_thuc_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "nhan_thuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_nhan_thuc_binh_thuong_24_29",
+    "id": "so_sanh_nhan_thuc_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "nhan_thuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_nhan_thuc_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "nhan_thuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_nhan_thuc_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "nhan_thuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_nhan_thuc_binh_thuong_48_59",
+    "id": "so_sanh_nhan_thuc_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "nhan_thuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_nhan_thuc_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "nhan_thuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -90,82 +50,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_nhan_thuc_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_nhan_thuc_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "nhan_thuc",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_cam_xuc_binh_thuong_15_17",
+    "id": "so_sanh_cam_xuc_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "cam_xuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_cam_xuc_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "cam_xuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_cam_xuc_binh_thuong_24_29",
+    "id": "so_sanh_cam_xuc_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "cam_xuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_cam_xuc_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "cam_xuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_cam_xuc_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "cam_xuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_cam_xuc_binh_thuong_48_59",
+    "id": "so_sanh_cam_xuc_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "cam_xuc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_cam_xuc_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "cam_xuc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -190,82 +110,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_cam_xuc_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_cam_xuc_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "cam_xuc",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_giac_quan_binh_thuong_15_17",
+    "id": "so_sanh_giac_quan_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "giac_quan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_giac_quan_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "giac_quan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_giac_quan_binh_thuong_24_29",
+    "id": "so_sanh_giac_quan_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "giac_quan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_giac_quan_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "giac_quan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_giac_quan_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "giac_quan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_giac_quan_binh_thuong_48_59",
+    "id": "so_sanh_giac_quan_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "giac_quan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_giac_quan_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "giac_quan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -290,82 +170,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_giac_quan_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_giac_quan_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "giac_quan",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_17",
+    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "quan_he_xa_hoi",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_24_29",
+    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "quan_he_xa_hoi",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_48_59",
+    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "quan_he_xa_hoi",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_quan_he_xa_hoi_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "quan_he_xa_hoi",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -390,82 +230,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "quan_he_xa_hoi",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_ngon_ngu_binh_thuong_15_17",
+    "id": "so_sanh_ngon_ngu_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "ngon_ngu",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_ngon_ngu_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "ngon_ngu",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_ngon_ngu_binh_thuong_24_29",
+    "id": "so_sanh_ngon_ngu_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "ngon_ngu",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_ngon_ngu_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "ngon_ngu",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_ngon_ngu_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "ngon_ngu",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_ngon_ngu_binh_thuong_48_59",
+    "id": "so_sanh_ngon_ngu_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "ngon_ngu",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_ngon_ngu_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "ngon_ngu",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -490,82 +290,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "ngon_ngu",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoc_binh_thuong_15_17",
+    "id": "so_sanh_sinh_hoc_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoc_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoc_binh_thuong_24_29",
+    "id": "so_sanh_sinh_hoc_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoc_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoc_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoc_binh_thuong_48_59",
+    "id": "so_sanh_sinh_hoc_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoc",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoc_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoc",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -590,82 +350,42 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoc_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_sinh_hoc_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoc",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_15_17",
+    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_15_23",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoat_ca_nhan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 15,
-    "do_tuoi_thang_max": 17,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_18_23",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoat_ca_nhan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 18,
     "do_tuoi_thang_max": 23,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_24_29",
+    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_24_47",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoat_ca_nhan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 24,
-    "do_tuoi_thang_max": 29,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_30_35",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoat_ca_nhan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 30,
-    "do_tuoi_thang_max": 35,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_36_47",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoat_ca_nhan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 36,
     "do_tuoi_thang_max": 47,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_48_59",
+    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoat_ca_nhan",
     "phan_loai": "binh_thuong",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
-    "content": "[Placeholder - chưa có nội dung thật]",
-    "nguon_tai_lieu": "[Chưa có nguồn]"
-  },
-  {
-    "id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_60_71",
-    "content_type": "so_sanh",
-    "linh_vuc": "sinh_hoat_ca_nhan",
-    "phan_loai": "binh_thuong",
-    "do_tuoi_thang_min": 60,
-    "do_tuoi_thang_max": 71,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
@@ -690,12 +410,12 @@
     "nguon_tai_lieu": "[Chưa có nguồn]"
   },
   {
-    "id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_48_59",
+    "id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_48_60",
     "content_type": "so_sanh",
     "linh_vuc": "sinh_hoat_ca_nhan",
     "phan_loai": "roi_loan_pho_tu_ky",
     "do_tuoi_thang_min": 48,
-    "do_tuoi_thang_max": 59,
+    "do_tuoi_thang_max": 60,
     "content": "[Placeholder - chưa có nội dung thật]",
     "nguon_tai_lieu": "[Chưa có nguồn]"
   }

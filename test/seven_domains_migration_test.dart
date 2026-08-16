@@ -173,7 +173,7 @@ void main() {
       final db = await AppDatabase.instance.database;
 
       // Bước 3 — Xác nhận version và dữ liệu đã được dọn sạch
-      expect(await db.getVersion(), 7);
+      expect(await db.getVersion(), 9);
 
       // Kiểm tra assessments
       final assessments = await db.query('assessments');

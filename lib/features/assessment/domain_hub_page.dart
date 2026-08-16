@@ -9,8 +9,6 @@ import '../../domain/models/assessment.dart';
 import '../../domain/models/child.dart';
 import 'nine_domains/comparison_video/comparison_video_page.dart';
 import 'nine_domains/description/description_page.dart';
-import 'nine_domains/expert_input/expert_input_page.dart';
-import 'nine_domains/parent_input/parent_input_page.dart';
 
 /// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiển thị ở đầu màn Hub lĩnh vực.
 const Map<String, String> _domainIntroText = {
@@ -30,11 +28,9 @@ const Map<String, String> _domainIntroText = {
 };
 
 /// Màn hình Hub trung tâm của 1 lĩnh vực đánh giá.
-/// Cho phép người dùng tự do lựa chọn 1 trong 4 phần theo bất kỳ thứ tự nào:
+/// Cho phép người dùng tự do lựa chọn 1 trong 2 phần:
 /// 1. Mô tả biểu hiện (Phần quan trọng nhất — dữ liệu thật của trẻ)
 /// 2. So sánh với trẻ cùng độ tuổi (Dữ liệu tham khảo bổ trợ)
-/// 3. Chia sẻ từ phụ huynh (Dữ liệu tham khảo bổ trợ)
-/// 4. Thông tin từ bác sĩ (Dữ liệu tham khảo bổ trợ)
 ///
 /// Hoàn toàn không ràng buộc thứ tự, không khoá phần nào, dùng `push` để vào
 /// từng phần và nút Back quay lại đúng Hub này.
@@ -275,44 +271,6 @@ class _DomainHubPageState extends State<DomainHubPage> {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => ComparisonVideoPage(
-                        child: widget.child,
-                        linhVuc: widget.linhVuc,
-                        linhVucLabel: widget.linhVucLabel,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // 3. Thẻ Chia sẻ từ phụ huynh
-                _HubNavigationCard(
-                  icon: Icons.groups_outlined,
-                  color: accent,
-                  title: 'Chia sẻ từ phụ huynh',
-                  subtitle:
-                      'Tham khảo góc nhìn và kinh nghiệm thực tế từ các phụ huynh khác trong các tình huống hàng ngày.',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ParentInputPage(
-                        child: widget.child,
-                        linhVuc: widget.linhVuc,
-                        linhVucLabel: widget.linhVucLabel,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // 4. Thẻ Thông tin từ bác sĩ
-                _HubNavigationCard(
-                  icon: Icons.medical_services_outlined,
-                  color: accent,
-                  title: 'Thông tin từ bác sĩ',
-                  subtitle:
-                      'Tra cứu mốc phát triển y khoa, các dấu hiệu cần lưu ý và giải thích chuyên môn.',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ExpertInputPage(
                         child: widget.child,
                         linhVuc: widget.linhVuc,
                         linhVucLabel: widget.linhVucLabel,

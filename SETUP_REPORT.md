@@ -1502,4 +1502,395 @@ Trong lúc verify, emulator phát hiện callback `_reload()` của Chân dung t
 
 **3. Kết quả**: `flutter analyze` — 0 issues. `flutter test` — toàn bộ PASS (xem [screening_flow_test.dart](test/screening_flow_test.dart) đã viết lại 3 test: nhánh "Có" → xem kết quả → Trang chủ đúng active child + không back được; nhánh "Chưa muốn" → thẳng Trang chủ + không back được; và xác nhận lối vào "Xem hồ sơ" từ Dashboard tới `ProfileDetailPage` vẫn hoạt động đúng, luồng sàng lọc gọi từ đó vẫn vào Bước 4 như cũ, không bị ảnh hưởng).
 
+---
+
+## 31. Thay Thế Bộ Câu Hỏi Sàng Lọc Mock Bằng Bộ 50 Câu Chính Thức 7 Lĩnh Vực (Audit & Kế Hoạch Triển Khai)
+
+### 1. Kết Quả Audit Toàn Diện Trước Khi Sửa Code
+
+#### a. File / Class chứa bộ câu hỏi mock A/B hiện tại
+- **File**: [lib/domain/services/screening_question_bank.dart](lib/domain/services/screening_question_bank.dart)
+  - Chứa `class ScreeningQuestionSet`, `_mockQuestionsA` (6 câu), `_mockQuestionsB` (6 câu), `screeningQuestionSetA`, `screeningQuestionSetB`, và hàm `selectScreeningQuestionSet(ageMonths)` rẽ nhánh theo mốc 30 tháng.
+  - Sẽ được **xoá bỏ hoàn toàn** và thay thế bằng `ScreeningLoaderService` đọc từ file JSON chính thức [assets/data/sang_loc_50_cau_7_linh_vuc.json](assets/data/sang_loc_50_cau_7_linh_vuc.json).
+  - Hàm `childAgeInMonths()` trong `lib/domain/models/child.dart` **được giữ nguyên** vì vẫn dùng cho các tính năng khác (như lọc `expert_knowledge_chunks` theo độ tuổi).
+
+#### b. Màn hình hiển thị câu hỏi và kết quả sàng lọc hiện tại
+- **[screening_tool_confirm_page.dart](lib/features/screening/screening_tool_confirm_page.dart)**:
+  - Hiện tại: hiển thị nhãn `selectScreeningQuestionSet(ageMonths).label` ("Bộ A (16-30 tháng)" / "Bộ B (31 tháng trở lên)").
+  - Cần cập nhật: hiển thị thông tin bộ câu hỏi 50 câu chuẩn hóa 7 lĩnh vực dùng chung cho mọi lứa tuổi, 4 mức lựa chọn (0, 1, 2, N/A).
+- **[screening_questionnaire_page.dart](lib/features/screening/screening_questionnaire_page.dart)**:
+  - Hiện tại: hiển thị danh sách tất cả câu hỏi mock trong `ListView.builder` cùng lúc, 2 nút Có/Không.
+  - Cần làm lại hoàn toàn: **Mô hình 1 câu hỏi / 1 màn hình**:
+    - Mỗi thời điểm CHỈ hiển thị đúng 1 câu hỏi (tiểu lĩnh vực, nội dung câu, gợi ý quan sát dạng tip, 4 nút lựa chọn: 0, 1, 2, N/A).
+    - Thanh tiến độ & số thứ tự "Câu X/50".
+    - Chọn đáp án -> tự động chuyển sang câu tiếp theo.
+    - Nút "Quay lại câu trước" cho phép xem/đổi đáp án đã chọn mà không mất dữ liệu.
+    - Câu 50 hoàn thành -> tự động tính điểm qua `ScreeningScoringService` -> lưu DB (`screenings`, 50 dòng `screening_responses`, 7 dòng `screening_domain_scores`, log lịch sử) -> chuyển sang `ScreeningResultPage`.
+    - Thoát giữa chừng không lưu dữ liệu nửa vời.
+- **[screening_result_page.dart](lib/features/screening/screening_result_page.dart)**:
+  - Hiện tại: hiển thị tỷ lệ câu có dấu hiệu chú ý dạng x/y.
+  - Cần cập nhật:
+    - Mức tổng quan: Tên mức theo `meta.muc_mo_ta` ("Mức 1 - Ít biểu hiện" / "Mức 2 - Có biểu hiện cần theo dõi" / "Mức 3 - Nhiều biểu hiện khó khăn") + điểm % toàn bài.
+    - Breakdown 7 lĩnh vực: điểm % từng lĩnh vực hoặc "Chưa đủ dữ liệu cho lĩnh vực này" nếu toàn N/A.
+    - Hiển thị nguyên văn `meta.luu_y_khong_chan_doan`.
+    - Giữ nguyên nút "Tiếp tục" điều hướng về `AssessmentSummaryPage` (hoặc `HomePage` nếu `isOnboarding == true`).
+
+#### c. Danh sách các nơi trong codebase đang ĐỌC dữ liệu từ bảng `screenings`
+1. **[lib/features/child_profile/profile_detail/profile_detail_page.dart](lib/features/child_profile/profile_detail/profile_detail_page.dart)**:
+   - Gọi `ScreeningRepository.hasScreening(child.id)` để hiển thị badge "Đã sàng lọc" / "Chưa sàng lọc".
+   - Ảnh hưởng: **Không đổi logic** (hàm `hasScreening` vẫn kiểm tra xem có bản ghi nào trong bảng `screenings` hay không).
+2. **[lib/features/home/home_page.dart](lib/features/home/home_page.dart)**:
+   - Gọi `ScreeningRepository.hasScreening(widget.child.id)` để ẩn/hiện nút "Sàng lọc".
+   - Ảnh hưởng: **Không đổi logic** (`hasScreening` trả về bool).
+3. **[lib/features/expert_connect/expert_connect_page.dart](lib/features/expert_connect/expert_connect_page.dart)**:
+   - Gọi `ScreeningRepository.hasScreening(child.id)`.
+   - Ảnh hưởng: **Không đổi logic**.
+4. **[lib/features/child_profile/profile_detail/child_debug_page.dart](lib/features/child_profile/profile_detail/child_debug_page.dart)**:
+   - Gọi `ScreeningRepository.getForChild(child.id)` hiển thị danh sách dòng `screenings` thô.
+   - Ảnh hưởng: **Không đổi logic**.
+5. **[lib/data/repositories/ai_repository.dart](lib/data/repositories/ai_repository.dart)** & **[lib/domain/services/guardrail_service.dart](lib/domain/services/guardrail_service.dart)**:
+   - Gọi `ScreeningRepository.hasScreening(child.id)` để xác định `hasScreeningResult` cho AI Guardrail Trạng thái 2.
+   - Ảnh hưởng: **Không đổi logic**.
+6. **[lib/features/screening/assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart)**:
+   - Gọi `ScreeningRepository.hasScreening()` và `getLatestForChild()`.
+   - Đang gọi `selectScreeningQuestionSet(ageMonths)` trong `_buildSuggestion()` -> Cần sửa nhỏ: bỏ gọi `selectScreeningQuestionSet`, dùng nhãn công cụ chuẩn "bài sàng lọc 50 câu (7 lĩnh vực)".
+7. **[lib/data/repositories/child_repository.dart](lib/data/repositories/child_repository.dart)**:
+   - Phương thức `delete(childId)` xóa hồ sơ và các bảng con liên quan: Bổ sung xóa `screening_responses` và `screening_domain_scores` trước khi xóa `screenings` để bảo toàn foreign key.
+
+### 2. Kết Quả Triển Khai Chi Tiết
+
+1. **Asset & Khai Báo Bộ Câu Hỏi Chính Thức**:
+   - Đặt file [assets/data/sang_loc_50_cau_7_linh_vuc.json](assets/data/sang_loc_50_cau_7_linh_vuc.json) (50 câu hỏi, 7 lĩnh vực, metadata, 4 thang điểm, 3 mức mô tả, lưu ý không chẩn đoán).
+   - Khai báo `- assets/data/` trong [pubspec.yaml](pubspec.yaml).
+
+2. **Migration Database SQLite Version 8**:
+   - Tạo 2 file schema bảng:
+     - [lib/data/local/tables/screening_responses_table.dart](lib/data/local/tables/screening_responses_table.dart) (`screeningResponsesTableCreate`)
+     - [lib/data/local/tables/screening_domain_scores_table.dart](lib/data/local/tables/screening_domain_scores_table.dart) (`screeningDomainScoresTableCreate`)
+   - Nâng DB `version: 8` trong [lib/data/local/database.dart](lib/data/local/database.dart) kèm `onUpgrade (oldVersion < 8)`.
+   - Tạo 2 domain model:
+     - [lib/domain/models/screening_response.dart](lib/domain/models/screening_response.dart)
+     - [lib/domain/models/screening_domain_score.dart](lib/domain/models/screening_domain_score.dart)
+   - Cập nhật [lib/data/repositories/screening_repository.dart](lib/data/repositories/screening_repository.dart) với hàm `saveScreeningSession` (lưu đồng thời `screenings`, 50 dòng `screening_responses`, 7 dòng `screening_domain_scores` trong 1 transaction SQLite) cùng `getResponses` và `getDomainScores`.
+   - Cập nhật [lib/data/repositories/child_repository.dart](lib/data/repositories/child_repository.dart) xóa cascade `screening_responses` và `screening_domain_scores`.
+
+3. **Service Chấm Điểm & Nạp Dữ Liệu (Pure Dart)**:
+   - [lib/domain/services/screening_scoring_service.dart](lib/domain/services/screening_scoring_service.dart):
+     - Hàm pure Dart `calculateScore` tính điểm theo chuẩn:
+       - 4 mức: `'0'`, `'1'`, `'2'`, `'N/A'`.
+       - N/A không tính điểm và không tính vào mẫu số chuẩn hóa %.
+       - Lĩnh vực toàn N/A: `diemPhanTram` là `null`, hiển thị "Chưa đủ dữ liệu cho lĩnh vực này", không quy thành 0%.
+       - Điểm toàn bài chuẩn hóa và xác định 3 mức: Mức 1 (0-33%), Mức 2 (34-66%), Mức 3 (67-100%).
+   - [lib/domain/services/screening_loader_service.dart](lib/domain/services/screening_loader_service.dart):
+     - Nạp JSON từ asset một lần duy nhất và cache trong phiên làm việc.
+   - Xoá bỏ hoàn toàn mock question bank cũ (`screening_question_bank.dart`).
+
+4. **UI Làm Bài & Kết Quả**:
+   - [lib/features/screening/screening_tool_confirm_page.dart](lib/features/screening/screening_tool_confirm_page.dart): Giới thiệu công cụ 50 câu 7 lĩnh vực (không còn Bộ A/B).
+   - [lib/features/screening/screening_questionnaire_page.dart](lib/features/screening/screening_questionnaire_page.dart):
+     - Mô hình 1 câu hỏi / 1 màn hình.
+     - Thanh tiến độ "Câu X/50", badge lĩnh vực và tiểu lĩnh vực, gợi ý quan sát dạng tip.
+     - 4 lựa chọn (0, 1, 2, N/A), tự chuyển câu tiếp theo, có nút "Quay lại câu trước" giữ nguyên đáp án đã chọn.
+     - Câu 50 tự động tính điểm, lưu DB và chuyển màn kết quả.
+   - [lib/features/screening/screening_result_page.dart](lib/features/screening/screening_result_page.dart):
+     - Mức tổng quan & điểm % toàn bài.
+     - Breakdown 7 lĩnh vực chi tiết (hoặc "Chưa đủ dữ liệu cho lĩnh vực này").
+     - Hiển thị NGUYÊN VĂN dòng `meta.luu_y_khong_chan_doan`.
+     - Giữ nguyên luồng điều hướng: Onboarding $\rightarrow$ `HomePage`, profile flow $\rightarrow$ `AssessmentSummaryPage`.
+   - [lib/features/screening/assessment_summary_page.dart](lib/features/screening/assessment_summary_page.dart):
+     - Cập nhật mô tả đề xuất phù hợp với bộ 50 câu 7 lĩnh vực.
+
+5. **Kết Quả Kiểm Thử Toàn Diện**:
+   - `flutter analyze`: **No issues found! (0 errors, 0 warnings, 0 infos)**
+   - `flutter test`: **111/111 PASS (100%)**:
+     - `test/screening_scoring_service_test.dart`: PASS toàn bộ test cases (toàn 0, toàn 2, toàn 1, N/A đơn lẻ, 1 domain toàn N/A, ranh giới 33%/34%/66%/67%, disclaimer nguyên văn).
+     - `test/screening_migration_test.dart`: PASS (khởi tạo v8, lưu 3 bảng, đọc lại, cascade delete khi xóa trẻ).
+     - `test/screening_flow_test.dart`: PASS 3/3 test flows UI & navigation.
+     - Tất cả các test suites khác trong toàn repo: PASS 100%.
+
+---
+
+## 32. Tính Năng "Lịch Sử Sàng Lọc" Trong Tab Tài Khoản & Bảo Vệ Toàn Vẹn Dữ Liệu Đa Trẻ
+
+### 1. Kết Quả Audit Màn Hình Kết Quả Sàng Lọc Hiện Tại ([screening_result_page.dart](lib/features/screening/screening_result_page.dart))
+
+- **Cách nhận dữ liệu hiện tại**:
+  - `ScreeningResultPage` nhận vào: `child` (Child), `screeningId` (String?), `score` (String), `resultSummary` (String), `scoreResult` (ScreeningScoreResult?, in-memory), `isOnboarding` (bool).
+  - Khi vừa làm bài xong từ `ScreeningQuestionnairePage`: truyền đầy đủ `scoreResult` (trong bộ nhớ) $\rightarrow$ màn hình vẽ trực tiếp từ `scoreResult.domainScores`.
+  - Khi mở từ lịch sử (hoặc từ bên ngoài): nếu chỉ truyền `screeningId`, hiện tại màn hình đọc `_screeningRepository.getDomainScores(screeningId)` nhưng lại phụ thuộc vào chuỗi `score`, `resultSummary` và đối tượng `child` truyền cứng ở constructor.
+- **Rủi ro dữ liệu đa trẻ**:
+  - Nếu mở màn kết quả từ danh sách lịch sử mà phụ thuộc vào `child` hoặc chuỗi `score` truyền từ bên ngoài mà không query chính bản ghi `screenings` trong SQLite, có nguy cơ hiển thị sai dữ liệu hoặc tên trẻ nếu state bị stale giữa các lần đổi tài khoản.
+- **Giải pháp Refactor an toàn**:
+  - Refactor `ScreeningResultPage` hỗ trợ chế độ query tự động hoàn toàn từ DB:
+    - Khi `screeningId` được cung cấp và `scoreResult == null` (chế độ xem lại lịch sử): `ScreeningResultPage` tự query `screenings` bằng `_screeningRepository.getById(screeningId)` để lấy `score`, `result_summary`, `performed_at`, và `child_id`. Đồng thời query `ChildRepository.getById(screening.childId)` để lấy đúng tên trẻ thuộc về bản ghi đó.
+    - Khi `scoreResult != null` (chế độ vừa làm bài xong): tiếp tục hiển thị tức thì từ kết quả vừa tính toán trong memory, không làm chậm hoặc ảnh hưởng luồng làm bài.
+  - Luồng làm bài xong $\rightarrow$ tự động chuyển sang màn kết quả được bảo toàn 100% không bị ảnh hưởng.
+
+### 2. Kế Hoạch Triển Khai
+
+1. **Repository**:
+   - Thêm `Future<List<Screening>> getScreeningsByChildId(String childId)` trong [lib/data/repositories/screening_repository.dart](lib/data/repositories/screening_repository.dart) dùng `WHERE child_id = ? ORDER BY performed_at DESC` (lọc trực tiếp trong câu SQL).
+   - Thêm `Future<Screening?> getById(String id)` trong `ScreeningRepository` dùng `WHERE id = ? LIMIT 1`.
+
+2. **Màn Hình Lịch Sử Sàng Lọc Mới ([lib/features/screening/screening_history_list_page.dart](lib/features/screening/screening_history_list_page.dart))**:
+   - Tự đọc `active_child_id` tươi từ `ActiveChildService().getActiveChildId()` ngay khi mở màn.
+   - Query thông tin trẻ từ `ChildRepository.getById(activeChildId)`.
+   - Query danh sách sàng lọc của đúng trẻ từ `ScreeningRepository.getScreeningsByChildId(activeChildId)`.
+   - Trạng thái rỗng: hiển thị rõ ràng "Chưa có lịch sử sàng lọc cho [Tên trẻ]".
+   - Danh sách: hiển thị từng lần sàng lọc gồm ngày thực hiện, điểm %, mức mô tả.
+   - Tap vào 1 dòng $\rightarrow$ mở `ScreeningResultPage(screeningId: item.id)`.
+
+3. **Tab Tài Khoản ([lib/features/home/home_page.dart](lib/features/home/home_page.dart))**:
+   - Thêm nút "Lịch sử sàng lọc" (icon `IrisAssets.iconScreening`) trong `_AccountTab` dẫn tới `ScreeningHistoryListPage`.
+
+### 3. Kết Quả Triển Khai Thực Tế
+
+1. **Repository Functions Mới**:
+   - [`ScreeningRepository.getScreeningsByChildId(childId)`](lib/data/repositories/screening_repository.dart):
+     - Truy vấn: `SELECT * FROM screenings WHERE child_id = ? ORDER BY performed_at DESC`.
+     - Lọc trực tiếp bằng mệnh đề `WHERE` trong SQLite, không load toàn bộ bảng rồi lọc ở Dart.
+   - [`ScreeningRepository.getById(id)`](lib/data/repositories/screening_repository.dart):
+     - Truy vấn: `SELECT * FROM screenings WHERE id = ? LIMIT 1`.
+
+2. **Refactor Màn Hình Kết Quả ([screening_result_page.dart](lib/features/screening/screening_result_page.dart))**:
+   - Khi `scoreResult != null` (luồng làm bài xong): vẽ tức thì từ memory.
+   - Khi `scoreResult == null` (luồng xem lại lịch sử): tự truy vấn `_screeningRepository.getById(screeningId)` và `_childRepository.getById(screening.childId)`, đọc điểm từng lĩnh vực qua `_screeningRepository.getDomainScores(screeningId)`.
+   - Nút "Tiếp tục" / Back:
+     - Nếu mở từ lịch sử: `Navigator.pop(context)` quay lại đúng danh sách lịch sử.
+     - Nếu trong luồng onboarding: `Navigator.popUntil(isFirst)` về Trang chủ.
+     - Nếu trong luồng làm bài từ Profile: chuyển sang `AssessmentSummaryPage`.
+
+3. **Màn Hình Lịch Sử Sàng Lọc Mới ([screening_history_list_page.dart](lib/features/screening/screening_history_list_page.dart))**:
+   - Tự động đọc `active_child_id` tươi từ `ActiveChildService` mỗi khi màn hình được mở hoặc cập nhật qua `didUpdateWidget`.
+   - Query thông tin hồ sơ của active child và gọi `getScreeningsByChildId(activeChildId)`.
+   - Trạng thái rỗng: Hiện mascot clipboard, tiêu đề "Chưa có lịch sử sàng lọc cho [Tên trẻ]" và hướng dẫn bắt đầu bài sàng lọc 50 câu.
+   - Trạng thái có dữ liệu: Hiển thị danh sách card gồm Mức mô tả, Điểm %, Ngày giờ thực hiện (`dd/MM/yyyy lúc HH:mm`).
+   - Tap vào card: Mở `ScreeningResultPage(screeningId: screening.id, child: child)`.
+
+4. **Tab Tài Khoản ([home_page.dart](lib/features/home/home_page.dart))**:
+   - Thêm nút `OutlinedButton.icon` "Lịch sử sàng lọc" (icon `IrisAssets.iconScreening`) ngay dưới Card thông tin của trẻ đang hoạt động.
+
+### 4. Kết Quả Kiểm Thử & Nghiệm Thu
+
+1. **Static Analysis**:
+   - `flutter analyze`: **No issues found! (0 errors, 0 warnings, 0 infos)**
+
+2. **Automated Test Suite**:
+   - `flutter test test/screening_history_test.dart`: **4/4 PASS (100%)**
+     - `Test 1`: Tạo Trẻ A (20% - Mức 1) và Trẻ B (80% - Mức 3). Khi active child = Trẻ A, danh sách CHỈ có dữ liệu của Trẻ A; khi đổi active child = Trẻ B, danh sách CHỈ có dữ liệu của Trẻ B $\rightarrow$ **PASS**.
+     - `Test 2`: Mở chi tiết từ lịch sử của Trẻ A, tự query DB theo `screening_id`, đối chiếu chính xác `score: 65%`, `result_summary`, các điểm % lĩnh vực và dòng disclaimer $\rightarrow$ **PASS**.
+     - `Test 3`: Trạng thái rỗng cho Trẻ C chưa từng làm bài sàng lọc, hiển thị đúng "Chưa có lịch sử sàng lọc cho Bé Chưa Sàng Lọc", không crash, không hiện lẫn dữ liệu $\rightarrow$ **PASS**.
+     - `Test 4`: Nút "Lịch sử sàng lọc" trong tab Tài khoản của `HomePage` mở đúng `ScreeningHistoryListPage` của active child $\rightarrow$ **PASS**.
+   - `flutter test test/screening_flow_test.dart`: **3/3 PASS (100%)**
+     - Luồng Onboarding làm bài 50 câu $\rightarrow$ hiển thị kết quả $\rightarrow$ vào Trang chủ hoạt động trơn tru.
+   - `flutter test` (toàn bộ workspace): **115/115 PASS (100%)** không có bất kỳ regression nào.
+
+## Cập Nhật Cấu Trúc Dữ Liệu `so_sanh` — 3 Dải Tuổi Đối Xứng (Audit, 2026-08-16)
+
+### 1. Audit trước khi sửa
+
+**File nguồn chính:** [assets/reference/expert_content_so_sanh.json](assets/reference/expert_content_so_sanh.json) — 70 entry, chỉ chứa `content_type: "so_sanh"`, mẫu khóa `id: "so_sanh_{linh_vuc}_{phan_loai}_{min}_{max}"`.
+
+- **7 linh_vuc**: `nhan_thuc`, `cam_xuc`, `giac_quan`, `quan_he_xa_hoi`, `ngon_ngu`, `sinh_hoc`, `sinh_hoat_ca_nhan`. Không còn `hanh_vi`/`ung_xu` (đã dọn ở đợt migration DB version 6 trước đây — xác nhận file nguồn JSON cũng đã được dọn theo, không lệch với DB).
+- **2 phan_loai**, mỗi phan_loai có bộ dải tuổi RIÊNG (bất đối xứng — cấu trúc CŨ):
+  - `binh_thuong`: 7 dải/linh_vuc — 15-17, 18-23, 24-29, 30-35, 36-47, 48-59, 60-71 (tháng) → 49 entry.
+  - `roi_loan_pho_tu_ky`: 3 dải/linh_vuc — 15-23, 24-47, 48-59 (tháng) → 21 entry.
+  - Tổng 49 + 21 = 70 entry, khớp `test/ingest_so_sanh_data_test.dart`.
+- **100% cả 70 entry đều là PLACEHOLDER**: `content = "[Placeholder - chưa có nội dung thật]"`, `nguon_tai_lieu = "[Chưa có nguồn]"` — không có ngoại lệ. Không có entry nào trong file này là nội dung thật, kể cả `quan_he_xa_hoi`.
+
+**File thứ hai — PHÁT HIỆN QUAN TRỌNG chưa có trong đề bài ban đầu:** [assets/reference/expert_content.json](assets/reference/expert_content.json) (file gốc, 22 entry, nhiều content_type) **cũng chứa 6 entry `content_type: "so_sanh"`** — đây là NỘI DUNG THẬT (không phải placeholder), thuộc `linh_vuc: "quan_he_xa_hoi"`, dải tuổi **48-71 tháng**, dùng **`phan_loai` theo bộ giá trị CŨ KHÁC**: `"thuong_gap"` (3 entry) / `"can_quan_sat"` (3 entry) — KHÔNG phải `binh_thuong`/`roi_loan_pho_tu_ky` như file `_so_sanh.json`. 6 entry này không có trường `id`.
+
+→ Dữ liệu `content_type='so_sanh'` trong dự án hiện **nằm rải ở 2 file JSON riêng biệt, với 2 bộ `phan_loai` không tương thích nhau**, không phải 1 file duy nhất như giả định ban đầu trong đề bài.
+
+**Đối chiếu DB thật:** Không thể kết nối — không có emulator/thiết bị đang chạy (`adb devices` không có kết quả), không có file `.db` seed nào tồn tại cục bộ. Qua đọc code xác nhận thêm 1 phát hiện quan trọng: nút **"Debug: Nạp dữ liệu tham khảo"** ([lib/features/child_profile/profile_detail/child_debug_page.dart:133-135](lib/features/child_profile/profile_detail/child_debug_page.dart#L133-L135)) — con đường DUY NHẤT hiện có để ghi dữ liệu tham khảo vào DB thật của app — **chỉ đọc `assets/reference/expert_content.json`**, KHÔNG đọc `expert_content_so_sanh.json`. File `expert_content_so_sanh.json` chỉ được `scripts/ingest_so_sanh_data.dart` và test tham chiếu tới (ghi vào `iris_so_sanh_seed.db` — file tạm trên desktop qua `sqflite_common_ffi`, không phải DB thật trên thiết bị). Do đó: **nhiều khả năng DB thật của app hiện chưa từng có 70 entry `so_sanh` placeholder nào** (chỉ có thể có 6 entry `so_sanh` thật `quan_he_xa_hoi`/48-71 nếu nút debug từng được bấm với `expert_content.json` phiên bản đã có 6 entry này).
+
+### 2. Việc CẦN NGƯỜI DÙNG XÁC NHẬN — chưa xử lý, chưa xoá/sửa gì
+
+1. **6 entry `so_sanh` nội dung thật (`quan_he_xa_hoi`, 48-71 tháng, `phan_loai` = `thuong_gap`/`can_quan_sat`) trong `expert_content.json`**: không khớp bất kỳ dải nào trong 3 dải mới (15-23/24-47/48-60), và dùng tên `phan_loai` khác hệ với `binh_thuong`/`roi_loan_pho_tu_ky`. Giữ nguyên, KHÔNG đụng tới. Cần người dùng quyết định: (a) coi đây là dữ liệu ngoài phạm vi tái cấu trúc lần này (giữ y nguyên, không đưa vào cấu trúc 42-entry mới) hay (b) có ý định gộp/ánh xạ `thuong_gap→binh_thuong`, `can_quan_sat→roi_loan_pho_tu_ky` và cắt/sửa dải 48-71→48-60 (việc này KHÔNG được tự động hoá theo đúng yêu cầu ban đầu).
+2. **Không có đường ghi `expert_content_so_sanh.json` vào DB thật của app**: để hoàn thành bước 6 (ingest lại và verify DB thật) của yêu cầu, cần bổ sung/sửa cơ chế nạp (ví dụ mở rộng nút debug trong `child_debug_page.dart` để đọc thêm file này) — đây là thay đổi code UI/app, không chỉ dữ liệu, cần xác nhận trước vì nằm ngoài "không tạo migration schema mới" nhưng vẫn là thay đổi hành vi app.
+3. **Không có emulator/thiết bị nào đang chạy** để đọc/ghi DB thật trực tiếp — cần người dùng khởi động emulator hoặc xác nhận cách khác để verify DB thật sau ingest.
+
+### 3. Quyết định của người dùng (2026-08-16)
+
+1. 6 entry thật `so_sanh`/`quan_he_xa_hoi`/48-71/`thuong_gap`+`can_quan_sat` trong `expert_content.json`: **giữ nguyên, ngoài phạm vi** — không đụng, không đưa vào cấu trúc 42-entry mới.
+2. **Không sửa code app** (`child_debug_page.dart`) lần này — chỉ cập nhật file JSON nguồn + script validate/ingest desktop (ghi vào file `.db` tạm qua `sqflite_common_ffi` để test luồng). Việc đưa dữ liệu vào DB thật trên thiết bị để sau.
+3. Verify DB thật: người dùng sẽ tự khởi động emulator, báo khi sẵn sàng.
+
+### 4. Thay đổi đã thực hiện
+
+- **[assets/reference/expert_content_so_sanh.json](assets/reference/expert_content_so_sanh.json)**: viết lại toàn bộ, từ 70 entry (7 linh_vuc × (7 dải `binh_thuong` + 3 dải `roi_loan_pho_tu_ky`)) → **42 entry** (7 linh_vuc × 3 dải chung `15-23`/`24-47`/`48-60` × 2 `phan_loai`). Toàn bộ 70 entry cũ đều là placeholder nên không có nội dung thật nào bị xoá — chỉ xoá placeholder thuộc dải không còn tồn tại (mọi dải `binh_thuong` cũ + dải `48-59` của `roi_loan_pho_tu_ky`) và tạo mới placeholder cho các dải còn thiếu (dải `48-60` của cả 2 phan_loai, và 2 dải còn lại của `binh_thuong`). Không còn `hanh_vi`/`ung_xu` (đã xác nhận từ trước, không phát sinh thêm việc xoá).
+- **[scripts/validate_so_sanh_data.dart](scripts/validate_so_sanh_data.dart)**: thay logic dò "age gap" phức tạp bằng so khớp tập hợp dải tuổi thực tế với tập hợp mong đợi cố định `{15-23, 24-47, 48-60}` cho mỗi (linh_vuc, phan_loai) — báo thiếu dải/dải lạ. Thêm kiểm tra `linh_vuc` phải thuộc đúng 7 giá trị hợp lệ (bắt lỗi nếu còn sót `hanh_vi`/`ung_xu`).
+- **[scripts/ingest_so_sanh_data.dart](scripts/ingest_so_sanh_data.dart)**: loại thêm entry có `unexpectedLinhVucIssues` khỏi danh sách ingest (trước đây chỉ loại theo field/age-range/duplicate issues).
+- **[test/validate_so_sanh_data_test.dart](test/validate_so_sanh_data_test.dart)**: viết lại theo cấu trúc đối xứng mới — test bộ 42-entry hợp lệ, test phát hiện `linh_vuc` lạ (`hanh_vi`/`ung_xu`), test thiếu dải mong đợi, test dải lạ, test 2 phan_loai dùng chung 3 dải không báo lệch giả.
+- **[test/ingest_so_sanh_data_test.dart](test/ingest_so_sanh_data_test.dart)**: cập nhật kỳ vọng ingest từ 70 (49 binh_thuong + 21 roi_loan_pho_tu_ky) → **42 (21 + 21)**.
+
+### 5. Kết quả kiểm thử
+
+- `dart run scripts/validate_so_sanh_data.dart`: **HỢP LỆ về cấu trúc** — 42/42 entry, đúng 7 linh_vuc × 3 dải × 2 phan_loai, 0 lỗi field/age-range/duplicate/linh_vuc-lạ/lệch-dải.
+- `flutter test test/validate_so_sanh_data_test.dart test/ingest_so_sanh_data_test.dart`: **11/11 PASS**.
+- `flutter analyze`: **No issues found!**
+- `flutter test` (toàn bộ workspace): **117/117 PASS (100%)**, không có regression.
+
+### 6. Việc còn lại (chờ người dùng)
+
+- Khởi động emulator/thiết bị thật để ingest `expert_content_so_sanh.json` vào DB thật và verify — hiện chưa có cơ chế UI đọc file này (chỉ có script desktop ghi vào `.db` tạm). Cần người dùng xác nhận thêm bước wiring vào app (đã hỏi và người dùng chọn bỏ qua lần này) trước khi có thể ingest vào DB thật trên thiết bị.
+- 6 entry thật `quan_he_xa_hoi`/48-71 trong `expert_content.json` vẫn treo, chưa được người dùng quyết định map/sửa hay giữ vĩnh viễn ngoài phạm vi — đây là quyết định tạm thời cho lần cập nhật này, có thể cần xem lại sau.
+
+## Áp Dụng 3 Dải Tuổi Chung Cho `chia_se_phu_huynh` Và `bac_si` (Audit, 2026-08-16)
+
+### 1. Audit trước khi sửa
+
+Nguồn dữ liệu duy nhất cho 2 content_type này: [assets/reference/expert_content.json](assets/reference/expert_content.json) (22 entry tổng, không có file riêng nào khác — khác với `so_sanh` đã tách file). Đọc toàn bộ 22 entry, phân loại chính xác:
+
+**`content_type = 'chia_se_phu_huynh'` — 8 entry:**
+- Cấu trúc phân loại RIÊNG xác nhận qua code thật: cột `nhom_tre` (giá trị: `binh_thuong`, `asd`) × cột `boi_canh` (giá trị: `o_nha`, `o_truong`, `noi_cong_cong`) — KHÔNG dùng cột `phan_loai`.
+- 1 entry **THẬT**, `linh_vuc=ngon_ngu`, `24-36` tháng, KHÔNG có `nhom_tre`/`boi_canh` (dữ liệu từ đợt seed rất sớm, trước khi 2 cột này tồn tại).
+- 1 entry **placeholder**, `linh_vuc=giac_quan`, `6-18` tháng, cũng không có `nhom_tre`/`boi_canh`.
+- 6 entry **THẬT**, `linh_vuc=quan_he_xa_hoi`, `48-71` tháng — đúng lưới đầy đủ 2×3 = 6 tổ hợp `nhom_tre`×`boi_canh`.
+- Không có entry `chia_se_phu_huynh` nào cho 6 lĩnh vực còn lại (`nhan_thuc`, `cam_xuc`, `quan_he_xa_hoi` đã có, `ngon_ngu` đã có 1, `sinh_hoc`, `sinh_hoat_ca_nhan` — tức 5/7 lĩnh vực hoàn toàn trống).
+
+**`content_type = 'bac_si'` — 7 entry:**
+- Cấu trúc phân loại RIÊNG: cột `phan_loai` với 3 giá trị mang ý nghĩa hoàn toàn khác `so_sanh` — `moc_phat_trien` (mốc phát triển), `dau_hieu_luu_y` (dấu hiệu cần lưu ý), `giai_thich` (giải thích thêm cho phụ huynh).
+- 1 entry **placeholder**, `linh_vuc=quan_he_xa_hoi`, `12-24` tháng, KHÔNG có `phan_loai`.
+- 6 entry **THẬT**, `linh_vuc=quan_he_xa_hoi`, `48-71` tháng — 2 entry mỗi giá trị `phan_loai` (2×3=6).
+- 6/7 lĩnh vực hoàn toàn trống (chỉ có `quan_he_xa_hoi`).
+
+**Phát hiện bổ sung ngoài phạm vi:** file này còn có 7 entry `content_type='so_sanh'` (1 entry `ngon_ngu`/24-36 thật không `phan_loai`, và 6 entry `quan_he_xa_hoi`/48-71 thật đã ghi nhận ở đợt audit trước) — giữ nguyên, không đụng, đúng phạm vi nhiệm vụ này (chỉ `chia_se_phu_huynh`/`bac_si`). Đợt audit trước chỉ liệt kê 6/7 entry so_sanh trong file này (bỏ sót entry `ngon_ngu`/24-36) — bổ sung ghi nhận ở đây cho đầy đủ, không hành động gì thêm vì ngoài phạm vi.
+
+**Đối chiếu 3 dải tuổi mới (15-23/24-47/48-60):** KHÔNG entry thật nào (của cả `chia_se_phu_huynh` lẫn `bac_si`) khớp chính xác 1 trong 3 dải mới — `24-36` không khớp `24-47`, `48-71` không khớp `48-60`. Không có script/cơ chế validate riêng nào cho 2 content_type này trước đây (chỉ có `ingest_expert_data.dart` ingest thẳng không validate) — đã tạo mới `scripts/validate_expert_content.dart` (xem mục 4).
+
+### 2. CẦN NGƯỜI DÙNG XÁC NHẬN — nội dung thật không khớp 3 dải mới (giữ nguyên, không tự sửa)
+
+| content_type | linh_vuc | Phân loại riêng | Dải hiện tại | Dải mới gần nhất | Số entry |
+|---|---|---|---|---|---|
+| chia_se_phu_huynh | ngon_ngu | (không có nhom_tre/boi_canh) | 24-36 | 24-47 | 1 |
+| chia_se_phu_huynh | quan_he_xa_hoi | nhom_tre×boi_canh đủ 6 tổ hợp | 48-71 | 48-60 | 6 |
+| bac_si | quan_he_xa_hoi | phan_loai đủ 3 giá trị ×2 | 48-71 | 48-60 | 6 |
+
+→ Tổng 13 entry thật bị treo, y hệt nguyên tắc đã áp dụng cho `so_sanh` — KHÔNG xoá, KHÔNG tự sửa số. Người dùng cần tự quyết định giữ nguyên vĩnh viễn hay chỉnh sửa.
+
+### 3. Đã xoá (chỉ placeholder, không đụng nội dung thật)
+
+- `chia_se_phu_huynh` / `giac_quan` / 6-18 tháng (placeholder, không khớp dải mới nào).
+- `bac_si` / `quan_he_xa_hoi` / 12-24 tháng (placeholder, không khớp dải mới nào).
+
+### 4. Đã thêm — placeholder theo cấu trúc mới
+
+Áp dụng đúng nguyên tắc: mỗi (linh_vuc × 3 dải tuổi mới × tổ hợp phân loại riêng đã có) phải có entry (thật hoặc placeholder).
+
+- **`chia_se_phu_huynh`**: 7 linh_vuc × 3 dải × 2 `nhom_tre` × 3 `boi_canh` = **126 entry** (placeholder cho toàn bộ ô còn thiếu — kể cả 5 lĩnh vực trước đây hoàn toàn chưa có entry nào).
+- **`bac_si`**: 7 linh_vuc × 3 dải × 3 `phan_loai` = **63 entry**.
+- Mẫu placeholder đúng theo yêu cầu (`id`, giữ nguyên tên/giá trị cột phân loại riêng, `content`/`nguon_tai_lieu` placeholder chuẩn).
+
+**Kết quả `expert_content.json` sau cập nhật:** 7 (so_sanh, không đổi) + 133 (chia_se_phu_huynh: 7 thật giữ nguyên + 126 placeholder mới) + 69 (bac_si: 6 thật giữ nguyên + 63 placeholder mới) = **209 entry**.
+
+### 5. Script validate mới
+
+Tạo **[scripts/validate_expert_content.dart](scripts/validate_expert_content.dart)** (trước đây KHÔNG có script validate nào cho `chia_se_phu_huynh`/`bac_si` — chỉ ingest thẳng không kiểm tra):
+- Đọc `expert_content.json`, lọc riêng `chia_se_phu_huynh` và `bac_si`.
+- Kiểm tra trường bắt buộc chung (không ép buộc `nhom_tre`/`boi_canh`/`phan_loai` phải có — để không báo lỗi giả cho 13 entry thật đang treo ở mục 2, vốn cố ý giữ nguyên cấu trúc cũ).
+- Kiểm tra `do_tuoi_thang_min/max` PHẢI thuộc đúng 1 trong 3 cặp (15,23)/(24,47)/(48,60) — entry nào lệch (kể cả entry thật đang treo) đều được liệt kê rõ trong báo cáo, không bị ẩn đi, đúng tinh thần "không tự sửa nhưng phải hiện rõ".
+- Kiểm tra trùng khoá (content_type, linh_vuc, nhom_tre, boi_canh, phan_loai, min, max).
+- Giữ nguyên logic phân loại riêng: KHÔNG gộp/ép `nhom_tre`/`boi_canh`/`phan_loai` theo cấu trúc `binh_thuong`/`roi_loan_pho_tu_ky` của `so_sanh`.
+- Báo cáo tổng số entry theo (content_type × linh_vuc × dải tuổi), đánh dấu placeholder vs thật.
+
+Đồng thời tạo **[scripts/ingest_expert_content.dart](scripts/ingest_expert_content.dart)** (mẫu giống `ingest_so_sanh_data.dart`): validate rồi CHỈ ingest entry mới lỗi cấu trúc bị loại (entry thật cũ lệch dải tuổi vẫn được ingest bình thường, không bị loại) — ghi vào file `.db` tạm qua `sqflite_common_ffi` để test luồng, đọc lại xác nhận theo (content_type, linh_vuc). KHÔNG đụng tới 7 entry `so_sanh` cũng nằm trong `expert_content.json` — những entry đó vẫn được ingest qua đường cũ (`ingest_expert_data.dart`/nút debug, đọc nguyên file không lọc content_type), không đổi gì.
+
+### 6. Kết quả kiểm thử
+
+- `dart run scripts/validate_expert_content.dart`: **HỢP LỆ về cấu trúc** — 202 entry (189 placeholder + 13 thật), 0 lỗi chặn ingest trên entry mới; đúng 13 ghi chú lệch dải tuổi trên entry thật cũ (khớp chính xác mục 2 ở trên).
+- `flutter test test/validate_expert_content_test.dart test/ingest_expert_content_test.dart`: **11/11 PASS**, gồm cả test đọc trực tiếp file JSON thật khoá lại đúng con số 202/189/13 (không nhiều hơn, không ít hơn) và test ingest 202 entry vào file `.db` thật qua `sqflite_common_ffi`, đọc lại xác nhận đúng 133 `chia_se_phu_huynh` + 69 `bac_si`.
+- `flutter analyze`: **No issues found!**
+- `flutter test` (toàn bộ workspace): **128/128 PASS (100%)**, không có regression.
+
+### 7. Ingest thật vào DB trên emulator (2026-08-16, sau khi người dùng khởi động emulator)
+
+Emulator `emulator-5554` đã chạy sẵn — thực hiện ingest thật (không phải qua script desktop nữa):
+- Chạy `flutter run -d emulator-5554 --dart-define-from-file=dart_define.json` (key NVIDIA lấy từ `dart_define.json`, file bị `.gitignore`, không commit).
+- Sự cố gặp phải: (1) lần đầu chạy nhầm `--release` — ẩn mất nút debug (chỉ hiện ở `kDebugMode`) — phải dừng và chạy lại không có cờ này; (2) lần chạy debug đầu tiên bị "Lost connection to device" giữa chừng, khiến app đang chạy thực ra vẫn là bản **release cũ không debuggable** (xác nhận qua `adb shell run-as ... — package not debuggable`) — phải chạy lại debug build và xác minh bằng `run-as` trước khi thao tác tiếp.
+- Điều hướng UI qua `adb shell input tap` + `uiautomator dump` (lấy toạ độ chính xác từ `bounds` thay vì ước lượng từ ảnh chụp màn hình — ước lượng ban đầu làm tab "Tài khoản" không bấm trúng): Trang chủ → Tài khoản → Đổi tài khoản → menu "⋮" trên hồ sơ → Xem hồ sơ → icon Debug → "Debug: Nạp dữ liệu tham khảo".
+- **Kết quả verify trực tiếp trên DB thật** (`adb shell run-as com.iris.app.iris_app sqlite3 .../iris.db`, KHÔNG chỉ tin log/snackbar):
+
+  ```
+  SELECT content_type, count(*) FROM expert_knowledge_chunks GROUP BY content_type;
+  bac_si|69
+  chia_se_phu_huynh|133
+  so_sanh|7
+  ```
+
+  Khớp đúng dự kiến (133 `chia_se_phu_huynh` + 69 `bac_si` mới ingest; 7 `so_sanh` cũ không đổi vì `expert_content_so_sanh.json` 42-entry vẫn chưa có đường nạp vào DB thật — chỉ `expert_content.json` được nút debug đọc). Mỗi `embedding` dài 4096 byte (1024 float) — xác nhận gọi NVIDIA embedding API THẬT thành công, không phải embedding giả.
+
+### 8. Việc còn lại (chờ người dùng)
+
+- File `expert_content_so_sanh.json` (42 entry, cấu trúc 3-dải-tuổi mới) vẫn CHƯA có đường nạp vào DB thật trên thiết bị — cần sửa `child_debug_page.dart` để đọc thêm file này (người dùng đã từ chối việc này ở đợt trước, có thể xem lại quyết định nếu muốn ingest 42 entry `so_sanh` mới vào DB thật).
+- 13 entry thật (audit mục 2) vẫn treo, chờ người dùng quyết định (bao gồm cả 7 entry `so_sanh` cũ đã ghi nhận ở đợt trước, cộng phát hiện bổ sung 1 entry `so_sanh`/`ngon_ngu`/24-36 trước đây bị bỏ sót).
+
+---
+
+## 21. Rút gọn mỗi lĩnh vực còn 2 phần (Mô tả & So sánh) — Gỡ bỏ Chia sẻ phụ huynh và Thông tin bác sĩ (2026-08-16)
+
+### 1. Bối cảnh & Mục tiêu
+Rút gọn cấu trúc đánh giá 7 lĩnh vực từ Hub 4 phần xuống còn **đúng 2 phần**:
+1. **Mô tả biểu hiện của trẻ** (`mo_ta` trong `assessments` + `profile_chunks` — dữ liệu thực tế duy nhất của trẻ)
+2. **So sánh với trẻ cùng độ tuổi** (`so_sanh` trong `expert_knowledge_chunks` — dữ liệu tham khảo bổ trợ)
+
+Gỡ bỏ hoàn toàn phần 3 (**Chia sẻ từ phụ huynh** — `content_type='chia_se_phu_huynh'`) và phần 4 (**Thông tin từ bác sĩ** — `content_type='bac_si'`).
+
+---
+
+### 2. Kết quả Audit trước khi sửa (bắt buộc)
+1. **File/Widget của 2 phần bị xoá**:
+   - `lib/features/assessment/nine_domains/parent_input/`:
+     - `parent_input_page.dart` (`class ParentInputPage`)
+     - `parent_context_page.dart` (`class ParentContextPage`)
+   - `lib/features/assessment/nine_domains/expert_input/`:
+     - `expert_input_page.dart` (`class ExpertInputPage`)
+     - `expert_detail_page.dart` (`class ExpertDetailPage`)
+2. **Route/Navigation trỏ tới 2 màn này**:
+   - Duy nhất tại `lib/features/assessment/domain_hub_page.dart` (import 2 file và 2 thẻ điều hướng `_HubNavigationCard`). Không có bất kỳ route hay file nào khác trong toàn bộ codebase dẫn tới 2 màn hình này.
+3. **Kiểm tra Hỏi đáp AI / Guardrail 3 trạng thái**:
+   - `GuardrailService.determineState()`: Xác định Trạng thái 1/2/3 hoàn toàn bằng code Dart thuần dựa trên `retrievedProfileChunks` (từ `profile_chunks` của trẻ) và `hasScreeningResult` (từ `screenings`). **Không phụ thuộc vào `expert_knowledge_chunks`**, logic guardrail giữ nguyên 100%.
+   - RAG Trạng thái 3 (`AiRepository.ask` & `VectorSearchService.searchExpertChunks`): Câu truy vấn gốc `_expertKnowledgeRepository.query(ageInMonths: ageMonths)` trước đây lấy mọi chunk theo độ tuổi. Đã bổ sung tường minh tham số `contentType: 'so_sanh'` trong `VectorSearchService.searchExpertChunks` để chỉ truy vấn tri thức so sánh.
+4. **File nguồn JSON**:
+   - `assets/reference/expert_content.json`: Chứa 209 entry (7 `so_sanh`, 133 `chia_se_phu_huynh`, 69 `bac_si`). Đã lọc và xoá sạch 202 entry `chia_se_phu_huynh` và `bac_si`, chỉ giữ lại 7 entry `so_sanh`.
+   - `assets/reference/expert_content_so_sanh.json`: 42 entry `so_sanh` chuẩn hoá 7 lĩnh vực × 3 dải tuổi × 2 phân loại được giữ nguyên.
+5. **Database Migration v9**:
+   - Nâng version SQLite `AppDatabase` từ 8 lên 9.
+   - Migration v9 thực hiện: `DELETE FROM expert_knowledge_chunks WHERE content_type IN ('chia_se_phu_huynh', 'bac_si');`.
+
+---
+
+### 3. Danh sách file đã xoá
+1. `lib/features/assessment/nine_domains/parent_input/parent_input_page.dart` (UI thẻ Chia sẻ phụ huynh)
+2. `lib/features/assessment/nine_domains/parent_input/parent_context_page.dart` (UI chi tiết tình huống)
+3. `lib/features/assessment/nine_domains/expert_input/expert_input_page.dart` (UI thẻ Thông tin bác sĩ)
+4. `lib/features/assessment/nine_domains/expert_input/expert_detail_page.dart` (UI chi tiết mốc phát triển y khoa)
+5. `scripts/validate_expert_content.dart` (Script validate riêng cho chia_se_phu_huynh/bac_si)
+6. `scripts/ingest_expert_content.dart` (Script ingest riêng cho chia_se_phu_huynh/bac_si)
+7. `test/validate_expert_content_test.dart` (Test cho script validate đã xoá)
+8. `test/ingest_expert_content_test.dart` (Test cho script ingest đã xoá)
+9. `test/expert_knowledge_context_migration_test.dart` (Test schema cũ v3->v4 cho cột nhom_tre/boi_canh)
+
+---
+
+### 4. File đã chỉnh sửa & tạo mới
+1. `lib/data/local/database.dart`: Nâng `version: 9`, thêm `onUpgrade` v9 xoá 2 loại `content_type`.
+2. `lib/features/assessment/domain_hub_page.dart`: Rút gọn Hub còn 2 thẻ (Mô tả biểu hiện & So sánh với trẻ cùng độ tuổi), xoá import và 2 thẻ cũ.
+3. `lib/domain/services/vector_search_service.dart`: Chỉ định rõ `contentType: 'so_sanh'` trong `searchExpertChunks`.
+4. `assets/reference/expert_content.json`: Lọc xoá 202 entry `chia_se_phu_huynh`/`bac_si`, chỉ giữ `so_sanh`.
+5. `test/expert_knowledge_cleanup_migration_test.dart` *(mới)*: Test migration v8 -> v9 xác nhận xoá sạch dữ liệu cũ, bảo toàn 100% `so_sanh`.
+6. `test/domain_hub_free_navigation_test.dart`: Cập nhật 4 test cases cho Hub 2 phần.
+7. `test/repositories_test.dart`: Chuyển test `ExpertKnowledgeRepository` tập trung vào `so_sanh`.
+8. `test/chan_dung_and_overview_description_migration_test.dart`, `test/seven_domains_migration_test.dart`, `test/overview_migration_test.dart`: Cập nhật kỳ vọng DB version lên 9.
+
+---
+
+### 5. Kết quả kiểm thử & Xác thực
+- `flutter analyze`: **0 issues found** (ran in 62.4s).
+- `flutter test test/expert_knowledge_cleanup_migration_test.dart`: **PASS** (xác minh migration v8 -> v9 trên DB SQLite thật).
+- `flutter test test/domain_hub_free_navigation_test.dart`: **4/4 PASS** (xác minh Hub 2 phần, điều hướng, nút Lưu).
+- `flutter test test/ai_repository_test.dart`: **4/4 PASS** (xác minh đủ 3 trạng thái AI Guardrail với kho tri thức `so_sanh`).
+- `flutter test` (toàn bộ workspace): **115/115 PASS (100%)**.
+
+
 

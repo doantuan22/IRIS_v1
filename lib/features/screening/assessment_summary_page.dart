@@ -6,7 +6,6 @@ import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
 import '../../domain/models/screening.dart';
-import '../../domain/services/screening_question_bank.dart';
 import '../assessment/domain_list_page.dart';
 
 class _SummaryData {
@@ -60,20 +59,19 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
     );
   }
 
-  /// Logic Dart thuần — không gọi AI. Kết hợp tuổi (qua bộ câu hỏi sàng lọc
-  /// tương ứng), trạng thái sàng lọc, và số lĩnh vực đã có mô tả.
-  String _buildSuggestion(_SummaryData data, int ageMonths) {
+  /// Logic Dart thuần — không gọi AI. Kết hợp trạng thái sàng lọc và số lĩnh vực đã có mô tả.
+  String _buildSuggestion(_SummaryData data) {
     final total = domains.length;
-    final toolLabel = selectScreeningQuestionSet(ageMonths).label;
+    const toolLabel = 'bài sàng lọc 50 câu (7 lĩnh vực)';
 
     if (!data.hasScreening && data.doneDomainCount == 0) {
       return 'Trẻ chưa thực hiện sàng lọc và chưa có mô tả biểu hiện ở lĩnh vực nào. '
-          'Có thể thực hiện sàng lọc bằng $toolLabel phù hợp độ tuổi hiện tại, '
+          'Có thể thực hiện $toolLabel, '
           'hoặc bắt đầu ngay bằng cách mô tả biểu hiện ở lĩnh vực trẻ có quan sát rõ nhất.';
     }
     if (!data.hasScreening && data.doneDomainCount > 0) {
       return 'Đã có mô tả biểu hiện cho ${data.doneDomainCount}/$total lĩnh vực nhưng chưa sàng lọc. '
-          'Có thể thực hiện thêm bước sàng lọc bằng $toolLabel để có góc nhìn tổng quát hơn.';
+          'Có thể thực hiện thêm $toolLabel để có góc nhìn tổng quát hơn.';
     }
     if (data.hasScreening && data.doneDomainCount == 0) {
       return 'Đã có kết quả sàng lọc nhưng chưa có mô tả biểu hiện cụ thể cho lĩnh vực nào. '
@@ -96,7 +94,6 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ageMonths = childAgeInMonths(widget.child);
     return Scaffold(
       appBar: AppBar(title: const Text('Tổng hợp hồ sơ & đề xuất')),
       body: FutureBuilder<_SummaryData>(
@@ -187,7 +184,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      Text(_buildSuggestion(data, ageMonths)),
+                      Text(_buildSuggestion(data)),
                     ],
                   ),
                 ),

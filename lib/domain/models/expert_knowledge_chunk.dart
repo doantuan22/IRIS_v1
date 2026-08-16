@@ -7,7 +7,8 @@
 /// Dùng `childAgeInMonths()` để quy đổi trước khi so sánh.
 ///
 /// [phanLoai] chỉ có ý nghĩa khi [contentType] = `'so_sanh'`:
-/// `'thuong_gap'` / `'can_quan_sat'` / `null` (chưa phân loại).
+/// `'binh_thuong'` (biểu hiện thường gặp) / `'roi_loan_pho_tu_ky'` (dấu hiệu
+/// cần quan sát thêm) / `null` (chưa phân loại).
 ///
 /// [nhomTre]/[boiCanh] chỉ có ý nghĩa khi [contentType] =
 /// `'chia_se_phu_huynh'`: [nhomTre] là `'binh_thuong'` / `'asd'` / `null`;

@@ -130,14 +130,43 @@ class _ChildDebugPageState extends State<ChildDebugPage> {
     var success = 0;
     var failed = 0;
     try {
-      final jsonString = await rootBundle.loadString(
-        'assets/reference/expert_content.json',
-      );
-      final entries = (jsonDecode(jsonString) as List<dynamic>)
-          .cast<Map<String, dynamic>>();
+      final allEntries = <Map<String, dynamic>>[];
+
+      // 1. Dữ liệu tham khảo khác (expert_content.json)
+      try {
+        final jsonString = await rootBundle.loadString(
+          'assets/reference/expert_content.json',
+        );
+        final list = (jsonDecode(jsonString) as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+        allEntries.addAll(list);
+      } catch (_) {}
+
+      // 2. Dữ liệu So sánh 15-23 tháng (so_sanh_15_23_thang.json)
+      try {
+        final jsonString = await rootBundle.loadString(
+          'assets/reference/so_sanh_15_23_thang.json',
+        );
+        final map = jsonDecode(jsonString) as Map<String, dynamic>;
+        final list = (map['entries'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+        allEntries.addAll(list);
+      } catch (_) {}
+
+      // 3. Dữ liệu So sánh 24-47 tháng (so_sanh_24_47_thang.json)
+      try {
+        final jsonString = await rootBundle.loadString(
+          'assets/reference/so_sanh_24_47_thang.json',
+        );
+        final map = jsonDecode(jsonString) as Map<String, dynamic>;
+        final list = (map['entries'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+        allEntries.addAll(list);
+      } catch (_) {}
+
       final nvidiaApiClient = NvidiaApiClient();
 
-      for (final entry in entries) {
+      for (final entry in allEntries) {
         try {
           final content = entry['content'] as String;
           final embedding = await nvidiaApiClient.embed(content);

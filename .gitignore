@@ -55,3 +55,8 @@ android/*.jks
 android/*.keystore
 android/app/*.jks
 android/app/*.keystore
+
+# Config cục bộ của tools/video_manager_tool.py (chỉ lưu đường dẫn thư mục dự
+# án trên máy — khác nhau tuỳ máy, không commit).
+tools/.video_manager_config.json
+tools/__pycache__/

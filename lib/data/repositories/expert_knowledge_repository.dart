@@ -56,16 +56,18 @@ class ExpertKnowledgeRepository {
   /// Lọc theo [linhVuc] (bỏ qua nếu null), theo [ageInMonths] — ĐƠN VỊ
   /// THÁNG, khớp `do_tuoi_thang_min`/`do_tuoi_thang_max` — nằm trong khoảng
   /// `do_tuoi_thang_min <= ageInMonths <= do_tuoi_thang_max`, và theo
-  /// [contentType]/[nhomTre]/[boiCanh] (mỗi tham số bỏ qua nếu null). Dùng
-  /// `childAgeInMonths()` để quy đổi từ `Child.ageYears`/`dob` trước khi gọi
-  /// hàm này. [nhomTre]/[boiCanh] chỉ có ý nghĩa khi lọc
-  /// `contentType='chia_se_phu_huynh'` — thường bỏ trống 2 tham số này và
-  /// lọc theo từng nhóm/bối cảnh ở phía Dart sau khi tải 1 lần (xem
-  /// `ParentInputPage`), giống cách `phanLoai` đã dùng ở "So sánh".
+  /// [contentType]/[phanLoai]/[nhomTre]/[boiCanh] (mỗi tham số bỏ qua nếu
+  /// null). Dùng `childAgeInMonths()` để quy đổi từ `Child.ageYears`/`dob`
+  /// trước khi gọi hàm này. [phanLoai] dùng để lọc đúng tab khi
+  /// `contentType='so_sanh'` (`'binh_thuong'`/`'roi_loan_pho_tu_ky'`).
+  /// [nhomTre]/[boiCanh] chỉ có ý nghĩa khi lọc `contentType='chia_se_phu_huynh'`
+  /// — thường bỏ trống 2 tham số này và lọc theo từng nhóm/bối cảnh ở phía
+  /// Dart sau khi tải 1 lần (xem `ParentInputPage`).
   Future<List<ExpertKnowledgeChunk>> query({
     String? linhVuc,
     required int ageInMonths,
     String? contentType,
+    String? phanLoai,
     String? nhomTre,
     String? boiCanh,
   }) async {
@@ -83,6 +85,10 @@ class ExpertKnowledgeRepository {
     if (contentType != null) {
       conditions.add('content_type = ?');
       args.add(contentType);
+    }
+    if (phanLoai != null) {
+      conditions.add('phan_loai = ?');
+      args.add(phanLoai);
     }
     if (nhomTre != null) {
       conditions.add('nhom_tre = ?');

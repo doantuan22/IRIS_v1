@@ -23,6 +23,32 @@ class Child {
   });
 }
 
+/// Quy đổi số tháng tuổi sang ngày sinh ước tính `dob` (ngang với `now - months`).
+///
+/// Xử lý an toàn các trường hợp:
+/// - Tràn năm (khi `now.month - months <= 0`).
+/// - Ngày không tồn tại trong tháng đích (ví dụ 31/03 trừ 1 tháng sang tháng 02
+///   chỉ có 28 hoặc 29 ngày) -> kẹp về ngày cuối cùng hợp lệ của tháng đích
+///   để không bị tràn sang tháng tiếp theo.
+DateTime dobFromAgeInMonths(int months, [DateTime? now]) {
+  if (months < 0) {
+    throw ArgumentError.value(months, 'months', 'Số tháng tuổi phải >= 0');
+  }
+  final currentDate = now ?? DateTime.now();
+  var year = currentDate.year;
+  var month = currentDate.month - months;
+  while (month <= 0) {
+    month += 12;
+    year -= 1;
+  }
+  // Lấy ngày cuối cùng của tháng đích để tránh tràn ngày
+  final daysInTargetMonth = DateTime(year, month + 1, 0).day;
+  final day = currentDate.day > daysInTargetMonth
+      ? daysInTargetMonth
+      : currentDate.day;
+  return DateTime(year, month, day);
+}
+
 /// Quy đổi tuổi trẻ sang THÁNG — dùng khi so sánh với
 /// `expert_knowledge_chunks.do_tuoi_thang_min/max` (đơn vị tháng), khác đơn
 /// vị với `Child.ageYears` (năm). Ưu tiên `dob` nếu có (tính chính xác số

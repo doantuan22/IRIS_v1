@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../data/local/database.dart';
 import '../../../data/repositories/child_repository.dart';
+import '../../../domain/models/child.dart';
 import '../../../domain/services/active_child_service.dart';
 import '../../screening/screening_intro_page.dart';
 
-enum _AgeInputMode { dob, ageYears }
+enum _AgeInputMode { dob, ageMonths }
 
-/// Bước 1-2 — Tạo hồ sơ trẻ: tên, ngày sinh HOẶC số tuổi, giới tính.
+/// Bước 1-2 — Tạo hồ sơ trẻ: tên, ngày sinh HOẶC số tháng tuổi, giới tính.
 class CreateProfilePage extends StatefulWidget {
   const CreateProfilePage({super.key});
 
@@ -18,7 +19,7 @@ class CreateProfilePage extends StatefulWidget {
 class _CreateProfilePageState extends State<CreateProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageYearsController = TextEditingController();
+  final _ageMonthsController = TextEditingController();
   final _nguoiDanhGiaController = TextEditingController();
 
   final _childRepository = ChildRepository(AppDatabase.instance);
@@ -33,7 +34,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _ageYearsController.dispose();
+    _ageMonthsController.dispose();
     _nguoiDanhGiaController.dispose();
     super.dispose();
   }
@@ -55,11 +56,25 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
     if (_ageInputMode == _AgeInputMode.dob) {
       return _selectedDob == null ? 'Vui lòng chọn ngày sinh' : null;
     }
-    final text = _ageYearsController.text.trim();
-    if (text.isEmpty) return 'Vui lòng nhập số tuổi';
-    final years = int.tryParse(text);
-    if (years == null || years < 0 || years > 18) return 'Số tuổi không hợp lệ';
+    final text = _ageMonthsController.text.trim();
+    if (text.isEmpty) return 'Vui lòng nhập số tháng tuổi';
+    final months = int.tryParse(text);
+    if (months == null || months < 1 || months > 120) {
+      return 'Số tháng tuổi không hợp lệ (1-120 tháng)';
+    }
     return null;
+  }
+
+  String? get _previewAgeText {
+    final text = _ageMonthsController.text.trim();
+    if (text.isEmpty) return null;
+    final m = int.tryParse(text);
+    if (m == null || m <= 0 || m > 120) return null;
+    final years = m ~/ 12;
+    final rem = m % 12;
+    if (years <= 0) return '≈ $rem tháng tuổi';
+    if (rem == 0) return '≈ $years tuổi';
+    return '≈ $years tuổi $rem tháng';
   }
 
   Future<void> _submit() async {
@@ -75,14 +90,14 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
     setState(() => _saving = true);
     try {
+      final dob = _ageInputMode == _AgeInputMode.dob
+          ? _selectedDob
+          : dobFromAgeInMonths(int.parse(_ageMonthsController.text.trim()));
+
       final created = await _childRepository.create(
         name: _nameController.text.trim(),
-        dob: _ageInputMode == _AgeInputMode.dob
-            ? _selectedDob?.toIso8601String()
-            : null,
-        ageYears: _ageInputMode == _AgeInputMode.ageYears
-            ? int.parse(_ageYearsController.text.trim())
-            : null,
+        dob: dob?.toIso8601String(),
+        ageYears: null, // Hồ sơ mới luôn dùng dob, không lưu ageYears
         gender: _gender,
         nguoiDanhGia: _nguoiDanhGiaController.text.trim().isEmpty
             ? null
@@ -158,16 +173,21 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                       ),
                     ),
                   const RadioListTile<_AgeInputMode>(
-                    title: Text('Theo số tuổi (năm)'),
-                    value: _AgeInputMode.ageYears,
+                    title: Text('Theo số tháng tuổi'),
+                    value: _AgeInputMode.ageMonths,
                   ),
-                  if (_ageInputMode == _AgeInputMode.ageYears)
+                  if (_ageInputMode == _AgeInputMode.ageMonths)
                     Padding(
                       padding: const EdgeInsets.only(left: 16, bottom: 8),
                       child: TextFormField(
-                        controller: _ageYearsController,
+                        controller: _ageMonthsController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Số tuổi'),
+                        decoration: InputDecoration(
+                          labelText: 'Số tháng tuổi *',
+                          hintText: 'Ví dụ: trẻ 1 tuổi rưỡi thì nhập 18',
+                          helperText: _previewAgeText,
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                 ],

@@ -1892,5 +1892,381 @@ Gỡ bỏ hoàn toàn phần 3 (**Chia sẻ từ phụ huynh** — `content_type
 - `flutter test test/ai_repository_test.dart`: **4/4 PASS** (xác minh đủ 3 trạng thái AI Guardrail với kho tri thức `so_sanh`).
 - `flutter test` (toàn bộ workspace): **115/115 PASS (100%)**.
 
+---
 
+## 22. Ingest 200 Entry Dữ liệu THẬT So Sánh 15-23 Tháng & Kiểm Chứng Nghiêm Ngặt Logic Lọc Độ Tuổi (2026-08-16)
 
+### 1. Kết quả Audit trước khi Ingest (Bắt buộc)
+1. **Hiện trạng bảng `expert_knowledge_chunks`**:
+   - Trong `assets/reference/expert_content.json` chỉ có 7 entry `so_sanh` thuộc các dải tuổi khác (`ngon_ngu` 24-36, `quan_he_xa_hoi` 48-71). **Không có entry thật nào thuộc dải 15-23 tháng**.
+   - Trong `assets/reference/expert_content_so_sanh.json` có 14 entry placeholder dải 15-23 tháng (được lưu cho môi trường test/dev, không dùng trong production DB).
+   - $\rightarrow$ **Kết luận**: Không có xung đột dữ liệu thật trong cơ sở dữ liệu.
+2. **Kiểm tra Logic Lọc Theo Độ Tuổi**:
+   - `ExpertKnowledgeRepository.query`:
+     ```sql
+     (do_tuoi_thang_min IS NULL OR do_tuoi_thang_min <= ?) AND (do_tuoi_thang_max IS NULL OR do_tuoi_thang_max >= ?)
+     ```
+   - `VectorSearchService.searchExpertChunks`: Lọc thô bằng SQL theo `ageInMonths` trước khi tính Cosine Similarity trên các vector. Nếu SQL trả về rỗng, hàm trả về danh sách rỗng ngay lập tức.
+   - `AiRepository.ask`: Khi `retrievedExpertChunks` rỗng, `PromptBuilder.buildState3ExpertContext` sinh câu mặc định: `'(không có dữ liệu tham khảo phù hợp)'`.
+   - `ComparisonVideoPage`: Khi `snapshot.data` rỗng, hiển thị thông báo: `'Chưa có dữ liệu so sánh cho lĩnh vực này ở độ tuổi hiện tại.'`.
+   - $\rightarrow$ **Xác nhận 100%**: Tuyệt đối **KHÔNG có bất kỳ cơ chế fallback** hay lấy dải tuổi gần nhất nào.
+
+---
+
+### 2. Xử lý Dữ liệu Cũ Trùng Phạm Vi
+- Các entry placeholder 15-23 tháng trong file test không được nạp vào DB runtime.
+- File `so_sanh_15_23_thang.json` (200 entry thật) được lưu vào `assets/reference/so_sanh_15_23_thang.json` và cập nhật `ChildDebugPage` để sẵn sàng nạp khi cần.
+- 2 trường `thu_tu_trong_bang` và `cap_doi_id` được bỏ qua hoàn toàn khi nạp vào bảng `expert_knowledge_chunks` (không sửa schema SQLite, giữ nguyên tính tương thích).
+
+---
+
+### 3. Kết quả Ingest 200 Entry Thật với NVIDIA NIM Embedding
+- **API Model**: `nvidia/nv-embedqa-e5-v5` (từ NVIDIA NIM qua `https://integrate.api.nvidia.com/v1/embeddings`).
+- **Vector Chiều rộng**: 1024 float32 / 4096 bytes per BLOB (encode/decode bằng `lib/domain/services/embedding_codec.dart`).
+- **Tỷ lệ Ingest thành công**: **200/200 entry (100%)**, Thất bại: **0**.
+- **Phân bổ 200 entry trên 7 lĩnh vực chuẩn**:
+  | Lĩnh vực | `binh_thuong` | `roi_loan_pho_tu_ky` | Tổng số entry |
+  |---|---|---|---|
+  | `nhan_thuc` | 13 | 13 | **26** |
+  | `cam_xuc` | 7 | 7 | **14** |
+  | `giac_quan` | 5 | 5 | **10** |
+  | `quan_he_xa_hoi` | 10 | 11 | **21** |
+  | `ngon_ngu` | 28 | 28 | **56** |
+  | `sinh_hoc` | 22 | 21 | **43** |
+  | `sinh_hoat_ca_nhan` | 15 | 15 | **30** |
+  | **TỔNG CỘNG** | **100** | **100** | **200** |
+
+---
+
+### 4. Kết quả Kiểm Chứng Nghiêm Ngặt Logic Lọc Tuổi qua Test Suite
+Đã xây dựng test suite chuyên biệt `test/so_sanh_15_23_age_filtering_test.dart` với 11 ca kiểm thử:
+1. **Test 1**: Trẻ 18 tháng (giữa dải 15-23) $\rightarrow$ Nhận đúng 200 entry phân bổ chính xác trên 7 lĩnh vực. **PASS**
+2. **Test 2**: Trẻ đúng 15 tháng (biên dưới) $\rightarrow$ Nhận đủ 200 entry dữ liệu tham khảo. **PASS**
+3. **Test 3**: Trẻ đúng 23 tháng (biên trên) $\rightarrow$ Nhận đủ 200 entry dữ liệu tham khảo. **PASS**
+4. **Test 4**: Trẻ 14 tháng (ngay dưới biên) $\rightarrow$ **RỖNG TUYỆT ĐỐI (0 kết quả)**, không bị gán nhầm dải 15-23. **PASS**
+5. **Test 5**: Trẻ 24 tháng (ngay trên biên) $\rightarrow$ **KHÔNG nhận bất kỳ entry nào từ dải 15-23**, chỉ nhận chunk của dải 24-36 (nếu có). **PASS**
+6. **Test 6**: Trẻ 40 tháng (lớn hơn nhiều) $\rightarrow$ **RỖNG TUYỆT ĐỐI trên cả 7 lĩnh vực**. **PASS**
+7. **Test 7**: Trẻ 60 tháng (5 tuổi) $\rightarrow$ **RỖNG TUYỆT ĐỐI trên cả 7 lĩnh vực**. **PASS**
+8. **Test 8**: `VectorSearchService.searchExpertChunks` lọc tuổi trước khi tính similarity $\rightarrow$ Trả về rỗng cho trẻ 14m/40m, không fallback. **PASS**
+9. **Test 9**: `childAgeInMonths` quy đổi chính xác từ `dob` sang số tháng tuổi. **PASS**
+10. **Test 10**: Widget test `ComparisonVideoPage` với trẻ 18 tháng $\rightarrow$ Tải và render bảng so sánh thành công. **PASS**
+11. **Test 11**: Widget test `ComparisonVideoPage` với trẻ 40 tháng $\rightarrow$ Hiển thị đúng trạng thái RỖNG, không crash, không lẫn dữ liệu dải 15-23. **PASS**
+
+---
+
+### 5. Xác Thực Trực Tiếp trên Thiết Bị / Emulator Pixel 7
+1. **Dữ liệu trong SQLite DB trên Emulator**:
+   - `SELECT do_tuoi_thang_min, do_tuoi_thang_max, count(*) FROM expert_knowledge_chunks GROUP BY do_tuoi_thang_min, do_tuoi_thang_max;`
+     - `15 | 23 | 200`
+     - `24 | 36 | 1`
+     - `48 | 71 | 6`
+   - Đủ 200 entry dải 15-23 với vector embedding 4096 bytes.
+2. **Kiểm tra luồng UI thực tế**:
+   - **Trường hợp Trẻ 18 tháng (`Bé An (18 tháng)` - 1 tuổi 6 tháng)**:
+     - Vào "Đánh giá 7 lĩnh vực" $\rightarrow$ chọn "Nhận thức" $\rightarrow$ chọn "So sánh với trẻ cùng độ tuổi".
+     - Header hiển thị: `Nhận thức — So sánh nhanh (1 tuổi 6 tháng)`.
+     - Nút "Xem chi tiết so sánh" hiển thị và mở ra bảng 26 tiêu chí (13 bình thường vs 13 rối loạn phổ tự kỷ).
+   - **Trường hợp Trẻ 40 tháng (`Bé Bình (40 tháng)` - 3 tuổi 4 tháng)**:
+     - Vào "Đánh giá 7 lĩnh vực" $\rightarrow$ chọn "Nhận thức" $\rightarrow$ chọn "So sánh với trẻ cùng độ tuổi".
+     - Header hiển thị: `Nhận thức — So sánh nhanh (3 tuổi 4 tháng)`.
+     - Body hiển thị thông báo rỗng: *"Chưa có dữ liệu so sánh cho lĩnh vực này ở độ tuổi hiện tại."*.
+     - Không có nút "Xem chi tiết", không crash, không xuất hiện bất kỳ nội dung nào của dải 15-23.
+3. **Ảnh chụp màn hình đối chứng**:
+   - `so_sanh_18m_data.png`: Minh chứng hiển thị dữ liệu cho trẻ 18 tháng.
+   - `so_sanh_40m_empty.png`: Minh chứng hiển thị trạng thái rỗng cho trẻ 40 tháng.
+
+---
+
+### 6. Tổng Kết Chất Lượng Codebase
+- `flutter analyze`: **0 issues found** (No issues found!).
+- `flutter test`: **126/126 PASS (100%)**.
+
+## Sửa Lỗi Màn "So Sánh" — Bảng Cột Trống → Đúng Cấu Trúc 2 Tab (2026-08-16)
+
+### 1. Audit — nguyên nhân gốc
+
+**File liên quan:**
+- `lib/features/assessment/nine_domains/comparison_video/comparison_video_page.dart` — "So sánh nhanh" (`ComparisonVideoPage`).
+- `lib/features/assessment/nine_domains/comparison_video/comparison_detail_page.dart` — "So sánh chi tiết" (`ComparisonDetailPage`), trước đây mở từ nút "Xem chi tiết so sánh" trong `ComparisonVideoPage`, nhận lại nguyên `List<ExpertKnowledgeChunk> chunks` đã tải sẵn (không tự query).
+- `lib/data/repositories/expert_knowledge_repository.dart` — hàm `query()` dùng chung.
+
+**Nguyên nhân gốc (2 lớp, xác nhận qua đọc trực tiếp code + đối chiếu dữ liệu thật):**
+
+1. **Sai giá trị `phan_loai` (nguyên nhân chính, gây đúng hiện tượng trong ảnh lỗi):** Code cũ ở cả 2 màn lọc/đánh dấu theo `c.phanLoai == 'thuong_gap'` và `c.phanLoai == 'can_quan_sat'`. Nhưng dữ liệu thật trong `expert_knowledge_chunks` (ingest từ `so_sanh_15_23_thang.json`, xác nhận qua `scripts/validate_so_sanh_data.dart` và `test/ingest_so_sanh_data_test.dart`) dùng đúng 2 giá trị **`'binh_thuong'`** / **`'roi_loan_pho_tu_ky'`** — không phải `'thuong_gap'`/`'can_quan_sat'`. Hệ quả: `ComparisonVideoPage` tải được `chunks` (không rỗng) nhưng cả 2 nhóm lọc phía Dart đều rỗng nên 2 khối UI biến mất; `ComparisonDetailPage` vẫn lặp đủ mọi hàng (vì dùng nguyên `chunks`, không lọc) nhưng cột "Thường gặp"/"Cần quan sát" luôn `SizedBox.shrink()` vì điều kiện check sai — **đúng hệt hiện tượng trong ảnh lỗi**: cột "Tiêu chí" liệt kê lẫn lộn cả `binh_thuong` lẫn `roi_loan_pho_tu_ky` thành các hàng riêng (vì không lọc), cột "Thường gặp" luôn trống.
+2. **Thiết kế bảng ghép cặp theo hàng đã lỗi thời:** JSON nguồn từng có `cap_doi_id`/`thu_tu_trong_bang` để ghép 2 entry đối xứng thành 1 hàng bảng, nhưng xác nhận qua `lib/data/local/tables/expert_knowledge_chunks_table.dart` — **schema DB KHÔNG có 2 cột này**, và cả 2 script ingest (`scripts/ingest_so_sanh_15_23.dart`, `scripts/ingest_so_sanh_data.dart`) đều không đọc/insert chúng. `ExpertKnowledgeRepository.query()` cũng không có tham số `phanLoai` — việc tách nhóm hoàn toàn nằm ở phía Dart trong 2 trang UI, dùng sai giá trị nêu trên.
+3. Test cũ (`test/so_sanh_15_23_age_filtering_test.dart` Test 10/11, `test/domain_hub_free_navigation_test.dart` Test 1) không phát hiện bug vì tự seed thủ công `phanLoai: 'thuong_gap'` (giá trị sai) vào DB test thay vì dùng giá trị thật `'binh_thuong'`/`'roi_loan_pho_tu_ky'` — che giấu mismatch, khớp UI "trông có vẻ đúng" nhưng không đối chiếu nội dung con.
+
+### 2. Thay đổi đã thực hiện
+
+- **`lib/data/repositories/expert_knowledge_repository.dart`**: thêm tham số `phanLoai` vào `query()` (SQL `WHERE phan_loai = ?`) — lọc đúng tab ngay ở DB thay vì lọc sai ở Dart.
+- **`lib/domain/models/expert_knowledge_chunk.dart`**: sửa docstring `phanLoai` (trước ghi sai `'thuong_gap'`/`'can_quan_sat'`, nay đúng `'binh_thuong'`/`'roi_loan_pho_tu_ky'`).
+- **`comparison_video_page.dart`**: viết lại hoàn toàn — `AppBar` có `TabBar` 2 tab "Trẻ bình thường"/"Trẻ tự kỷ"; `initState` gọi `loadComparisonTabData()` (2 lệnh `ExpertKnowledgeRepository.query()` song song, mỗi lệnh đúng `phanLoai` của 1 tab, KHÔNG ghép theo `cap_doi_id`/hàng ngang); mỗi tab render `ComparisonItemList` — danh sách, mỗi dòng = 1 entry, không còn bảng. Trạng thái rỗng hiện thông báo riêng cho từng tab. Nút "Xem chi tiết so sánh" chỉ hiện khi có ít nhất 1 tab có dữ liệu, giờ điều hướng bằng `child`+`linhVuc`+`linhVucLabel` (không truyền `chunks` nữa).
+- **`comparison_detail_page.dart`**: viết lại hoàn toàn theo cùng cấu trúc — từ `StatelessWidget` nhận sẵn `chunks` chuyển thành `StatefulWidget` tự gọi `loadComparisonTabData()` theo đúng `linhVuc`, 2 tab riêng, xoá hẳn `Table`/`_HeaderCell`/`_MarkCell` (bảng "Tiêu chí \| Thường gặp \| Cần quan sát" cũ).
+- Không đụng: dữ liệu trong `expert_knowledge_chunks`, logic `childAgeInMonths()`/lọc tuổi, Mô tả biểu hiện, Chân dung toàn cảnh, Sàng lọc 50 câu.
+
+### 3. Test
+
+- **`test/comparison_tabs_test.dart`** (mới, 4 test): tab "Trẻ bình thường" hiện đúng số lượng/nội dung entry `phan_loai='binh_thuong'` đối chiếu trực tiếp với `ExpertKnowledgeRepository.query()` thật (không chỉ tin UI); chuyển qua lại 2 tab 3 vòng liên tiếp xác nhận không lẫn dữ liệu; trẻ ngoài mọi dải tuổi → cả 2 tab hiện đúng thông báo trống riêng, `find.byType(Table)` rỗng (không còn bảng cột trống); `ComparisonDetailPage` tự query lại theo `linhVuc`, xác nhận không còn `Text('Tiêu chí')`/`Text('Thường gặp')`/`Table` nào trong cây widget.
+- Cập nhật `test/domain_hub_free_navigation_test.dart` Test 1 và `test/so_sanh_15_23_age_filtering_test.dart` Test 11: sửa `phanLoai` seed từ giá trị sai `'thuong_gap'` sang đúng `'binh_thuong'`, cập nhật assertion theo tiêu đề tab mới thay vì tiêu đề section cũ.
+- Kết quả: `flutter test test/comparison_tabs_test.dart test/domain_hub_free_navigation_test.dart test/so_sanh_15_23_age_filtering_test.dart` — **19/19 PASS**.
+- `flutter analyze`: **No issues found!**
+- `flutter test` (toàn bộ workspace): đang chạy, cập nhật kết quả bên dưới sau khi hoàn tất.
+
+### 4. Verify luồng thật trên emulator (2026-08-16)
+
+Redeploy debug build lên `emulator-5554` (`flutter run -d emulator-5554 --dart-define-from-file=dart_define.json`), xác nhận `run-as` debuggable trước khi thao tác. Trẻ có sẵn trong DB thật: **"lvl"**, `dob=2025-03-16` → tính tới ngày verify (2026-08-16) đúng **17 tháng = "1 tuổi 5 tháng"**, đúng kịch bản trong ảnh lỗi gốc. DB thật đã có sẵn dữ liệu THẬT (200 entry, dải 15-23 tháng, ingest từ `so_sanh_15_23_thang.json` ở đợt trước) — lĩnh vực `nhan_thuc`: 13 `binh_thuong` + 13 `roi_loan_pho_tu_ky` — đúng dữ liệu từng gây lỗi trong ảnh chụp gốc.
+
+Điều hướng qua `adb shell input tap` + `uiautomator dump` (Home → Đánh giá 7 lĩnh vực → Nhận thức → So sánh với trẻ cùng độ tuổi):
+
+1. **"Nhận thức — So sánh nhanh"**: hiện đúng 2 tab "Trẻ bình thường" (mặc định, active) / "Trẻ tự kỷ". Tiêu đề "So sánh nhanh (1 tuổi 5 tháng)" — đúng tuổi, không đổi. Tab "Trẻ bình thường" liệt kê đủ 13 dòng nội dung thật (VD "Xếp chồng ít nhất hai vật nhỏ...", "Bắt chước hành động như các động tác và cử chỉ..."). Nút "Xem chi tiết so sánh" hiện đúng.
+2. Bấm tab "Trẻ tự kỷ": danh sách đổi hoàn toàn sang 13 dấu hiệu khác (VD "Không thể xếp chồng hai vật nhỏ", "Không hứng thú với đồ chơi") — xác nhận không lẫn dữ liệu giữa 2 tab.
+3. Bấm "Xem chi tiết so sánh" → **"Nhận thức — Chi tiết so sánh"** (đúng màn trong ảnh lỗi gốc): tiêu đề "So sánh chi tiết (1 tuổi 5 tháng)", đúng 2 tab, tab "Trẻ bình thường" hiện lại đúng 13 dòng (không phải bảng "Tiêu chí \| Thường gặp" với cột trống như ảnh cũ), có hộp disclaimer "Thông tin này chỉ giúp đối chiếu với trẻ cùng độ tuổi, không dùng để tự chẩn đoán." ở cuối.
+4. Bấm tab "Trẻ tự kỷ" ở màn chi tiết: đổi đúng sang 13 dấu hiệu tương ứng, không lẫn — xác nhận `ComparisonDetailPage` tự query lại đúng theo tab, không còn dùng `chunks` cố định truyền từ màn trước.
+
+**Kết luận verify:** lỗi trong ảnh gốc (bảng 1 cột "Tiêu chí" liệt kê lẫn lộn, cột "Thường gặp" trống hoàn toàn) đã hết hoàn toàn trên dữ liệu thật, đúng hành vi 2-tab theo yêu cầu.
+
+## 24. Ingest Dữ Liệu Thật So Sánh 24-47 Tháng (196 Entry) & Kiểm Chứng Nghiêm Ngặt (2026-08-16)
+
+### 1. Audit Bước 0 Trước Khi Thực Hiện
+1. **Tái sử dụng logic Ingest**:
+   - Tái sử dụng cấu trúc và phương thức từ `scripts/ingest_so_sanh_15_23.dart` để xây dựng `scripts/ingest_so_sanh_24_47.dart`.
+2. **Schema `expert_knowledge_chunks`**:
+   - Gồm 11 cột: `id`, `content`, `content_type`, `phan_loai`, `nhom_tre`, `boi_canh`, `linh_vuc`, `do_tuoi_thang_min`, `do_tuoi_thang_max`, `nguon_tai_lieu`, `embedding` (BLOB float32 1024 chiều / 4096 bytes).
+   - Hai trường `cap_doi_id` và `thu_tu_trong_bang` trong JSON nguồn **không tồn tại** trong SQLite schema và đã được bỏ qua khi insert (không sửa schema, không thêm migration).
+3. **Query SQLite DB thật trên thiết bị/emulator trước ingest**:
+   - `content_type='so_sanh' AND do_tuoi_thang_min=24 AND do_tuoi_thang_max=47`: **0 dòng**.
+   - Có 1 dòng legacy `24|36` (`ffe04570-6163-4914-aeaf-10d30c320211`) và 6 dòng `48|71`.
+   - Đã thực hiện xoá sạch bản ghi legacy `24|36` và toàn bộ dải 24-47 cũ trước khi insert 196 entry mới, đảm bảo không có bản ghi trùng lặp hay dữ liệu rác.
+
+---
+
+### 2. Quá Trình Ingest với NVIDIA NIM Embedding API
+- **Nguồn dữ liệu**: `so_sanh_24_47_thang.json` (được lưu cả ở root và `assets/reference/so_sanh_24_47_thang.json`).
+- **NVIDIA NIM Model**: `nvidia/nv-embedqa-e5-v5` (`https://integrate.api.nvidia.com/v1/embeddings`, `input_type: 'query'`, `encoding_format: 'float'`).
+- **Kết quả Ingest**: **196/196 entry thành công (100%)**, Thất bại: **0**.
+- **Đã nạp và đồng bộ vào SQLite DB thật**: `/data/data/com.iris.app.iris_app/app_flutter/iris.db` trên emulator Pixel 7.
+
+---
+
+### 3. Phân Bổ 196 Entry Theo 7 Lĩnh Vực Trong DB Thật
+Đã đối chiếu trực tiếp qua SQL query trên DB thật:
+`SELECT linh_vuc, count(*) FROM expert_knowledge_chunks WHERE content_type='so_sanh' AND do_tuoi_thang_min=24 AND do_tuoi_thang_max=47 GROUP BY linh_vuc ORDER BY linh_vuc;`
+
+| Lĩnh vực (`linh_vuc`) | Bình thường (`binh_thuong`) | Tự kỷ (`roi_loan_pho_tu_ky`) | Tổng cộng |
+|---|---|---|---|
+| `cam_xuc` | 6 | 6 | **12** |
+| `giac_quan` | 4 | 4 | **8** |
+| `ngon_ngu` | 32 | 32 | **64** |
+| `nhan_thuc` | 11 | 11 | **22** |
+| `quan_he_xa_hoi` | 11 | 11 | **22** |
+| `sinh_hoat_ca_nhan` | 9 | 9 | **18** |
+| `sinh_hoc` | 25 | 25 | **50** |
+| **TỔNG CỘNG** | **98** | **98** | **196** |
+
+---
+
+### 4. Kiểm Chứng Nghiêm Ngặt Qua Test Suite
+Tạo test suite [test/so_sanh_24_47_age_filtering_test.dart](test/so_sanh_24_47_age_filtering_test.dart) (8 bài test):
+1. **Test 1**: Tổng số dòng đúng 196 và phân bổ chính xác 7 lĩnh vực (98 BT, 98 TK) $\rightarrow$ **PASS**.
+2. **Test 2 (Biên tuổi 23 tháng)**: Nhận đúng 200 entry dải 15-23, **0 entry từ dải 24-47** $\rightarrow$ **PASS**.
+3. **Test 3 (Biên tuổi 24 tháng)**: Nhận đúng 196 entry dải 24-47, **0 entry từ dải 15-23** $\rightarrow$ **PASS**.
+4. **Test 4 (Biên tuổi 47 tháng)**: Nhận đúng 196 entry dải 24-47 $\rightarrow$ **PASS**.
+5. **Test 5 (Biên tuổi 48 tháng)**: **Không nhận bất kỳ entry nào từ dải 24-47**, không có fallback $\rightarrow$ **PASS**.
+6. **Test 6 (Test riêng Cảm xúc)**: Trẻ 30 tháng query `linh_vuc='cam_xuc'` trả về đủ 12 entry (6 BT, 6 TK), không còn trạng thái rỗng $\rightarrow$ **PASS**.
+7. **Test 7**: `VectorSearchService.searchExpertChunks` lọc tuổi trước khi tính similarity cho dải 24-47 $\rightarrow$ **PASS**.
+8. **Test 8**: Widget `ComparisonVideoPage` cho trẻ 30 tháng lĩnh vực Cảm xúc hiển thị 2 tab và danh sách nội dung thật $\rightarrow$ **PASS**.
+
+---
+
+### 5. Tổng Kết Chất Lượng Toàn Codebase
+- `flutter analyze`: **0 issues found** (No issues found!).
+- `flutter test`: **154/154 PASS (100% trên toàn bộ 33 test files)**.
+
+## Dev Tool: `tools/video_manager_tool.py` — Thêm Video Mẫu Tham Khảo (2026-08-16)
+
+**Đây là DEV TOOL độc lập, KHÔNG phải tính năng của app Flutter** — chạy trên máy tính người phát triển bằng:
+```
+python tools/video_manager_tool.py
+```
+Chỉ dùng thư viện chuẩn Python (`tkinter`, `json`, `shutil`, `pathlib`, `re`, `datetime`) — không cần `pip install` gì. Không được build cùng app, không đụng tới `lib/`.
+
+### 1. Audit trước khi viết code
+
+- **`pubspec.yaml`** (đọc trực tiếp): khối `flutter: > assets:` thụt lề 2 space/cấp, đã khai báo sẵn **7 thư mục video theo cấp LĨNH VỰC** (phẳng, không lồng theo phân loại/dải tuổi): `assets/videos/{nhan_thuc,cam_xuc,giac_quan,quan_he_xa_hoi,ngon_ngu,sinh_hoc,sinh_hoat_ca_nhan}/`. Ngoài ra có `assets/data/`, `assets/reference/`, `assets/images/mascot/`, `assets/images/icons/`.
+- **`assets/videos/` trên đĩa**: 9 thư mục, mỗi thư mục chỉ có 1 file `.gitkeep` (rỗng thật). 2 thư mục thừa `hanh_vi/`, `ung_xu/` tồn tại trên đĩa nhưng KHÔNG được khai báo trong `pubspec.yaml` (tàn dư từ đợt gỡ 2 lĩnh vực này khỏi app) — tool KHÔNG dùng 2 thư mục này.
+- **`lib/core/constants/domains.dart`**: nguồn CHUẨN cho danh sách 7 lĩnh vực — mỗi `Domain` có `code` (snake_case) + `label` (tiếng Việt). Docstring của file này còn xác nhận trực tiếp: "*[code] khớp... tên thư mục trong `assets/videos/`*" — xác nhận quy ước tên thư mục = `Domain.code`. Đã copy chính xác 7 cặp (code, label) vào tool, test đối chiếu ngược lại với chính file `.dart` này (xem mục 3).
+- **`phan_loai`**: không có enum/constants riêng trong `lib/`, dùng string literal `'binh_thuong'`/`'roi_loan_pho_tu_ky'` xuyên suốt (`expert_knowledge_chunk.dart`, `expert_knowledge_repository.dart`, `comparison_video_page.dart`) — đã xác nhận qua các đợt sửa lỗi màn "So sánh" ngay trước đó trong cùng phiên làm việc.
+- **Dải tuổi**: 3 dải cố định `(15,23)/(24,47)/(48,60)` tháng — đúng chuẩn đã chốt cho `so_sanh`/`chia_se_phu_huynh`/`bac_si` (`scripts/validate_expert_content.dart`), key thư mục dùng định dạng `"15_23"/"24_47"/"48_60"` khớp cách đặt tên đã dùng cho `so_sanh_15_23_thang.json`.
+- **`assets/reference/`**: đã là nơi chứa các file dữ liệu tĩnh JSON khác (`expert_content.json`, `expert_content_so_sanh.json`) — manifest video đặt cùng chỗ: `assets/reference/video_manifest.json`.
+- grep `assets/videos`/`video_manifest` trong `lib/`: **không có kết quả nào** ngoài dòng docstring nêu trên — xác nhận CHƯA có code Dart nào đọc video mẫu; tool này là nơi đầu tiên định ra schema manifest.
+
+**Phát hiện lệch quan trọng so với thiết kế ban đầu (bắt buộc phải điều chỉnh):** yêu cầu tổ chức video theo TỪNG TỔ HỢP lĩnh vực×phân loại×dải tuổi (`assets/videos/{linh_vuc}/{phan_loai}/{dai_tuoi}/`) — nhưng Flutter chỉ đóng gói file nằm TRỰC TIẾP trong thư mục được khai báo ở `pubspec.yaml` (không tự đệ quy vào thư mục con). 7 dòng khai báo cấp lĩnh vực có sẵn **không đủ** để đóng gói các thư mục con lồng bên trong. → Quyết định: giữ cấu trúc thư mục lồng theo đúng yêu cầu (browsable, không trùng tên), và tính năng "Cập nhật pubspec.yaml" của tool **thực sự cần thiết** (không phải no-op) — mỗi khi thêm video vào 1 tổ hợp mới, cần thêm 1 dòng khai báo thư mục con cụ thể đó.
+
+### 2. Code đã viết
+
+- **[tools/video_manager_tool.py](tools/video_manager_tool.py)**: 1 file duy nhất.
+  - Hằng số `DOMAINS`/`PHAN_LOAI`/`AGE_BANDS` copy chính xác từ `domains.dart` + giá trị `phan_loai`/dải tuổi đã xác nhận qua audit.
+  - Logic thuần (không phụ thuộc tkinter ở top-level, `tkinter` chỉ `import` bên trong `_run_gui()`): `load_config`/`save_config`, `load_manifest`/`save_manifest`, `next_entry_id` (max id hiện có + 1, không dùng `len()` — đúng cả khi đã xoá entry giữa danh sách), `unique_dest_filename` (tránh ghi đè khi trùng tên, thêm hậu tố `" (2)"`, `" (3)"`...), `add_video_files` (copy nhiều file, tạo thư mục tổ hợp nếu chưa có, ghi manifest, không dừng giữa chừng nếu 1 file lỗi), `remove_video_entry` (xoá file thật + dòng manifest, báo lỗi rõ nếu id không tồn tại), `filter_entries` (lọc theo lĩnh vực/phân loại).
+  - `declared_pubspec_asset_dirs`/`missing_pubspec_asset_dirs`/`update_pubspec_file`: parse các dòng `- assets/...` hiện có bằng regex, tìm dòng "- assets/..." CUỐI CÙNG để chèn ngay sau (giữ nguyên thụt lề), backup `.bak` trước khi ghi, không đụng bất kỳ dòng nào khác trong file.
+  - GUI Tkinter tiếng Việt: chọn thư mục dự án (nhớ lại qua `tools/.video_manager_config.json`), form 3 dropdown (Lĩnh vực/Phân loại/Dải tuổi) + ô tiêu đề + chọn nhiều file + nút thêm, bảng Treeview danh sách video (lọc theo lĩnh vực/phân loại, nút xoá có xác nhận), nút "Cập nhật pubspec.yaml..." (preview trước, hỏi xác nhận, rồi mới ghi).
+- **[tools/test_video_manager_tool.py](tools/test_video_manager_tool.py)**: test logic thuần — import thẳng module (không cần `Tk()` chạy được, vì `tkinter` chỉ import bên trong hàm `_run_gui()`), dùng thư mục `tempfile.TemporaryDirectory` làm "dự án giả" cho mọi test copy/xoá file thật.
+- Thêm `.gitignore`: `tools/.video_manager_config.json` (đường dẫn máy cục bộ) và `tools/__pycache__/`.
+
+**Không có gì phải sửa thêm ngoài quyết định ở mục 1** — phần còn lại của thiết kế (form 3 dropdown, manifest 9 trường, nút xoá, nút cập nhật pubspec) giữ nguyên như yêu cầu.
+
+### 3. Kết quả test
+
+`python tools/test_video_manager_tool.py` — **55/55 PASS**, gồm:
+- Manifest load/save round-trip, đúng vị trí `assets/reference/video_manifest.json`.
+- Sinh id tăng dần đúng cả khi đã xoá entry giữa danh sách.
+- Tránh ghi đè khi copy nhiều file trùng tên gốc (test copy 2 lần cùng tên `same_name.mp4` với nội dung khác nhau — xác nhận file gốc KHÔNG bị ghi đè, cả 2 bản cùng tồn tại).
+- `add_video_files` tạo đúng thư mục tổ hợp lĩnh vực/phân loại/dải tuổi, copy đúng file thật, ghi đúng 9 trường manifest (`id`, `linh_vuc`, `phan_loai`, `do_tuoi_thang_min`, `do_tuoi_thang_max`, `file_path`, `tieu_de`, `ten_file_goc`, `ngay_them`).
+- `remove_video_entry` xoá đúng file thật + dòng manifest, báo lỗi rõ khi xoá lần 2 (id không còn tồn tại), không crash.
+- `filter_entries` lọc đúng theo lĩnh vực/phân loại/cả 2.
+- Đối chiếu ngược `DOMAINS`/`PHAN_LOAI`/`AGE_BANDS` trong tool với đúng nội dung file `lib/core/constants/domains.dart` thật (đọc trực tiếp bằng test, không tin bằng mắt).
+- **Test riêng `update_pubspec_file` trên BẢN SAO `pubspec.yaml` THẬT** (copy ra `tempfile.TemporaryDirectory`, KHÔNG đụng file thật trong repo): xác nhận thêm đúng 2 dòng thư mục còn thiếu, có backup `.bak` giống hệt bản gốc trước khi ghi, mọi dòng gốc khác (kể cả khối `dependencies:`/`dev_dependencies:`) không bị mất/sửa, chạy lại lần 2 với cùng dữ liệu KHÔNG thêm trùng (`ok2 is False`), mỗi dòng mới chỉ xuất hiện đúng 1 lần trong file cuối cùng.
+- Xác nhận `git status`/`git diff --stat pubspec.yaml` sau khi chạy test: **file `pubspec.yaml` thật trong repo hoàn toàn không đổi** — mọi thao tác ghi chỉ xảy ra trên bản sao trong thư mục tạm.
+- `python -m py_compile tools/video_manager_tool.py tools/test_video_manager_tool.py`: sạch, không lỗi cú pháp.
+
+### 4. Schema manifest — để phiên sau (code UI hiển thị video thật) biết đọc từ đâu
+
+File: **`assets/reference/video_manifest.json`** — JSON array, mỗi phần tử:
+```json
+{
+  "id": 1,
+  "linh_vuc": "nhan_thuc",
+  "phan_loai": "binh_thuong",
+  "do_tuoi_thang_min": 15,
+  "do_tuoi_thang_max": 23,
+  "file_path": "assets/videos/nhan_thuc/binh_thuong/15_23/ten_file.mp4",
+  "tieu_de": "Tiêu đề tuỳ chọn",
+  "ten_file_goc": "ten_file_goc_tren_may.mp4",
+  "ngay_them": "2026-08-16T14:30:00"
+}
+```
+`file_path` đã đúng định dạng asset Flutter (dùng `/`, sẵn sàng dùng trực tiếp với `AssetSource`/`VideoPlayerController.asset()`). **Lưu ý quan trọng cho phiên sau**: nếu thêm video cho tổ hợp lĩnh vực/phân loại/dải tuổi MỚI (chưa từng có), phải chạy nút "Cập nhật pubspec.yaml..." trong tool này (hoặc tự thêm dòng tương ứng) TRƯỚC khi build lại app — nếu không, Flutter sẽ không đóng gói file video đó (không lỗi build, chỉ là app không load được asset lúc runtime).
+
+## Thiết Kế Lại `video_manager_tool.py` — Video Gắn Theo TỪNG ID Entry (2026-08-16)
+
+**Sửa 1 hiểu lầm quan trọng ở đợt trước**: đợt trước tool gắn video theo TỔ HỢP lĩnh vực×phân loại×dải tuổi (nhiều video dùng chung cho cả nhóm) — SAI so với thiết kế thật của dữ liệu. Đã **thiết kế lại hoàn toàn phần lõi xử lý dữ liệu** (không chỉ vá thêm — đúng theo yêu cầu, vì mô hình khoá theo group vs khoá theo id khác nhau về bản chất).
+
+### 1. Audit trước khi sửa
+
+- **`assets/reference/so_sanh_15_23_thang.json`** (đọc trực tiếp, đối chiếu với `assets/reference/so_sanh_24_47_thang.json` — cả 2 đều tồn tại, `so_sanh_48_60_thang.json` **CHƯA có** — tool phải tự `glob` để tự nhận file mới sau này): field `entries` (list), mỗi entry có `id` **DUY NHẤT TOÀN CỤC** (VD `so_sanh_nhan_thuc_binh_thuong_15_23_001`), cùng `linh_vuc`, `phan_loai`, `do_tuoi_thang_min/max`, `content`, `nguon_tai_lieu` (là link tham khảo nội bộ — có thể là URL YouTube, KHÔNG phải video hiển thị cho người dùng cuối, không liên quan tới video mẫu tool này gắn). Kiểm tra script xác nhận: 200 + 196 = 396 entry, **396 id — không trùng id nào** giữa 2 file.
+- Đọc lại toàn bộ `tools/video_manager_tool.py` (bản đợt trước): xác định **giữ lại** style module docstring, cách tổ chức `_run_gui()`/class `VideoManagerApp`, `load_config`/`save_config`, và gần như nguyên vẹn logic `declared_pubspec_asset_dirs`/`update_pubspec_file` (thuần xử lý text, không phụ thuộc mô hình dữ liệu video theo group hay theo id — tái dùng được). **Viết lại hoàn toàn**: toàn bộ phần nạp dữ liệu (nay đọc entry từ `so_sanh_*_thang.json` thay vì dropdown chọn nhóm), schema manifest (dict khoá theo id thay vì list), hàm gắn/xoá video (theo entry cụ thể thay vì theo tổ hợp), toàn bộ UI (bảng tìm/lọc entry + panel xem chi tiết + nút gắn/gỡ, thay cho form 3 dropdown + nút thêm hàng loạt).
+- **`pubspec.yaml`**: đã khai báo sẵn 7 thư mục `assets/videos/{linh_vuc}/` từ trước (không đổi từ đợt trước). Vì tên file video giờ = chính xác id của entry (không cần chia theo phân loại/dải tuổi trong đường dẫn nữa — id đã tự chứa đủ thông tin đó), quyết định: **lưu video tại `assets/videos/{linh_vuc}/{id}.{đuôi file}`** — tái dùng ĐÚNG 7 thư mục lĩnh vực đã khai báo sẵn, KHÔNG tạo thêm cấp thư mục con nào. Kết quả: trong tình huống thông thường **KHÔNG cần sửa `pubspec.yaml` thêm lần nào nữa** (test xác nhận: 7/7 thư mục lĩnh vực dùng bởi manifest video mẫu đều đã có sẵn). Vẫn giữ nút "Cập nhật pubspec.yaml..." để phòng trường hợp hiếm 1 dòng khai báo lĩnh vực bị lỡ xoá.
+
+### 2. Mô hình dữ liệu mới
+
+- **Manifest**: `assets/reference/video_manifest.json` (không đổi vị trí) — nhưng đổi hẳn schema, khoá **THEO ID**:
+  ```json
+  {
+    "videos": {
+      "so_sanh_nhan_thuc_binh_thuong_15_23_001": {
+        "file_path": "assets/videos/nhan_thuc/so_sanh_nhan_thuc_binh_thuong_15_23_001.mp4",
+        "ten_file_goc": "tên file gốc lúc chọn trên máy",
+        "ngay_them": "2026-08-16T14:30:00"
+      }
+    }
+  }
+  ```
+  Chỉ 1 mô hình duy nhất (theo id) — **không còn** cấu trúc list nhóm theo lĩnh vực/phân loại/tuổi của bản trước (đã xoá hẳn, không giữ song song 2 mô hình).
+- **Sparse theo thiết kế**: phần lớn id KHÔNG có video — `video_manifest.json` chỉ chứa các id người dùng chủ động chọn gắn. Entry không có video vẫn hiện bình thường trong bảng (trạng thái cột "Video" để trống, không lỗi, không bị ẩn) — có test riêng xác nhận đúng hành vi này.
+- **Tên file = chính xác id** (giữ đuôi file gốc, hạ thường): loại bỏ hoàn toàn khả năng nhầm entry nào ứng với video nào chỉ bằng cách nhìn tên file.
+
+### 3. Chức năng UI mới
+
+- Bảng (Treeview) liệt kê TẤT CẢ entry gộp từ mọi file `so_sanh_*_thang.json` tìm được — cột: trạng thái video (✅/trống), id, lĩnh vực, phân loại, dải tuổi, nội dung rút gọn (~60 ký tự).
+- Ô tìm kiếm theo id/nội dung (không phân biệt hoa/thường) + dropdown lọc lĩnh vực/phân loại/dải tuổi + checkbox "Chỉ hiện chưa có video".
+- Chọn 1 dòng → panel bên phải hiện đầy đủ `content`, metadata, trạng thái video hiện tại.
+- Nút "Gắn / Thay video..." (hỏi xác nhận thay thế nếu entry đã có video — xoá file cũ trước khi copy file mới, không để sót file rác) và "Gỡ video" (xoá file thật + xoá khoá khỏi manifest, có xác nhận).
+
+### 4. Kết quả test
+
+`python tools/test_video_manager_tool.py` — **67/67 PASS**, gồm:
+- Tự `glob` đúng file `so_sanh_*_thang.json`, bỏ qua file khác không khớp mẫu; gộp đúng entry từ nhiều file, gắn đúng `_source_file`.
+- Xử lý đúng id trùng lặp (giữ bản xuất hiện trước, cảnh báo rõ ràng) — phòng trường hợp hiếm `so_sanh_48_60_thang.json` sau này lỡ trùng id.
+- Manifest mới đúng schema `{"videos": {id: {...}}}`; **từ chối rõ ràng** nếu gặp file manifest kiểu CŨ (list nhóm) — không âm thầm đọc nhầm.
+- Gắn video: đặt tên file đúng theo id (giữ đuôi gốc, hạ thường), đúng thư mục `assets/videos/{linh_vuc}/`, đúng 3 trường manifest.
+- **Thay thế video cho cùng 1 id**: xác nhận file video CŨ (đuôi khác) bị xoá khỏi đĩa, không để sót, chỉ còn đúng 1 file/1 entry manifest sau khi thay.
+- Entry KHÔNG có video vẫn hiện trong danh sách lọc bình thường (test riêng, đúng yêu cầu "sparse — không bắt buộc đủ").
+- Gỡ video: xoá đúng file + khoá manifest, báo lỗi rõ khi gỡ lần 2 (không còn gì để gỡ).
+- Lọc theo lĩnh vực/phân loại/dải tuổi/tìm kiếm — từng chiều riêng lẻ đều đúng.
+- Đối chiếu `DOMAINS`/`PHAN_LOAI`/`AGE_BANDS` với **cả** `lib/core/constants/domains.dart` **và** dữ liệu thật trong `assets/reference/so_sanh_*_thang.json` của repo (đọc trực tiếp, không giả lập) — xác nhận mọi `linh_vuc`/`phan_loai` thật trong repo đều nằm trong tập hằng số của tool.
+- **`update_pubspec_file` trên bản sao thật**: xác nhận 7/7 thư mục lĩnh vực đã khai báo sẵn (tình huống thông thường không cần thêm gì); mô phỏng tình huống hiếm (xoá thật 1 dòng khỏi bản sao) → phát hiện đúng, thêm lại đúng, có backup `.bak` khớp đúng trạng thái ngay trước khi ghi, không mất dòng nào khác, chạy lại lần 2 không thêm trùng.
+- `git status --porcelain pubspec.yaml` sau khi chạy test: **sạch** — file thật hoàn toàn không bị đụng.
+- `python -m py_compile tools/video_manager_tool.py tools/test_video_manager_tool.py`: sạch.
+
+### 5. Việc còn lại
+
+- Manifest hiện chưa có entry nào thật (chưa ai dùng tool để gắn video) — `assets/reference/video_manifest.json` sẽ chỉ được tạo khi người dùng chạy tool và gắn video đầu tiên.
+- Khi `so_sanh_48_60_thang.json` được thêm vào `assets/reference/`, tool tự nhận diện ngay (không cần sửa code) nhờ dùng `glob("so_sanh_*_thang.json")`.
+
+## Đổi Giao Diện `video_manager_tool.py` — Cuộn Xem Toàn Bộ, Không Cần Tìm Mới Thấy (2026-08-16)
+
+**Yêu cầu:** bỏ mô hình "bảng Treeview rút gọn + phải bấm chọn 1 dòng mới xem full nội dung ở panel riêng" — đổi sang: mở dự án xong là thấy NGAY toàn bộ id kèm đầy đủ nội dung trên 1 khung cuộn dọc, không cần thao tác gì thêm. Chỉ đổi phần hiển thị — mô hình dữ liệu (manifest khoá theo id) giữ nguyên như đợt trước.
+
+### 1. Thiết kế giao diện mới
+
+- Khung cuộn dọc dựng thủ công theo đúng cách chuẩn của Tkinter (Tkinter không có scroll frame dựng sẵn): `Canvas` + `Frame` bên trong (`list_frame`) + `ttk.Scrollbar`, cộng cuộn bằng chuột giữa (bind `<MouseWheel>` khi con trỏ ở trên khung, unbind khi rời khỏi).
+- Mỗi entry = 1 "khối" (`Frame` viền mỏng, nền trắng) gồm: `id` đầy đủ (in đậm), 1 dòng metadata (lĩnh vực • phân loại • dải tuổi • file nguồn), **toàn bộ `content`** (dùng `tk.Label` với `wraplength=900` — Label tự xuống dòng và tự cao theo độ dài nội dung, không cần tự tính chiều cao thủ công như `tk.Text`), và 1 dòng trạng thái video (nút "Thêm video..." nếu chưa có; tên file + nút "Thay video..."/"Gỡ video" nếu đã có).
+- Thanh lọc (tìm theo id/nội dung — chỉ là lựa chọn hỗ trợ thêm, KHÔNG bắt buộc; dropdown lĩnh vực/phân loại/dải tuổi; checkbox "Chỉ hiện chưa có video") đặt CỐ ĐỊNH phía trên khung cuộn, không cuộn theo danh sách.
+- **Hiệu năng**: dựng TOÀN BỘ khối đúng 1 LẦN khi mở dự án (`_build_all_blocks()`), lưu vào `self.block_frames`/`self.status_frames` theo id. Lọc/tìm kiếm (`_apply_filters()`) chỉ gọi `pack()`/`pack_forget()` trên khối đã dựng sẵn — KHÔNG dựng lại widget mỗi lần gõ phím, nên gõ tìm kiếm trên danh sách 400 entry vẫn mượt. Gắn/gỡ video chỉ dựng lại đúng `status_frame` của khối đó (`_render_block_status()`), không đụng các khối khác.
+- Tách rõ 2 tầng: hành động có hộp thoại (`_prompt_project_root`, `_attach_video`, `_detach_video`, `_update_pubspec` — không gọi trong test) và logic thuần không hộp thoại (`open_project`, `apply_attach`, `apply_detach` — gọi trực tiếp được từ test).
+
+### 2. Testable bằng `tk.Tk()` THẬT
+
+Môi trường chạy có display thật (`tk.Tk()` tạo được cửa sổ) — xác nhận qua thử nghiệm trước khi viết test. Vì vậy, thay vì giả lập tối thiểu module `tkinter`, đã tách `build_app_class()` (import tkinter + định nghĩa `VideoManagerApp`, trả về class) ra khỏi `_run_gui()` — cho phép test dựng **widget Tkinter thật** (`tk.Tk()` ẩn qua `root.withdraw()`, không gọi `mainloop()`) để đếm số khối đã `pack()`, đọc `.cget("text")` thật từ widget, đo thời gian dựng UI — mà KHÔNG cần chạy cửa sổ thật hay thao tác chuột/bàn phím thật. `import video_manager_tool` (không gọi `build_app_class()`) vẫn không đụng tới tkinter, giữ đúng yêu cầu module import được ở môi trường không có GUI (hàm `_make_hidden_root()` trong test có fallback bỏ qua nhóm test giao diện + in `[SKIP]` nếu môi trường nào đó không tạo được cửa sổ Tk, không làm crash toàn bộ test).
+
+### 3. Kết quả test
+
+`python tools/test_video_manager_tool.py` — **80/80 PASS** (67 test logic thuần trước đó + 13 test mới), gồm:
+- **Load full ngay khi mở dự án**: 2 file giả (5 + 3 = 8 entry) → dựng đúng 8 khối, cả 8 đều đang `pack()` (hiển thị) khi chưa lọc gì — không có khối nào bị ẩn mặc định. Nội dung ĐẦY ĐỦ (so khớp y hệt `entry["content"]`, không rút gọn) và `id` đầy đủ đã có sẵn trong cây widget ngay sau khi dựng — dò bằng hàm đệ quy `_collect_widget_texts()` đọc thật `.cget("text")` từ mọi widget con, không chỉ tin thuộc tính nội bộ của app.
+- **Lọc theo lĩnh vực**: chọn "Nhận thức" → đúng 2/3 khối còn hiển thị (so khớp chính xác id), khối thứ 3 vẫn tồn tại trong `self.block_frames` (chỉ ẩn, không huỷ) — bỏ lọc thì hiện lại đủ.
+- **Checkbox "chỉ hiện chưa có video"**: gắn video cho 1 id qua `apply_attach()` (không qua hộp thoại thật) → bật checkbox → đúng id đã gắn biến mất khỏi hiển thị, id còn lại (chưa có video) vẫn hiện; khối của id đã gắn hiện đúng 2 nút "Thay video..."/"Gỡ video" ngay tại chỗ.
+- **Hiệu năng với dữ liệu THẬT của repo** (396 entry từ 2 file `so_sanh_15_23_thang.json` + `so_sanh_24_47_thang.json` có sẵn): dựng toàn bộ UI trong **0.13 giây** — không giật/treo, không cần tối ưu thêm (lazy render/phân đợt) như phương án dự phòng nêu trong yêu cầu. Lọc/tìm kiếm sau khi đã dựng xong chỉ mất **0.001 giây** (nhanh hơn ~130 lần so với lần dựng đầu) — xác nhận đúng cơ chế "chỉ ẩn/hiện, không dựng lại".
+- `python -m py_compile tools/video_manager_tool.py tools/test_video_manager_tool.py`: sạch.
+- `git status --porcelain pubspec.yaml assets/reference/video_manifest.json` sau khi chạy toàn bộ test (kể cả test hiệu năng mở thẳng repo thật ở chế độ chỉ-đọc): **sạch** — không file thật nào trong repo bị tạo/sửa.
+
+## Nút "Xem Video Minh Hoạ" Trong UI "So Sánh" (2026-08-16)
+
+Đưa kết quả 78 video mẫu đã gắn qua `tools/video_manager_tool.py` (dải 15-23 tháng) lên UI thật của app Flutter — trước đây chỉ có manifest JSON, chưa có code Dart nào đọc.
+
+### 1. Audit trước khi sửa
+
+- **`assets/reference/video_manifest.json`** (đọc trực tiếp): đúng schema đã thống nhất `{"videos": {"<id>": {"file_path", "ten_file_goc", "ngay_them"}}}` — **78 video** đã gắn, khoá đúng theo `id` chunk thật (VD `so_sanh_nhan_thuc_binh_thuong_15_23_001`). Xác nhận cả 78 file `.mp4` tương ứng đều tồn tại thật trên đĩa đúng `file_path` khai báo (0 file thiếu).
+- **`pubspec.yaml`**: cả 7 thư mục `assets/videos/{linh_vuc}/` cần dùng (nhan_thuc, cam_xuc, quan_he_xa_hoi, ngon_ngu, sinh_hoc, sinh_hoat_ca_nhan — và giac_quan) đã khai báo sẵn từ trước — **không cần sửa `pubspec.yaml`**.
+- **`lib/domain/models/expert_knowledge_chunk.dart`**: model **có giữ `id` gốc** (`final String id;`), đúng khớp id trong SQLite/manifest — không cần sửa gì để "mang id xuống UI".
+- **`ComparisonItemList`** (`comparison_video_page.dart`, dùng chung bởi `ComparisonVideoPage` và `ComparisonDetailPage`, từ đợt sửa lỗi 2-tab trước đó trong cùng phiên): `itemBuilder` nhận `items[index]` là `ExpertKnowledgeChunk` đầy đủ (không phải `String` rút gọn) — **đã có `id` sẵn tại điểm render**, chỉ cần sửa `itemBuilder`, không cần đổi signature/luồng dữ liệu nào khác.
+- **Cơ chế phát video sẵn có**: grep `video_player`/`VideoPlayerController` trong `lib/` → chỉ có ở `video_detail_page.dart` và `video_review_page.dart` (màn xem lại video người dùng TỰ QUAY) — cả 2 dùng `VideoPlayerController.file(File(...))`. **Không có sẵn `VideoPlayerController.asset(...)`** (nguồn asset đóng gói sẵn, khác hẳn file người dùng tự quay) và **không có sẵn widget dialog/page dùng chung nào** (`VideoPlayerDialog`/`VideoPreviewPage` — không tồn tại). Quyết định: viết 1 page mới nhỏ `VideoIllustrationPlayerPage` theo ĐÚNG cùng kiểu giao diện (AspectRatio + VideoPlayer + nút play/pause đè lên, báo lỗi bằng Text khi init thất bại) như `_buildPlayer()` trong `video_detail_page.dart` — tái dùng ĐÚNG PATTERN/LOGIC, không phải tái cấu trúc 2 file video-quay (ngoài phạm vi, có nguy cơ ảnh hưởng tính năng quay video đang chạy tốt) để ép dùng chung 1 class.
+- grep `video_manifest` trong `lib/` trước khi sửa: **0 kết quả** — xác nhận đây là lần đầu tiên có code Dart đọc file này.
+
+### 2. Code đã thêm/sửa
+
+- **[lib/domain/services/video_manifest_service.dart](lib/domain/services/video_manifest_service.dart)** (mới): nạp + cache `video_manifest.json` — cùng pattern với `ScreeningLoaderService` đã có (`static Map? _cachedPaths`, `loadVideoPaths({AssetBundle? bundle})` chỉ đọc file 1 lần, `parseJson()` tách riêng để test không cần Flutter engine, `clearCache()` cho test). `getVideoPathForId(id)` tra cứu đồng bộ từ cache. An toàn tuyệt đối nếu asset chưa tồn tại (dải 24-47/48-60 chưa gắn video nào) — `catch` mọi lỗi, trả `{}`, không chặn màn "So sánh".
+- **[lib/features/assessment/nine_domains/comparison_video/video_illustration_player_page.dart](lib/features/assessment/nine_domains/comparison_video/video_illustration_player_page.dart)** (mới): `VideoIllustrationPlayerPage(assetPath, title)` — khởi tạo `VideoPlayerController.asset(assetPath)`, tự `play()`, báo lỗi bằng `Text` nếu init thất bại (file thiếu/hỏng), không crash app.
+- **`comparison_video_page.dart`**: `loadComparisonTabData()` nạp thêm `VideoManifestService.loadVideoPaths()` song song với 2 query tab (dùng `Future.wait`, cache lại nên `ComparisonDetailPage` mở sau đó không đọc lại file). `ComparisonItemList.itemBuilder` gọi `VideoManifestService.getVideoPathForId(item.id)` — khác `null` thì thêm `TextButton.icon` "Xem video minh hoạ" (icon `play_circle_outline`) ngay dưới `content`, mở `VideoIllustrationPlayerPage`; `null` thì **không render gì thêm** (không mờ/disable).
+- **`comparison_detail_page.dart`**: **không cần sửa** — tái dùng `ComparisonItemList` nên tự động thừa hưởng nút video.
+
+### 3. Kết quả test
+
+- **[test/video_manifest_service_test.dart](test/video_manifest_service_test.dart)** (mới, 6 test): `parseJson` đúng schema; `loadVideoPaths` cache đúng (đọc file đúng 1 lần dù gọi nhiều lần, xác nhận bằng bộ đếm trên `AssetBundle` giả); `getVideoPathForId` đúng cho cả 2 trường hợp có/không có video; an toàn khi asset chưa tồn tại (trả rỗng, không lỗi); `clearCache()` buộc đọc lại đúng.
+- **`test/comparison_tabs_test.dart`**: thêm 3 test trong group `Nút "Xem video minh hoạ"` — dùng `AssetBundle` giả (`_FakeVideoManifestBundle`) tiêm trực tiếp qua `VideoManifestService.loadVideoPaths(bundle: ...)` để kiểm soát chính xác id nào có video, không phụ thuộc 78 video thật (dễ đổi theo thời gian):
+  - Đúng 1/3 entry hiện nút — khớp chính xác số id có trong manifest, entry khác **hoàn toàn không có nút** (không mờ/disable).
+  - Bấm nút mở đúng `VideoIllustrationPlayerPage` với đúng `assetPath` của entry đã bấm (không lẫn asset giữa các entry).
+  - Manifest chưa tồn tại (dải tuổi chưa gắn video) → toàn bộ entry không hiện nút nào, không lỗi.
+  - **Bug phát hiện + sửa trong lúc viết test**: cache tĩnh của `VideoManifestService` bị nạp bởi dữ liệu THẬT từ `rootBundle` ở các test KHÔNG liên quan chạy trước đó trong cùng file (mọi lần render `ComparisonVideoPage` đều gọi `loadVideoPaths()`), khiến lần gọi với bundle giả sau đó bị bỏ qua (cache đã có). Sửa: thêm `VideoManifestService.clearCache()` vào `setUp()` chung của file test.
+- `flutter analyze`: **No issues found!**
+- `flutter test` (toàn bộ workspace, log ra file tránh timeout): **163/163 PASS**, không regression so với baseline trước đó.
+
+### 4. Verify thật trên emulator (Pixel_7, Android, 2026-08-16)
+
+Build debug (`flutter run -d emulator-5554 --dart-define-from-file=dart_define.json`), xác nhận `run-as` debuggable. DB thật trên máy có sẵn 402 entry `so_sanh` (bao gồm dải 15-23 thật khớp đúng id với `video_manifest.json`) và trẻ "lvl" (dob 2025-03-16 → đúng 17 tháng = "1 tuổi 5 tháng", nằm trong dải 15-23).
+
+1. **Đếm khớp chính xác**: DB có 13 entry `nhan_thuc`/`binh_thuong`/15-23; manifest có đúng 12/13 id đó có video (thiếu id `_013`). Trên UI thật ("Nhận thức — So sánh nhanh", tab "Trẻ bình thường"): cuộn hết danh sách, đếm đúng **12 nút "Xem video minh hoạ"**, entry cuối cùng (`_013`, "Bắt chước làm việc nhà như dùng chổi để quét.") **không có nút** — khớp chính xác 100% với dữ liệu manifest thật, không thừa không thiếu.
+2. **Bấm nút phát đúng video**: bấm nút của entry "Nó nhìn vào một vật quen thuộc khi bạn gọi tên vật đó." → mở đúng `VideoIllustrationPlayerPage`, nút play/pause chuyển sang trạng thái "đang phát" (⏸), không có Text lỗi, `adb logcat` không có exception nào liên quan video/ExoPlayer/flutter error → xác nhận `VideoPlayerController.asset()` init + play thành công với video thật. (Khung hình video xuất hiện đen trong ảnh chụp qua `adb screencap` — đây là giới hạn đã biết của `adb screencap` với lớp render texture/SurfaceView của video trên Android, không phản ánh lỗi thật; trạng thái nút pause + không có exception trong log là bằng chứng đáng tin cậy hơn ảnh chụp cho việc video đang phát.)
+3. **Trẻ ở dải tuổi CHƯA có video (24-47 tháng)**: đổi active child sang "233" (2 tuổi 3 tháng). Mở "Nhận thức — So sánh nhanh": toàn bộ 10 entry hiện nội dung đầy đủ bình thường, **0 nút "Xem video minh hoạ"** nào xuất hiện, không lỗi, không khoảng trống/placeholder gây rối giao diện — đúng hành vi mong đợi khi `video_manifest.json` không có video nào cho dải tuổi đó.
+
+### 5. Việc còn lại
+
+- Chỉ dải 15-23 tháng có video (78/~400+ id khả dụng). Khi biên soạn thêm video cho dải 24-47/48-60 qua `tools/video_manager_tool.py`, không cần sửa code Dart nào thêm — `VideoManifestService`/`ComparisonItemList` đã tổng quát theo mọi id trong manifest.

@@ -63,11 +63,11 @@ void main() {
       (tester) async {
     final child = await ChildRepository(AppDatabase.instance).create(name: 'Bé Test Hub', ageYears: 3);
 
-    // Thêm dữ liệu so sánh mẫu
+    // Thêm dữ liệu so sánh mẫu (đúng phan_loai thật dùng trong DB: 'binh_thuong'/'roi_loan_pho_tu_ky')
     await ExpertKnowledgeRepository(AppDatabase.instance).add(
       content: 'Biểu hiện so sánh ngôn ngữ thường gặp ở trẻ 3 tuổi',
       contentType: 'so_sanh',
-      phanLoai: 'thuong_gap',
+      phanLoai: 'binh_thuong',
       linhVuc: 'ngon_ngu',
       doTuoiThangMin: 24,
       doTuoiThangMax: 48,
@@ -98,11 +98,13 @@ void main() {
     // Bấm vào thẻ "So sánh với trẻ cùng độ tuổi" khi CHƯA từng mở "Mô tả"
     await tapVisible(tester, find.text('So sánh với trẻ cùng độ tuổi'));
 
-    // Xác nhận đã vào màn ComparisonVideoPage thành công
+    // Xác nhận đã vào màn ComparisonVideoPage thành công, đúng cấu trúc 2 tab
     expect(find.byType(ComparisonVideoPage), findsOneWidget);
     expect(find.text('Ngôn ngữ — So sánh nhanh'), findsOneWidget);
+    expect(find.text('Trẻ bình thường'), findsOneWidget);
+    expect(find.text('Trẻ tự kỷ'), findsOneWidget);
+    // Tab mặc định (index 0 = "Trẻ bình thường") hiện đúng entry phan_loai='binh_thuong'
     expect(find.text('Biểu hiện so sánh ngôn ngữ thường gặp ở trẻ 3 tuổi'), findsOneWidget);
-    expect(find.text('Biểu hiện thường gặp'), findsOneWidget);
 
     // ignore: avoid_print
     print('PASS Test 1: Vào thẳng So sánh khi chưa có mô tả thành công, Hub chỉ có đúng 2 thẻ');

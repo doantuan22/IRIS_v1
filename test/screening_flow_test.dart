@@ -25,9 +25,9 @@ Future<void> fillAndSaveCreateProfileForm(
   expect(find.byType(CreateProfilePage), findsOneWidget);
 
   await tester.enterText(find.byType(TextFormField).first, name);
-  await tester.tap(find.text('Theo số tuổi (năm)'));
+  await tester.tap(find.text('Theo số tháng tuổi'));
   await pumpFrames(tester);
-  await tester.enterText(find.byType(TextFormField).at(1), '3');
+  await tester.enterText(find.byType(TextFormField).at(1), '36');
 
   await tester.scrollUntilVisible(
     find.widgetWithText(FilledButton, 'Lưu hồ sơ'),

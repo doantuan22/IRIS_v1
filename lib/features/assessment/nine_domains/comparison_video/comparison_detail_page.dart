@@ -1,87 +1,117 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/iris_theme.dart';
+import '../../../../data/local/database.dart';
+import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
-import '../../../../domain/models/expert_knowledge_chunk.dart';
+import 'comparison_video_page.dart';
 
-/// Bảng chi tiết so sánh (3 cột: Tiêu chí | Thường gặp | Cần quan sát) — dùng
-/// lại đúng danh sách chunk đã tải ở "So sánh nhanh" (`ComparisonVideoPage`),
-/// không truy vấn lại database.
-class ComparisonDetailPage extends StatelessWidget {
+/// "So sánh chi tiết": tự truy vấn lại `expert_knowledge_chunks`
+/// (content_type='so_sanh') theo đúng [linhVuc] + độ tuổi trẻ, tách 2 TAB
+/// theo `phan_loai` giống [ComparisonVideoPage] — KHÔNG dùng bảng "Tiêu chí
+/// | Thường gặp | Cần quan sát" ghép cặp theo hàng như thiết kế cũ.
+class ComparisonDetailPage extends StatefulWidget {
   final Child child;
+  final String linhVuc;
   final String linhVucLabel;
-  final List<ExpertKnowledgeChunk> chunks;
 
   const ComparisonDetailPage({
     super.key,
     required this.child,
+    required this.linhVuc,
     required this.linhVucLabel,
-    required this.chunks,
   });
+
+  @override
+  State<ComparisonDetailPage> createState() => _ComparisonDetailPageState();
+}
+
+class _ComparisonDetailPageState extends State<ComparisonDetailPage>
+    with SingleTickerProviderStateMixin {
+  final _expertKnowledgeRepository = ExpertKnowledgeRepository(
+    AppDatabase.instance,
+  );
+  late final TabController _tabController;
+  late Future<ComparisonTabData> _dataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _dataFuture = loadComparisonTabData(
+      repository: _expertKnowledgeRepository,
+      child: widget.child,
+      linhVuc: widget.linhVuc,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('$linhVucLabel — Chi tiết so sánh')),
-      body: chunks.isEmpty
-          ? const Center(
+      appBar: AppBar(
+        title: Text('${widget.linhVucLabel} — Chi tiết so sánh'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Trẻ bình thường'),
+            Tab(text: 'Trẻ tự kỷ'),
+          ],
+        ),
+      ),
+      body: FutureBuilder<ComparisonTabData>(
+        future: _dataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Chưa có dữ liệu so sánh cho lĩnh vực này ở độ tuổi hiện tại.',
+                  'Không tải được dữ liệu so sánh: ${snapshot.error}',
                   textAlign: TextAlign.center,
                 ),
               ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  'So sánh chi tiết (${formatAgeLabel(child)})',
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data!;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'So sánh chi tiết (${formatAgeLabel(widget.child)})',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Table(
-                    border: TableBorder.all(
-                      color: Theme.of(context).dividerColor,
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    ComparisonItemList(
+                      items: data.binhThuong,
+                      emptyText:
+                          'Chưa có dữ liệu so sánh cho trẻ bình thường ở lĩnh vực này, độ tuổi hiện tại.',
                     ),
-                    columnWidths: const {
-                      0: FixedColumnWidth(280),
-                      1: FixedColumnWidth(96),
-                      2: FixedColumnWidth(96),
-                    },
-                    children: [
-                      TableRow(
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                        ),
-                        children: [
-                          _HeaderCell('Tiêu chí'),
-                          _HeaderCell('Thường gặp'),
-                          _HeaderCell('Cần quan sát'),
-                        ],
-                      ),
-                      ...chunks.map(
-                        (c) => TableRow(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(c.content),
-                            ),
-                            _MarkCell(checked: c.phanLoai == 'thuong_gap'),
-                            _MarkCell(checked: c.phanLoai == 'can_quan_sat'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ComparisonItemList(
+                      items: data.roiLoanPhoTuKy,
+                      emptyText:
+                          'Chưa có dữ liệu so sánh cho trẻ tự kỷ ở lĩnh vực này, độ tuổi hiện tại.',
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Container(
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Theme.of(
@@ -93,39 +123,10 @@ class ComparisonDetailPage extends StatelessWidget {
                     'Thông tin này chỉ giúp đối chiếu với trẻ cùng độ tuổi, không dùng để tự chẩn đoán.',
                   ),
                 ),
-              ],
-            ),
-    );
-  }
-}
-
-class _HeaderCell extends StatelessWidget {
-  final String text;
-
-  const _HeaderCell(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-    );
-  }
-}
-
-class _MarkCell extends StatelessWidget {
-  final bool checked;
-
-  const _MarkCell({required this.checked});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Center(
-        child: checked
-            ? const Icon(Icons.check, color: IrisColors.success)
-            : const SizedBox.shrink(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -2270,3 +2270,270 @@ Build debug (`flutter run -d emulator-5554 --dart-define-from-file=dart_define.j
 ### 5. Việc còn lại
 
 - Chỉ dải 15-23 tháng có video (78/~400+ id khả dụng). Khi biên soạn thêm video cho dải 24-47/48-60 qua `tools/video_manager_tool.py`, không cần sửa code Dart nào thêm — `VideoManifestService`/`ComparisonItemList` đã tổng quát theo mọi id trong manifest.
+
+## Ingest Dữ Liệu Thật So Sánh 48-60 Tháng (136 Entry) — Hoàn Tất Toàn Bộ 3 Dải Tuổi (2026-08-16)
+
+### 1. Audit Bước 0 Trước Khi Thực Hiện
+1. **Logic Ingest**:
+   - Dùng script pure Dart [scripts/ingest_so_sanh_48_60.dart](scripts/ingest_so_sanh_48_60.dart) kế thừa logic và pattern chuẩn từ 2 đợt ingest trước (15-23 tháng và 24-47 tháng).
+2. **Schema `expert_knowledge_chunks`**:
+   - Bảng gồm 11 cột: `id`, `content`, `content_type`, `phan_loai`, `nhom_tre`, `boi_canh`, `linh_vuc`, `do_tuoi_thang_min`, `do_tuoi_thang_max`, `nguon_tai_lieu`, `embedding` (BLOB float32 1024 chiều / 4096 bytes).
+   - Bỏ qua 2 trường `cap_doi_id` và `thu_tu_trong_bang` do không tồn tại trong schema SQLite (không sửa schema, không thêm migration).
+3. **Hiện trạng DB thật trước Ingest**:
+   - `content_type='so_sanh' AND do_tuoi_thang_min=48 AND do_tuoi_thang_max=60`: **0 dòng** (đúng như kỳ vọng).
+   - Tổng số dòng `content_type='so_sanh'` trước ingest: **402 dòng** (`15|23`: 200, `24|47`: 196, `48|71`: 6 dòng legacy placeholder cũ).
+   - Đã thực hiện xoá sạch 6 dòng legacy placeholder `48|71` và đảm bảo dải 48-60 sạch trước khi insert 136 entry mới.
+
+---
+
+### 2. Quá Trình Ingest với NVIDIA NIM Embedding API
+- **File nguồn**: `so_sanh_48_60_thang.json` (đã đồng bộ vào [assets/reference/so_sanh_48_60_thang.json](assets/reference/so_sanh_48_60_thang.json) và [child_debug_page.dart](lib/features/child_profile/profile_detail/child_debug_page.dart)).
+- **NVIDIA NIM Model**: `nvidia/nv-embedqa-e5-v5` (`https://integrate.api.nvidia.com/v1/embeddings`, `input_type: 'query'`, `encoding_format: 'float'`).
+- **Kết quả Ingest**: **136/136 entry thành công (100%)**, Thất bại: **0**.
+- **Đã đồng bộ vào SQLite DB thật trên emulator/thiết bị**: `/data/data/com.iris.app.iris_app/app_flutter/iris.db`.
+
+---
+
+### 3. Phân Bổ 136 Entry Theo 7 Lĩnh Vực & Đối Chiếu Toàn DB Sau Ingest
+Đã query trực tiếp qua SQL trên DB thật:
+
+| Lĩnh vực (`linh_vuc`) | Bình thường (`binh_thuong`) | Tự kỷ (`roi_loan_pho_tu_ky`) | Tổng cộng |
+|---|---|---|---|
+| `nhan_thuc` | 14 | 14 | **28** |
+| `cam_xuc` | 4 | 4 | **8** |
+| `giac_quan` | 3 | 3 | **6** |
+| `quan_he_xa_hoi` | 12 | 12 | **24** |
+| `ngon_ngu` | 17 | 17 | **34** |
+| `sinh_hoc` | 9 | 9 | **18** |
+| `sinh_hoat_ca_nhan` | 9 | 9 | **18** |
+| **TỔNG CỘNG DẢI 48-60** | **68** | **68** | **136** |
+
+**Tổng số dòng `content_type='so_sanh'` toàn bộ DB trên cả 3 dải tuổi:**
+- Dải 15-23 tháng: **200 dòng**
+- Dải 24-47 tháng: **196 dòng**
+- Dải 48-60 tháng: **136 dòng**
+- **TỔNG TOÀN DB**: **532 dòng** (khớp chính xác 100% với 200 + 196 + 136).
+
+---
+
+### 4. Kiểm Chứng Nghiêm Ngặt Qua Test Suite ([test/so_sanh_48_60_age_filtering_test.dart](test/so_sanh_48_60_age_filtering_test.dart))
+1. **Test 1**: Tổng số dòng dải 48-60 tháng đúng 136 và phân bổ chính xác 7 lĩnh vực (68 BT, 68 TK) $\rightarrow$ **PASS**.
+2. **Test 2**: Tổng số dòng `so_sanh` toàn DB = 200 + 196 + 136 = 532 $\rightarrow$ **PASS**.
+3. **Test 3 (Biên tuổi 47 tháng)**: Trả về đúng 196 entry dải 24-47, **0 entry từ dải 48-60** $\rightarrow$ **PASS**.
+4. **Test 4 (Biên tuổi 48 tháng)**: Trả về đúng 136 entry dải 48-60, **0 entry từ dải 24-47** $\rightarrow$ **PASS**.
+5. **Test 5 (Biên tuổi 60 tháng)**: Trả về đúng 136 entry dải 48-60 $\rightarrow$ **PASS**.
+6. **Test 6 (Biên tuổi 61+ tháng)**: Trả về **RỖNG TUYỆT ĐỐI (0 kết quả)**, không crash, không fallback nhầm về bất kỳ dải nào khác $\rightarrow$ **PASS**.
+7. **Test 7 (Verify riêng Quan hệ xã hội)**: Đủ 24 entry (12 BT, 12 TK), bảo toàn nguyên vẹn 2 entry ASD có nội dung trùng lặp do đặc thù file gốc (khác ID) $\rightarrow$ **PASS**.
+8. **Test 8**: `VectorSearchService.searchExpertChunks` lọc tuổi trước similarity: trẻ 54 tháng chỉ tìm trong dải 48-60, trẻ 61 tháng trả về rỗng $\rightarrow$ **PASS**.
+9. **Test 9**: Widget `ComparisonVideoPage` cho trẻ 54 tháng hiển thị đủ 2 tab và nội dung thật trên cả 7 lĩnh vực (không tab nào rỗng) $\rightarrow$ **PASS**.
+
+---
+
+### 5. Kết Luận Hoàn Tất Nội Dung "So Sánh"
+
+## Audit toàn diện sau khi bổ sung 3 dải tuổi và video mẫu (2026-08-16)
+
+### Phạm vi, bằng chứng và giới hạn
+
+Đây là **audit**, không phải đợt bổ sung tính năng. Không sửa mã nguồn hay dữ liệu sản phẩm. Hai báo cáo lịch sử được yêu cầu đối chiếu (`BAO_CAO_TONG_HOP_DU_AN_IRIS.md`, `BAO_CAO_PHIEN_CHAT_HAU_GIAI_DOAN_6.md`, `BAO_CAO_PHIEN_CHAT_SANG_LOC_VA_SO_SANH.md`) không có trong workspace tại thời điểm audit; vì vậy không thể xác nhận từng tuyên bố của các file đó. `SETUP_REPORT.md`, mã nguồn hiện hành, Git, asset, APK sẵn có và Android SDK là nguồn bằng chứng đã dùng.
+
+Không có thiết bị/emulator kết nối: lệnh `C:\Users\doant\AppData\Local\Android\Sdk\platform-tools\adb.exe devices -l` trả về danh sách rỗng. Không có file SQLite app/backup trong workspace để query. Vì thế các mục ghi “chưa xác minh” bên dưới thực sự chưa có bằng chứng DB hoặc UI, không được suy diễn PASS.
+
+### Giai đoạn 1 — Trạng thái thực tế
+
+| Hạng mục | Trạng thái thực tế | Bằng chứng |
+|---|---|---|
+| JSON So sánh 3 dải tuổi | Đã có ở source, cấu trúc cơ bản hợp lệ | `assets/reference/so_sanh_15_23_thang.json`: 200; `24_47`: 196; `48_60`: 136; tổng 532 ID duy nhất; mỗi file có đủ 7 lĩnh vực và đúng min/max tuổi. Đây **không** phải count từ DB app. |
+| DB thực có 532 entry | Chưa xác minh | Không có emulator/thiết bị và không có DB app cục bộ để query `expert_knowledge_chunks`. |
+| Sàng lọc 50 câu / bảng chi tiết | Mã nguồn đã có, DB thực chưa xác minh | Asset 50 câu, migration v8, `screening_responses` và `screening_domain_scores` tồn tại trong code; không có DB app để đếm phiên/dòng thật. |
+| Cấu trúc 7 lĩnh vực | Đã áp dụng ở logic hiện hành | `domains.dart` có đúng 7 mã; quét Dart không thấy logic lưu mới dùng `hanh_vi`/`ung_xu`. Còn một docstring cũ “≥5/9” ở `expert_connect_page.dart`, không đổi điều kiện code `doneDomainCount >= 5`. |
+| Manifest/video asset | Hợp lệ ở mức filesystem, chưa chứng minh chạy app | Manifest có 204 ID, không thiếu file và không có ID lạ; 82/75/47 video theo 15–23/24–47/48–60. Bảy thư mục manifest đều đã khai báo trong `pubspec.yaml`. |
+| Dữ liệu tham khảo trong release cài mới | Chạy sai | Xem BUG-01: app chỉ nạp `expert_knowledge_chunks` qua UI Debug. |
+| Liên kết entry DB ↔ video manifest | Chạy sai | Xem BUG-02: nạp qua UI Debug tạo UUID mới, trong khi manifest khóa bằng ID JSON. |
+| Xóa hồ sơ đa trẻ | Mã nguồn có xử lý đúng, chưa chạy thật | `ChildRepository.delete()` xóa `screening_responses` và `screening_domain_scores` trước `screenings` trong transaction, rồi xóa file video sau commit. |
+| Git / khả năng tái tạo release | Dở dang, rủi ro cao | `git status --porcelain`: 137 thay đổi chưa commit (3 modified, 134 untracked), gồm JSON 48–60, 204 video/manifest và script. `HEAD` là `5e9f850`; các asset mới không nằm trong commit hiện tại. |
+
+### Bug phát hiện qua audit tĩnh
+
+| ID | Mức độ / phạm vi | Mô tả và bước tái hiện | Bằng chứng |
+|---|---|---|---|
+| BUG-01 | **Chặn demo — Debug và Release** | Cài mới app, tạo trẻ, vào một lĩnh vực → **So sánh**. `ComparisonVideoPage` chỉ query SQLite `expert_knowledge_chunks`; `AppDatabase.onCreate` chỉ tạo bảng, không seed JSON. Cách nạp duy nhất là nút `Debug: Nạp dữ liệu tham khảo`, bị bọc bởi `kDebugMode`, nên bản release không có đường nạp. Kết quả: hai tab rỗng trên release cài mới. | `comparison_video_page.dart`, `database.dart`, `profile_detail_page.dart`, `child_debug_page.dart`. |
+| BUG-02 | **Chặn demo video — Debug; Release cũng không có dữ liệu để tới bước này** | Trên debug, bấm `Debug: Nạp dữ liệu tham khảo`, sau đó mở một entry So sánh có video. `ChildDebugPage` gọi `ExpertKnowledgeRepository.add()`; repository luôn sinh `Uuid.v4()` cho `ExpertKnowledgeChunk.id`. UI tra `VideoManifestService.getVideoPathForId(item.id)`, nhưng manifest khóa bằng ID JSON như `so_sanh_...`. Vì UUID khác ID JSON, lookup luôn `null`, nên nút **Xem video minh hoạ** không hiện. | `child_debug_page.dart:184`, `expert_knowledge_repository.dart`, `comparison_video_page.dart:231`, `video_manifest.json`. |
+| BUG-03 | **Chặn phát hành / khả năng cài đặt — Release** | Đóng gói toàn bộ asset hiện có tạo APK cực lớn. 204 video chiếm 1,840,655,071 bytes = **1,755.39 MiB**; file lớn nhất 110.16 MiB. MP4/WebM vốn đã nén nên APK mới gần như chắc tăng cỡ dữ liệu này, thay vì APK cũ 25,776,723 bytes (24.58 MiB). Không phù hợp để phát hành/tải demo; còn có nguy cơ build/cài đặt không thực tế tùy thiết bị và kênh phân phối. | Đo trực tiếp `assets/videos/`; APK sẵn có tại `build/app/outputs/flutter-apk/app-release.apk`. |
+| BUG-04 | Nên sửa — Debug | UI Debug cho phép xác nhận “Vẫn nạp” khi DB đã có data rồi insert lại toàn bộ, không khóa ID/khử trùng. Số entry So sánh có thể bị nhân bản qua mỗi lần nạp, làm kết quả/hiệu năng sai lệch. | `child_debug_page.dart`, nhánh `existing.isNotEmpty` và vòng gọi `add()`. |
+| BUG-05 | Cosmetic / tài liệu UI | Docstring Expert Connect vẫn nói ngưỡng “≥5/9 lĩnh vực”, trong khi hệ thống hiện là 7 lĩnh vực và code dùng `doneDomainCount >= 5`. | `expert_connect_page.dart`. |
+
+### Giai đoạn 2 — Kiểm thử luồng thật trên Pixel_7
+
+**Chưa thể thực hiện, không PASS.** Android SDK và `adb` có trên máy, nhưng không có thiết bị/emulator ở trạng thái `device`; do đó không thể chạy/debug, dùng `uiautomator dump`, query DB trên thiết bị, kiểm tra 3 mốc tuổi, bấm video, test 3 trạng thái AI, camera, hay xóa đa trẻ.
+
+Khi có Pixel_7/emulator, cần chạy lại tối thiểu các ca yêu cầu trong nhiệm vụ. Riêng BUG-01 và BUG-02 phải được xác nhận lại sau khi sửa trước khi coi các ca video là PASS.
+
+### Giai đoạn 3 — Build và release
+
+- Đã thử `flutter build apk --release --dart-define-from-file=dart_define.json` hai lần; lệnh không sinh log/kết quả sau 120 giây và sau gần 5 phút, nên bị dừng để không treo audit. Không đọc hay in giá trị API key.
+- APK sẵn có (timestamp 2026-08-16 09:02:16) **không được xem là build của source hiện hành**: archive chỉ có `.gitkeep` trong các thư mục video, không có `assets/reference/video_manifest.json`, `so_sanh_48_60_thang.json`, hay một video 48–60 đã kiểm tra. Không được dùng artefact này để chứng minh release mới.
+- `aapt dump permissions` trên APK sẵn có xác nhận có `INTERNET`, `CAMERA`, `RECORD_AUDIO`; target SDK 36, min SDK 24. Đây chỉ xác nhận manifest của APK cũ.
+- `android/key.properties` không tồn tại; Gradle cấu hình fallback ký release bằng debug signing. Có thể build thử release sau khi môi trường Flutter hoạt động, nhưng **chưa có keystore phát hành thật**.
+- Kiểm tra ProGuard/R8, cài APK release lên Pixel_7, chạy video asset và AI key thật: **chưa xác minh** vì chưa có build mới/thiết bị.
+
+### Kết luận audit
+
+Không thể kết luận dự án sẵn sàng demo hoặc release. Trước khi làm lại kiểm thử thiết bị, cần ưu tiên xử lý BUG-01, BUG-02 và BUG-03; sau đó commit đầy đủ JSON/video/manifest/mã liên quan, khôi phục khả năng chạy Flutter build, build APK mới, cài lên Pixel_7 và thực hiện lại toàn bộ Giai đoạn 2–3.
+
+## Thử nén video mẫu cho BUG-03 — Dừng trước khi ghi đè (2026-08-16)
+
+Mục tiêu là giảm 204 video minh hoạ trong `assets/videos/` từ 1,755.39 MiB xuống khoảng 150–300 MiB, không xóa video, không thay đổi Dart/manifest/pubspec và không đụng video do người dùng tự quay.
+
+### Audit và backup bắt buộc
+
+- FFmpeg/FFprobe đã cài qua WinGet: `ffmpeg version 9.0-full_build-www.gyan.dev`. Windows alias không thực thi được trong shell audit, nên dùng binary thật trong package WinGet.
+- Inventory trước nén: `C:\Users\doant\AppData\Local\Temp\IRIS_video_inventory_before_20260816.csv`.
+- Đối chiếu: đúng **204** video, đúng **204** entry manifest, không có file không được manifest tham chiếu và không có `file_path` gãy.
+- Tổng nguồn: **1,840,655,071 bytes = 1,755.39 MiB**; codec: 201 H.264/AAC, 3 VP8/Vorbis WebM.
+- Backup nguyên gốc đã hoàn tất ngoài repo tại **`D:\IRIS_video_goc_backup_20260816\assets\videos`**: đúng 204 file, đúng 1,840,655,071 bytes = 1,755.39 MiB.
+
+### Nén thử 10 mẫu — không ghi đè source
+
+Mẫu gồm file nhỏ nhất/lớn nhất và các file nhỏ-trung bình-lớn trải đều ba dải tuổi (3/4/3 cho 15–23/24–47/48–60). Output tạm nằm tại `C:\Users\doant\AppData\Local\Temp\IRIS_video_compression_samples_20260816`.
+
+Thông số thử:
+
+- H.264 `libx264`, preset `medium`, CRF 27, `yuv420p`, MP4.
+- Scale giữ tỷ lệ, bounding box tối đa 1280×720, không upscale.
+- AAC mono 80 kbps, `faststart`.
+
+Kết quả thực:
+
+| Chỉ số | Kết quả |
+|---|---:|
+| Tổng 10 mẫu trước nén | 297.00 MiB |
+| Tổng 10 mẫu sau nén | 164.11 MiB |
+| Giảm theo dung lượng có trọng số | 44.74% |
+| Ước lượng 204 file theo tỷ lệ mẫu | **969.99 MiB** |
+| Sai lệch duration lớn nhất | 0.03 giây |
+| Codec output | 10/10 H.264 + AAC; FFmpeg giải mã lại thành công |
+
+### Kết luận và trạng thái
+
+**ĐÃ DỪNG, không nén toàn bộ.** Ước lượng 969.99 MiB nằm ngoài khoảng chấp nhận 150–350 MiB, nên không được tự ý ghi đè 204 video theo yêu cầu. Không file nào trong `assets/videos/` đã bị sửa; backup nguyên gốc vẫn sẵn sàng.
+
+Lần thử tiếp theo cần thông số mạnh hơn (ví dụ scale tối đa 480p, CRF cao hơn/bitrate thấp hơn, có thể giảm fps) và phải nén mẫu lại trước. Ba file `.webm` cũng cần quyết định riêng: đầu ra H.264/AAC MP4 không thể giữ nguyên phần mở rộng `.webm` mà vẫn là container hợp lệ; không đổi tên/manifest thì chỉ có thể giữ WebM hoặc dùng codec/container WebM tương thích.
+
+## BUG-03 — Nén toàn bộ video minh hoạ theo mức đã chấp nhận (2026-08-16)
+
+Người dùng đã chấp nhận mức dung lượng khoảng 900 MiB sau thử mẫu, nên áp dụng **đúng** thông số đã thử; không thực hiện vòng tối ưu mới hay đổi CRF/độ phân giải/bitrate.
+
+### Phạm vi và an toàn dữ liệu
+
+- Chỉ thay đổi file vật lý trong `assets/videos/`; không đổi tên, đường dẫn, `video_manifest.json`, `pubspec.yaml`, Dart hay dữ liệu So sánh.
+- Bản gốc vẫn được backup đầy đủ tại `D:\IRIS_video_goc_backup_20260816\assets\videos` (204 file, 1,840,655,071 bytes = 1,755.39 MiB).
+- Mỗi output được tạo ở file tạm trước; chỉ thay thế nguồn sau khi FFmpeg trả exit code thành công, file tạm tồn tại và nhỏ hơn nguồn. Nếu lỗi/không có lợi, nguồn được giữ nguyên.
+
+### Thông số đã dùng
+
+- Video: H.264 `libx264`, preset `medium`, CRF 27, `yuv420p`.
+- Scale giữ tỷ lệ: bounding box tối đa 1280×720, không upscale, kích thước chia hết cho 2.
+- Audio: AAC mono 80 kbps; `faststart` cho MP4.
+
+### Kết quả thực tế
+
+| Chỉ số | Kết quả |
+|---|---:|
+| Video trước nén | 204 |
+| Video sau nén | 204 |
+| Dung lượng trước | 1,840,655,071 bytes = 1,755.39 MiB |
+| Dung lượng sau | 940,574,747 bytes = **897.00 MiB** |
+| Giảm thực tế | 48.90% (815.39 MiB) |
+| Nén thành công | 183 |
+| Giữ nguyên vì nguồn ≤ 1 MiB | 15 |
+| Giữ nguyên vì output không nhỏ hơn nguồn | 3 |
+| Giữ nguyên do lỗi encode | 3 WebM |
+
+Ba WebM lỗi là hệ quả kỹ thuật đã biết của yêu cầu giữ nguyên tên/đuôi `.webm` đồng thời dùng H.264/AAC: WebM không chấp nhận tổ hợp codec đó. Cả ba được giữ nguyên, hash khớp backup:
+
+- `assets/videos/ngon_ngu/so_sanh_ngon_ngu_binh_thuong_24_47_004.webm`
+- `assets/videos/ngon_ngu/so_sanh_ngon_ngu_binh_thuong_24_47_005.webm`
+- `assets/videos/quan_he_xa_hoi/so_sanh_quan_he_xa_hoi_binh_thuong_24_47_002.webm`
+
+Các file giữ nguyên theo quy tắc kích thước:
+
+- ≤ 1 MiB: `cam_xuc/so_sanh_cam_xuc_binh_thuong_24_47_002.mp4`; `ngon_ngu/so_sanh_ngon_ngu_binh_thuong_15_23_002.mp4`, `_24_47_014.mp4`, `_24_47_021.mp4`, `_24_47_022.mp4`, `_24_47_024.mp4`; `nhan_thuc/so_sanh_nhan_thuc_roi_loan_pho_tu_ky_15_23_005.mp4`; `quan_he_xa_hoi/so_sanh_quan_he_xa_hoi_binh_thuong_24_47_007.mp4`; `sinh_hoat_ca_nhan/so_sanh_sinh_hoat_ca_nhan_binh_thuong_15_23_002.mp4`; `sinh_hoc/so_sanh_sinh_hoc_binh_thuong_24_47_001.mp4`, `_004.mp4`, `_007.mp4`, `_009.mp4`, `_013.mp4`, `_015.mp4`.
+- Output không nhỏ hơn nguồn: `cam_xuc/so_sanh_cam_xuc_roi_loan_pho_tu_ky_24_47_005.mp4`; `ngon_ngu/so_sanh_ngon_ngu_binh_thuong_15_23_003.mp4`; `quan_he_xa_hoi/so_sanh_quan_he_xa_hoi_binh_thuong_48_60_010.mp4`.
+
+Log từng file: `artifacts/video_compression_20260816.csv`.
+
+### Verify sau nén
+
+- Đếm trực tiếp: 204 video hiện tại; backup cũng 204.
+- Manifest: 204 entry, **0** `file_path` gãy và **0** video không được manifest tham chiếu.
+- Các file không nén thành công/được bỏ qua được đối chiếu SHA-256 với backup: **0 mismatch**.
+- Không còn file tạm hoặc file giữ chỗ sau khi hoàn tất.
+- `ffprobe` + giải mã FFmpeg đã kiểm tra 10 video đại diện (gồm các video lớn 236.844 s, 278.872 s và 834.920 s; cả ngang/dọc; đủ ba dải tuổi). Duration chênh tối đa **0.000 s**, sai lệch tỉ lệ khung hình tối đa **0.0009**, 10/10 giải mã không lỗi. Chi tiết: `artifacts/video_compression_ffprobe_20260816.csv`.
+- `adb devices -l` tại thời điểm verify không có thiết bị kết nối, nên **chưa verify phát trên thiết bị thật** và không suy diễn đây là PASS runtime trên Android.
+
+### Trạng thái
+
+**BUG-03 đã được xử lý ở mức người dùng chấp nhận:** 1,755.39 MiB → **897.00 MiB** với 204 đường dẫn vẫn nguyên vẹn. Đây **không phải mức tối ưu tuyệt đối**; nếu cần giảm thêm, thực hiện một đợt riêng với yêu cầu chất lượng mới (và quyết định riêng cho ba WebM), không tự động thay đổi thông số trong đợt này.
+- **TOÀN BỘ 3 DẢI TUỔI NỘI DUNG "SO SÁNH" ĐÃ HOÀN TẤT TRỌN VẸN**:
+  - Dải 15-23 tháng (200 entry, 7 lĩnh vực) $\rightarrow$ **Đã nạp & kiểm chứng**.
+  - Dải 24-47 tháng (196 entry, 7 lĩnh vực) $\rightarrow$ **Đã nạp & kiểm chứng**.
+  - Dải 48-60 tháng (136 entry, 7 lĩnh vực) $\rightarrow$ **Đã nạp & kiểm chứng**.
+  - **Không còn bất kỳ dải tuổi nào thiếu dữ liệu "So sánh".**
+- `flutter analyze`: **0 issues found** (No issues found!).
+- `flutter test`: **172/172 PASS (100% trên toàn bộ 34 test files)**.
+
+## Điều Chỉnh Văn Phong 3 File "So Sánh" — Áp Dụng Skill `dieu-chinh-van-phong-so-sanh` (2026-08-16)
+
+Thực hiện đúng 6 bước trong `dieu-chinh-van-phong-so-sanh/SKILL.md` (skill được người dùng thêm sẵn vào repo, nội dung thay đổi đã chốt sẵn trong `references/`) — chỉ ÁP DỤNG, không tự sáng tác thêm nội dung nào.
+
+### Bước 1 — Xác định 3 file
+
+`assets/reference/so_sanh_15_23_thang.json`, `assets/reference/so_sanh_24_47_thang.json`, `assets/reference/so_sanh_48_60_thang.json` (cả 3 đã tồn tại — dải 48-60 tháng đã được hoàn tất ở 1 phiên làm việc khác trước đó, xem mục ngay phía trên). Xác nhận KHÔNG còn bản sao trùng ở gốc repo (kiểm tra `so_sanh_*_thang.json` ở `d:\IRIS_v1\` — không có, chỉ còn đúng 3 file trong `assets/reference/`).
+
+### Bước 2 — Backup
+
+Đã copy nguyên vẹn cả 3 file gốc sang **`backup_van_phong_20260816/`** (tại gốc repo) TRƯỚC khi sửa bất cứ gì. Giữ lại, không xoá.
+
+### Bước 3 — Đọc 4 file reference
+
+Đọc đủ 4 file theo đúng thứ tự: `loai_A_xoa_rac_ky_thuat.md` (85 entry — xoá timestamp/số chú thích trôi nổi), `loai_B_viet_lai_tu_nhien.md` (71 entry — viết lại câu văn xuôi tự nhiên), `loai_C_entry_ngan_chua_ro_nghia.md` (9 entry — làm rõ nghĩa entry quá ngắn), `ngoai_le_sua_url_hong.md` (1 entry — sửa `nguon_tai_lieu` bị dính `%200:46` vào cuối URL).
+
+### Bước 4 — Áp dụng
+
+Viết script Python nhỏ (`apply_van_phong.py`, chạy 1 lần, không giữ trong repo — chỉ dùng `references/expected_final_content.json` làm nguồn sự thật duy nhất): với mỗi entry trong 3 file thật, tra đúng `id` trong file kỳ vọng (532 id), gán `content` = giá trị cuối cùng; riêng đúng 1 id ngoại lệ (`so_sanh_ngon_ngu_binh_thuong_48_60_008`) gán thêm `nguon_tai_lieu`. Không đụng bất kỳ field nào khác, không đụng entry nào ngoài danh sách 532 id.
+
+- **140 entry có `content` thực sự thay đổi** (khớp đúng với việc 1 số id trùng lặp giữa Loại A và Loại B/C — skill đã lưu ý rõ 165 "lượt" thay đổi trên danh sách nhưng số id THỰC SỰ đổi ít hơn do trùng lặp; script chỉ tính là "thay đổi" khi giá trị cuối khác giá trị gốc, không đếm trùng).
+- **1 ngoại lệ `nguon_tai_lieu` đã áp dụng** đúng theo `ngoai_le_sua_url_hong.md`.
+
+### Bước 5 — Verify BẮT BUỘC
+
+```
+python dieu-chinh-van-phong-so-sanh/scripts/verify_changes.py \
+    --edited assets/reference/so_sanh_15_23_thang.json \
+             assets/reference/so_sanh_24_47_thang.json \
+             assets/reference/so_sanh_48_60_thang.json \
+    --expected dieu-chinh-van-phong-so-sanh/references/expected_final_content.json
+```
+
+**Kết quả thật (output đầy đủ):**
+```
+======================================================================
+KET QUA VERIFY - SUA VAN PHONG 3 FILE SO_SANH_*_THANG.JSON
+======================================================================
+Tong so id ky vong : 532
+Tong so id thuc te : 532
+
+PASS - Khong phat hien sai lech nao.
+  - 532/532 entry co content dung ky vong.
+  - Khong entry nao bi doi field ngoai 'content'.
+```
+**Exit code: 0 (PASS).** Toàn bộ 532/532 id khớp đúng `content` kỳ vọng; không entry nào bị đổi field ngoài `content` (trừ đúng 1 ngoại lệ đã khai báo).
+
+### Bước 6 — Kết quả
+
+- Đã áp dụng đúng **165 lượt thay đổi đã duyệt** (85 Loại A + 71 Loại B + 9 Loại C, có trùng id giữa các loại → 140 id thực sự đổi `content`) + **1 ngoại lệ sửa URL** (`nguon_tai_lieu`).
+- Verify: **PASS** (chi tiết ở trên).
+- Backup: `backup_van_phong_20260816/` (giữ nguyên, không xoá).
+- **Không chạy bước ingest/embedding/seed DB** trong nhiệm vụ này — đúng theo giới hạn phạm vi của skill, để dành cho nhiệm vụ riêng sau khi văn phong đã được xác nhận đúng.
+- Không phát hiện chỗ nào khác "có vẻ" cần sửa văn phong nhưng ngoài phạm vi `references/` trong lúc thực hiện — không có gì cần báo cáo thêm cho vòng duyệt sau.

@@ -115,15 +115,15 @@ void main() {
       final db = await AppDatabase.instance.database;
 
       // 1. Xác nhận version DB là 9 (sau khi có migration v9)
-      expect(await db.getVersion(), 9);
+      expect(await db.getVersion(), 10);
 
-      // 2. Xác nhận expert_knowledge_chunks đã xoá sạch chan_dung, chia_se_phu_huynh, bac_si, giữ nguyên so_sanh
+      // 2. Xác nhận expert_knowledge_chunks đã xoá sạch chan_dung/bac_si (v7/v9)
+      // VÀ so_sanh (v10 — sửa BUG-01/02, xoá sạch so_sanh cũ để seed lại từ
+      // file mới; seed lại thất bại ngầm trong môi trường test thuần không
+      // có asset channel thật, nên kết quả cuối là RỖNG hoàn toàn).
       final expertRepo = ExpertKnowledgeRepository(AppDatabase.instance);
       final allChunks = await expertRepo.getAll();
-      expect(allChunks, hasLength(1));
-      expect(allChunks.any((c) => c.contentType == 'chan_dung'), isFalse);
-      expect(allChunks.any((c) => c.contentType == 'bac_si'), isFalse);
-      expect(allChunks.any((c) => c.contentType == 'so_sanh'), isTrue);
+      expect(allChunks, isEmpty);
 
       // 3. Xác nhận overview_summaries cũ còn nguyên dữ liệu, moTaTongHop là null
       final summaryRepo = OverviewSummaryRepository(AppDatabase.instance);

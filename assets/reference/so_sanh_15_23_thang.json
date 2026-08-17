@@ -122,7 +122,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thiếu tò mò khám phá: không biết tìm kiếm 2:48",
+      "content": "Thiếu tò mò khám phá, không chủ động tìm kiếm.",
       "nguon_tai_lieu": "https://youtu.be/zwPFSnYEKOw?si=jp_SsgtNo8tWVZs1",
       "thu_tu_trong_bang": 5,
       "cap_doi_id": "so_sanh_nhan_thuc_binh_thuong_15_23_005"
@@ -194,7 +194,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Làm ngơ kích thích môi trường: Không phản ứng khi được gọi tên (01)",
+      "content": "Làm ngơ trước các kích thích từ môi trường, không phản ứng khi được gọi tên.",
       "nguon_tai_lieu": "https://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 8,
       "cap_doi_id": "so_sanh_nhan_thuc_binh_thuong_15_23_008"
@@ -254,7 +254,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chơi trò giả vờ đơn giản (Ví dụ cho thú nhồi bông ăn). (0:33 - 0:39)",
+      "content": "Chơi trò giả vờ đơn giản (Ví dụ cho thú nhồi bông ăn).",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=6GJWzDi0gFI",
       "thu_tu_trong_bang": 11,
       "cap_doi_id": "so_sanh_nhan_thuc_roi_loan_pho_tu_ky_15_23_011"
@@ -410,7 +410,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Dễ nổi giận, trầm cảm: Thường xuyên bất an, dễ cáu gắt hoặc thu mình 1:08",
+      "content": "Dễ nổi giận, có biểu hiện trầm buồn, thường xuyên bất an, dễ cáu gắt hoặc thu mình lại.",
       "nguon_tai_lieu": "https://youtu.be/_gEps3r7FfQ?si=xJ_mmFZ_QVQns9R8",
       "thu_tu_trong_bang": 4,
       "cap_doi_id": "so_sanh_cam_xuc_binh_thuong_15_23_004"
@@ -434,7 +434,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thiếu nụ cười giao tiếp: Rất ít hoặc không đáp lại bằng nụ cười xã giao",
+      "content": "Rất ít hoặc không đáp lại bằng nụ cười giao tiếp xã giao.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 5,
       "cap_doi_id": "so_sanh_cam_xuc_binh_thuong_15_23_005"
@@ -494,7 +494,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Trẻ cho bạn xem một vật mà trẻ thích. (0:53 - 1:10)",
+      "content": "Trẻ cho bạn xem một vật mà trẻ thích.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_15_23_001"
@@ -506,7 +506,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Né tránh sự dạy dỗ và tương tác từ người lớn: Không hợp tác với sự hướng dẫn ban đầu của người lớn",
+      "content": "Né tránh sự dạy dỗ và tương tác từ người lớn, không hợp tác với những hướng dẫn ban đầu.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_23_001"
@@ -530,7 +530,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Xa  lánh cha mẹ: Mối quan hệ lạnh nhạt, không bám cha mẹ như trẻ bình thường",
+      "content": "Mối quan hệ với cha mẹ khá lạnh nhạt, xa cách, không bám cha mẹ như trẻ cùng tuổi.",
       "nguon_tai_lieu": "https://youtu.be/7qezaR6R1uo?si=y5T9SBFeokAMro1b%204:58",
       "thu_tu_trong_bang": 2,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_23_002"
@@ -566,7 +566,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Tách rời và thích chơi một mình (20)",
+      "content": "Tách rời và thích chơi một mình",
       "nguon_tai_lieu": "https://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 4,
       "cap_doi_id": null
@@ -602,7 +602,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chơi với người lớn.(1: 24 – 1:30)",
+      "content": "Chơi với người lớn.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=s6lq--JCpIM",
       "thu_tu_trong_bang": 5,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_15_23_006"
@@ -614,7 +614,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Gọi tên không đáp, không phản ứng khi được gọi tên: Gọi tên hầu như không có phản ứng đáp lại (cha mẹ hay lầm tưởng bị điếc) (01)",
+      "content": "Hầu như không phản ứng khi được gọi tên, khiến cha mẹ đôi khi lầm tưởng trẻ bị điếc.",
       "nguon_tai_lieu": "https://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 6,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_23_005"
@@ -650,7 +650,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chỉ tay để cho bạn xem một điều gì đó thú vị. Trẻ sẽ nhìn qua lại giữa đồ vật và bố mẹ để chắc chắn rằng bố mẹ đang chú ý đến những gì chúng đang nhìn. (1:28 – 1:47)",
+      "content": "Chỉ tay để cho bạn xem một điều gì đó thú vị. Trẻ sẽ nhìn qua lại giữa đồ vật và bố mẹ để chắc chắn rằng bố mẹ đang chú ý đến những gì chúng đang nhìn.",
       "nguon_tai_lieu": "https://www.wellchildlens.com/video_room/detail/see-the-/0/D49A200BF77C%20C482F835%20D4A9%200313%20316F?utm_",
       "thu_tu_trong_bang": 7,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_15_23_008"
@@ -662,7 +662,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thiếu tương tác mắt: Không nhìn mắt người đối diện khi giao tiếp",
+      "content": "Không nhìn vào mắt người đối diện khi giao tiếp.",
       "nguon_tai_lieu": "https://youtu.be/mkin5up15XM?si=jTPXSKZQb-8fDIG0",
       "thu_tu_trong_bang": 8,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_binh_thuong_15_23_007"
@@ -698,7 +698,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Có thể sợ người lạ nhưng sẽ thể hiện tình cảm với những người quen thuộc.(0:23 – 0:35)",
+      "content": "Có thể sợ người lạ nhưng sẽ thể hiện tình cảm với những người quen thuộc.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=ymF0xg3a4oM&t=22s",
       "thu_tu_trong_bang": 9,
       "cap_doi_id": "so_sanh_quan_he_xa_hoi_roi_loan_pho_tu_ky_15_23_010"
@@ -758,7 +758,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chậm nói, chậm ngôn ngữ: Chưa có dấu hiệu ngôn ngữ phát hiện rõ ràng 1:51",
+      "content": "Chậm nói, chậm phát triển ngôn ngữ, chưa có dấu hiệu ngôn ngữ rõ ràng.",
       "nguon_tai_lieu": "https://youtu.be/zwPFSnYEKOw?si=jp_SsgtNo8tWVZs1",
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_ngon_ngu_binh_thuong_15_23_001"
@@ -878,7 +878,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Không biểu đạt: Khó khăn trong việc dùng âm thanh để biểu đạt nhu cầu cá nhân, Giao tiếp thông qua các hành động tay",
+      "content": "Khó khăn trong việc dùng âm thanh để biểu đạt nhu cầu cá nhân, thường giao tiếp bằng hành động tay thay vì lời nói.",
       "nguon_tai_lieu": "https://youtube.com/shorts/P08OUwyn_MA?si=dK_PIOJ5Qe9fciEx",
       "thu_tu_trong_bang": 6,
       "cap_doi_id": "so_sanh_ngon_ngu_binh_thuong_15_23_006"
@@ -938,7 +938,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Hiểu khoảng 50 từ. (1:24 – 1:33)",
+      "content": "Hiểu khoảng 50 từ.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 9,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_009"
@@ -962,7 +962,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Phản ứng và thực hiện theo những yêu cầu đơn giản mà bạn đưa ra. (0:37 - 0:51)",
+      "content": "Phản ứng và thực hiện theo những yêu cầu đơn giản mà bạn đưa ra.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 10,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_010"
@@ -986,7 +986,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Cố gắng lặp lại những từ bạn nói. (0:05 - 0:13)",
+      "content": "Cố gắng lặp lại những từ bạn nói.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 11,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_011"
@@ -1022,7 +1022,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Mất ngôn ngữ đột ngột: Khoảng 20-25% trẻ từng phát triển một số từ rồi dừng lại hoặc mất đi 1:55",
+      "content": "Có thể mất ngôn ngữ đột ngột — khoảng 20-25% trẻ từng phát triển một số từ rồi dừng lại hoặc mất đi khả năng đó.",
       "nguon_tai_lieu": "https://youtu.be/7qezaR6R1uo?si=v2NaBZ7fi_yq95qQ",
       "thu_tu_trong_bang": 12,
       "cap_doi_id": "so_sanh_ngon_ngu_binh_thuong_15_23_012"
@@ -1058,7 +1058,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Lắc đầu để nói “không”. (2:15 – 2:20)",
+      "content": "Lắc đầu để nói “không”.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 14,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_014"
@@ -1106,7 +1106,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chỉ 3 - 5 bộ phận cơ thể khi được yêu cầu.(1:00 – 1:15)",
+      "content": "Chỉ 3 - 5 bộ phận cơ thể khi được yêu cầu.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=-2C--4gay2c",
       "thu_tu_trong_bang": 16,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_016"
@@ -1178,7 +1178,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Nói được ít nhất 50 từ. (0:05 – 0:14)",
+      "content": "Nói được ít nhất 50 từ.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=-2C--4gay2c",
       "thu_tu_trong_bang": 19,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_019"
@@ -1202,7 +1202,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Bắt đầu kết hợp 2 từ thành câu đơn giản.(1:36 – 1:43)",
+      "content": "Bắt đầu kết hợp 2 từ thành câu đơn giản.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=-2C--4gay2c",
       "thu_tu_trong_bang": 20,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_020"
@@ -1226,7 +1226,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đáp ứng một số yêu cầu đơn giản bằng lời nói.(1:48 – 1:53)",
+      "content": "Đáp ứng một số yêu cầu đơn giản bằng lời nói.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 21,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_021"
@@ -1274,7 +1274,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Gọi được tên vật khi nhìn vào ảnh. (0:25 – 0:44)",
+      "content": "Gọi được tên vật khi nhìn vào ảnh.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=-2C--4gay2c",
       "thu_tu_trong_bang": 23,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_023"
@@ -1322,7 +1322,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chỉ vào đồ vật quen thuộc khi được hỏi.(2:01 – 2:10)",
+      "content": "Chỉ vào đồ vật quen thuộc khi được hỏi.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 25,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_025"
@@ -1346,7 +1346,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Những âm thanh bập bẹ của trẻ nghe giống lời nói hơn.(1:55 – 2:00)",
+      "content": "Những âm thanh bập bẹ của trẻ nghe giống lời nói hơn.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 26,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_026"
@@ -1358,7 +1358,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Phát ra âm thanh vô nghĩa: Thường phát ra các âm thanh vô nghĩa, thiếu âm bi bô giao tiếp 2:05",
+      "content": "Thường phát ra các âm thanh vô nghĩa, thiếu âm bi bô mang tính giao tiếp.",
       "nguon_tai_lieu": "https://youtu.be/zwPFSnYEKOw?si=jp_SsgtNo8tWVZs1",
       "thu_tu_trong_bang": 26,
       "cap_doi_id": "so_sanh_ngon_ngu_binh_thuong_15_23_026"
@@ -1370,7 +1370,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Trả lời được câu hỏi.(1:39 – 1:46)",
+      "content": "Trả lời được câu hỏi.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=VdewP3tCPEA",
       "thu_tu_trong_bang": 27,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_027"
@@ -1394,7 +1394,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Nhanh chóng hiểu các từ mới.(1:15 – 1:30)",
+      "content": "Nhanh chóng hiểu các từ mới.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=-2C--4gay2c",
       "thu_tu_trong_bang": 28,
       "cap_doi_id": "so_sanh_ngon_ngu_roi_loan_pho_tu_ky_15_23_028"
@@ -1430,7 +1430,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đi kiễng chân: Thường xuyên đi bằng 5 đầu ngón chân (kiễng gót) (03) (09)",
+      "content": "Thường xuyên đi kiễng chân bằng các đầu ngón chân.",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_001"
@@ -1454,7 +1454,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chậm phối hợp vận động: Khó chuyển đổi tư thế hoặc phối hợp vận động chưa linh hoạt",
+      "content": "Khó chuyển đổi tư thế, phối hợp vận động còn chưa linh hoạt.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 2,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_002"
@@ -1634,7 +1634,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chạy",
+      "content": "Bắt đầu biết chạy.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=LDHPlMpVUvE",
       "thu_tu_trong_bang": 10,
       "cap_doi_id": "so_sanh_sinh_hoc_roi_loan_pho_tu_ky_15_23_010"
@@ -1646,7 +1646,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đi kiễng chân: Thường xuyên đi bằng 5 đầu ngón chân (kiễng gót) (03) (09)",
+      "content": "Thường xuyên đi kiễng chân bằng các đầu ngón chân.",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 10,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_010"
@@ -1682,7 +1682,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Cơ thể bất thường khi ôm: Khi ôm hay bế cơ thể trẻ có thể rất mềm yếu hoặc ngược lại cứng nhắc",
+      "content": "Khi được ôm hay bế, cơ thể trẻ có thể rất mềm yếu hoặc ngược lại, cứng nhắc bất thường.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 11,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_012"
@@ -1706,7 +1706,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Xếp mọi thứ thành một hàng (06) (02)",
+      "content": "Xếp mọi thứ thành một hàng",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 12,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_013"
@@ -1730,7 +1730,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chuyển động lặp lại: vẫy tay    (01)",
+      "content": "Có chuyển động lặp lại như vẫy tay liên tục.",
       "nguon_tai_lieu": "https://youtu.be/3Colcv5Xlc0?si=RigJ_pr6i1d_D7_5\nhttps://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU",
       "thu_tu_trong_bang": 13,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_014"
@@ -1754,7 +1754,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chuyển động lặp lại: thích chạy, xoay vòng tròn   (11)   (05)",
+      "content": "Có chuyển động lặp lại như thích chạy hoặc xoay vòng tròn.",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 14,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_015"
@@ -1778,7 +1778,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Biểu hiện tự kích thích cụ thể: Khua tay trước mặt, dáng đi bất thường, nháy mắt liên hồi, gõ hoặc đập vào cơ thể",
+      "content": "Có các biểu hiện tự kích thích như khua tay trước mặt, dáng đi bất thường, nháy mắt liên hồi, gõ hoặc đập vào cơ thể.",
       "nguon_tai_lieu": "https://youtu.be/_brSCemI6ZM?si=MfmDh3O6nsCdHji9",
       "thu_tu_trong_bang": 15,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_016"
@@ -1802,7 +1802,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Dành phần lớn thời gian để đi lại (04)    (13)",
+      "content": "Dành phần lớn thời gian để đi lại",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 16,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_017"
@@ -1826,7 +1826,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đung đưa cơ thể rất nhiều và thường xuyên (07)",
+      "content": "Đung đưa cơ thể rất nhiều và thường xuyên",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU",
       "thu_tu_trong_bang": 17,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_018"
@@ -1886,7 +1886,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đổ hạt/ vật nhỏ ra khỏi lọ.(0:02 – 0:08)",
+      "content": "Đổ hạt/ vật nhỏ ra khỏi lọ.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=GgBvMnPhahQ",
       "thu_tu_trong_bang": 21,
       "cap_doi_id": "so_sanh_sinh_hoc_roi_loan_pho_tu_ky_15_23_020"
@@ -1922,7 +1922,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chưa biết chỉ ngón trỏ: Chưa biết sử dụng ngón trỏ để chỉ vào vật hay hướng chú ý của người khác",
+      "content": "Chưa biết dùng ngón trỏ để chỉ vào vật hoặc hướng sự chú ý của người khác.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 21,
       "cap_doi_id": "so_sanh_sinh_hoc_binh_thuong_15_23_022"
@@ -1934,7 +1934,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đưa tay hoặc chân ra để hỗ trợ khi được mặc quần áo.(0:05 – 0:12)",
+      "content": "Đưa tay hoặc chân ra để hỗ trợ khi được mặc quần áo.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=312AF-QJQb4",
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_001"
@@ -1958,7 +1958,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Uống nước bằng cốc và sử dụng đồ vật đúng cách.(0:59 – 1:01)",
+      "content": "Uống nước bằng cốc và sử dụng đồ vật đúng cách.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=F2XYjFDkrqU",
       "thu_tu_trong_bang": 2,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_002"
@@ -2006,7 +2006,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Ăn được nhiều loại thức ăn hơn, chẳng hạn như rau củ nấu mềm và trái cây mềm.(0:32 – 0:41)",
+      "content": "Ăn được nhiều loại thức ăn hơn, chẳng hạn như rau củ nấu mềm và trái cây mềm.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=F2XYjFDkrqU",
       "thu_tu_trong_bang": 4,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_004"
@@ -2018,7 +2018,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Kén ăn: Chỉ chấp nhận một số ít loại thức ăn hoặc từ chối thử món mới.",
+      "content": "Kén ăn, chỉ chấp nhận một số ít loại thức ăn hoặc từ chối thử món mới.",
       "nguon_tai_lieu": null,
       "thu_tu_trong_bang": 4,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_15_23_004"
@@ -2054,7 +2054,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Có thể nhai thức ăn kỹ.(0:35 – 0:45)",
+      "content": "Có thể nhai thức ăn kỹ.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=v-Lf4v_whNw",
       "thu_tu_trong_bang": 6,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_006"
@@ -2066,7 +2066,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Bất thường ăn uống: Không biết nhai hoặc từ chối chấp nhận các thức ăn cứng, kén ăn 3:01",
+      "content": "Ăn uống bất thường, không biết nhai hoặc từ chối các thức ăn cứng, kén ăn.",
       "nguon_tai_lieu": "https://youtu.be/7qezaR6R1uo?si=W2N9hg6vW860KNR2",
       "thu_tu_trong_bang": 6,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_binh_thuong_15_23_006"
@@ -2126,7 +2126,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Có lịch ngủ đều đặn.(0:14  - 0:24)",
+      "content": "Có lịch ngủ đều đặn.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=312AF-QJQb4",
       "thu_tu_trong_bang": 9,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_009"
@@ -2150,7 +2150,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thử các loại thức ăn đặc được cắt nhỏ như thịt gà hoặc bí.(0:05 – 0:13)",
+      "content": "Thử các loại thức ăn đặc được cắt nhỏ như thịt gà hoặc bí.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=KfbG-DIx82w",
       "thu_tu_trong_bang": 10,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_010"
@@ -2174,7 +2174,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Uống nước bằng cốc không có nắp và đôi khi có thể làm đổ.(0:15 – 0:21)",
+      "content": "Uống nước bằng cốc không có nắp và đôi khi có thể làm đổ.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=KfbG-DIx82w",
       "thu_tu_trong_bang": 11,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_011"
@@ -2222,7 +2222,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Đưa hai tay ra để bạn rửa cho.(0:55 – 1:03)",
+      "content": "Đưa hai tay ra để bạn rửa cho.",
       "nguon_tai_lieu": "https://www.youtube.com/watch?v=6z6iFou8nW0",
       "thu_tu_trong_bang": 13,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_013"
@@ -2270,7 +2270,7 @@
       "phan_loai": "binh_thuong",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Cởi quần áo.",
+      "content": "Biết tự cởi quần áo.",
       "nguon_tai_lieu": "https://youtube.com/shorts/0GoP6ggMpak?si=xJ-PIedOGnUBW-7u",
       "thu_tu_trong_bang": 15,
       "cap_doi_id": "so_sanh_sinh_hoat_ca_nhan_roi_loan_pho_tu_ky_15_23_015"
@@ -2306,7 +2306,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thờ ơ kích thích : Dường như làm ngơ hoặc không chú ý tới các kích thích âm thanh/hình ảnh xung quanh (10)",
+      "content": "Dường như làm ngơ hoặc không chú ý tới các kích thích âm thanh, hình ảnh xung quanh.",
       "nguon_tai_lieu": "https://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 1,
       "cap_doi_id": "so_sanh_giac_quan_binh_thuong_15_23_001"
@@ -2330,7 +2330,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thích tự nhìn ngắm chuyển động tay: Bận tâm dành nhiều thời gian ngắm các bàn tay của mình",
+      "content": "Dành nhiều thời gian tự ngắm nhìn chuyển động của bàn tay mình.",
       "nguon_tai_lieu": "https://youtu.be/peMID5ZaBlA?si=7qD4kuJFpxJIBHav",
       "thu_tu_trong_bang": 2,
       "cap_doi_id": "so_sanh_giac_quan_binh_thuong_15_23_002"
@@ -2354,7 +2354,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Thích chổng ngược, cúi đầu xuống đất (02)",
+      "content": "Thích chổng ngược, cúi đầu xuống đất",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU",
       "thu_tu_trong_bang": 3,
       "cap_doi_id": "so_sanh_giac_quan_binh_thuong_15_23_003"
@@ -2378,7 +2378,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Biểu hiện tự kích thích cụ thể: Khua tay trước mặt, dáng đi bất thường, nháy mắt liên hồi, gõ hoặc đập vào cơ thể",
+      "content": "Có các biểu hiện tự kích thích như khua tay trước mặt, dáng đi bất thường, nháy mắt liên hồi, gõ hoặc đập vào cơ thể.",
       "nguon_tai_lieu": "https://youtu.be/_brSCemI6ZM?si=MfmDh3O6nsCdHji9",
       "thu_tu_trong_bang": 4,
       "cap_doi_id": "so_sanh_giac_quan_binh_thuong_15_23_004"
@@ -2402,7 +2402,7 @@
       "phan_loai": "roi_loan_pho_tu_ky",
       "do_tuoi_thang_min": 15,
       "do_tuoi_thang_max": 23,
-      "content": "Chuyển động lặp lại: thích chạy, xoay vòng tròn   (11)   (05)",
+      "content": "Có chuyển động lặp lại như thích chạy hoặc xoay vòng tròn.",
       "nguon_tai_lieu": "https://youtu.be/VkOjea52SjY?si=gKhuZBOG6nNRyAcU\nhttps://youtu.be/H8-hbOQ4Zas?si=Abe9GgsWrpsYf15D",
       "thu_tu_trong_bang": 5,
       "cap_doi_id": "so_sanh_giac_quan_binh_thuong_15_23_005"

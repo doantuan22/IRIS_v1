@@ -173,7 +173,7 @@ void main() {
       final db = await AppDatabase.instance.database;
 
       // Bước 3 — Xác nhận version và dữ liệu đã được dọn sạch
-      expect(await db.getVersion(), 9);
+      expect(await db.getVersion(), 10);
 
       // Kiểm tra assessments
       final assessments = await db.query('assessments');
@@ -193,15 +193,19 @@ void main() {
       expect(domainLabels, hasLength(1));
       expect(domainLabels.single['linh_vuc'], 'cam_xuc');
 
-      // Kiểm tra expert_knowledge_chunks
+      // Kiểm tra expert_knowledge_chunks — v6 xoá hanh_vi/ung_xu (còn lại 1
+      // dòng ngon_ngu), nhưng v10 (sửa BUG-01/02) xoá sạch TOÀN BỘ
+      // content_type='so_sanh' còn lại (bất kể lĩnh vực) để seed lại từ file
+      // mới; seed lại thất bại ngầm trong môi trường test thuần không có
+      // asset channel thật, nên kết quả cuối cùng là RỖNG.
       final expertChunks = await db.query('expert_knowledge_chunks');
-      expect(expertChunks, hasLength(1));
-      expect(expertChunks.single['linh_vuc'], 'ngon_ngu');
+      expect(expertChunks, isEmpty);
 
       // ignore: avoid_print
       print(
-        'PASS: migration version 5 -> 6 xoá sạch hanh_vi và ung_xu ở cả 4 bảng, '
-        'giữ nguyên toàn bộ dữ liệu của 7 lĩnh vực còn lại',
+        'PASS: migration version 5 -> 6 xoá sạch hanh_vi và ung_xu ở 3 bảng còn lại '
+        '(assessments/profile_chunks/domain_overview_labels); expert_knowledge_chunks '
+        'bị xoá sạch hoàn toàn bởi migration version 10 (đúng thiết kế sửa BUG-01/02)',
       );
     } finally {
       final db = await AppDatabase.instance.database;

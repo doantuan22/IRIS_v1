@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM expert_knowledge_chunks WHERE content_type='so_sanh' AND do_tuoi_thang_min=48 AND do_tuoi_thang_max=60; SELECT do_tuoi_thang_min, do_tuoi_thang_max, count(*) FROM expert_knowledge_chunks WHERE content_type='so_sanh' GROUP BY do_tuoi_thang_min, do_tuoi_thang_max; SELECT COUNT(*) FROM expert_knowledge_chunks WHERE content_type='so_sanh';

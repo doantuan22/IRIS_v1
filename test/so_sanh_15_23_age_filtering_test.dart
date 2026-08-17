@@ -59,7 +59,7 @@ void main() {
     vectorSearchService = VectorSearchService(profileRepo, expertRepo);
 
     // Nạp toàn bộ 200 entry từ file so_sanh_15_23_thang.json vào DB in-memory
-    final file = File('so_sanh_15_23_thang.json');
+    final file = File('assets/reference/so_sanh_15_23_thang.json');
     final data = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
     final entries = (data['entries'] as List<dynamic>).cast<Map<String, dynamic>>();
 

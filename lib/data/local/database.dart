@@ -2,6 +2,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../domain/services/expert_knowledge_seed_service.dart';
 import 'tables/ai_conversations_table.dart';
 import 'tables/assessments_table.dart';
 import 'tables/children_table.dart';
@@ -45,9 +46,30 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 9,
+      version: 10,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+      },
+      // Chạy ở MỌI lần mở DB (không chỉ lần đầu tạo bảng) — tự seed dữ liệu
+      // "So sánh" (content_type='so_sanh') nếu bảng đang rỗng. Đây là cơ chế
+      // sửa BUG-01: trước đây dữ liệu này chỉ vào được DB qua nút debug, bị
+      // loại khỏi bản release do `kDebugMode` — cài app mới (debug lẫn
+      // release) giờ luôn tự có sẵn dữ liệu, không cần thao tác gì thêm. Chỉ
+      // đọc file JSON local (đã có sẵn embedding tính trước) + ghi SQLite,
+      // KHÔNG gọi API, chạy dưới vài giây. Xem
+      // `ExpertKnowledgeSeedService` để biết quy trình cập nhật nội dung sau này.
+      //
+      // CHỈ chạy khi `debugPathOverride == null` (tức đang mở DB thật của
+      // app, không phải DB test) — theo đúng mô tả của field đó ("Chỉ dùng
+      // trong test"). Tất cả ~24 file test hiện có đều set
+      // `debugPathOverride` trước khi mở DB để tự kiểm soát dữ liệu
+      // `expert_knowledge_chunks`/so_sanh của riêng test đó; nếu auto-seed
+      // chạy cả trong test sẽ tự nhét thêm 532 dòng thật vào DB in-memory
+      // của mọi test, phá vỡ hàng loạt assertion đếm số dòng không liên quan.
+      onOpen: (db) async {
+        if (debugPathOverride == null) {
+          await ExpertKnowledgeSeedService.seedIfEmpty(db);
+        }
       },
       onCreate: (db, version) async {
         await db.execute(childrenTableCreate);
@@ -174,6 +196,25 @@ class AppDatabase {
             try {
               await db.execute(
                 "DELETE FROM expert_knowledge_chunks WHERE content_type IN ('chia_se_phu_huynh', 'bac_si')",
+              );
+            } catch (_) {}
+          }
+        }
+        // Version 10 — sửa BUG-01/BUG-02: xoá SẠCH mọi dòng `content_type='so_sanh'`
+        // hiện có, bất kể nội dung/id — có thể là dữ liệu placeholder cũ, nội
+        // dung văn phong CŨ (từ trước đợt sửa văn phong), hoặc dòng mang UUID
+        // tự sinh bởi nút debug cũ (không khớp `id` trong `video_manifest.json`).
+        // Xoá xong, `onOpen` (chạy ngay sau `onUpgrade`) sẽ tự seed lại đúng
+        // 532 dòng từ `expert_knowledge_seed.json` — id gốc + nội dung mới
+        // nhất, không cần người dùng thao tác gì.
+        if (oldVersion < 10) {
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = 'expert_knowledge_chunks'",
+          );
+          if (tables.isNotEmpty) {
+            try {
+              await db.execute(
+                "DELETE FROM expert_knowledge_chunks WHERE content_type = 'so_sanh'",
               );
             } catch (_) {}
           }

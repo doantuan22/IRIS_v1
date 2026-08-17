@@ -7,10 +7,20 @@ import 'package:iris_app/domain/services/embedding_codec.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Test migration schema `expert_knowledge_chunks` version 2 → 3 (thêm cột
-/// `phan_loai`) — mô phỏng đúng tình huống rủi ro nhất: máy đã có sẵn dữ
-/// liệu tham khảo đã ingest từ trước (schema CŨ, không có `phan_loai`), rồi
-/// mở app sau khi cập nhật lên bản có cột mới. Không được để mất dữ liệu
-/// tham khảo đã có hoặc crash khi mở lại.
+/// `phan_loai`) — mô phỏng máy đã có sẵn dữ liệu tham khảo đã ingest từ
+/// trước (schema CŨ, không có `phan_loai`), rồi mở app sau khi cập nhật lên
+/// bản có cột mới. Không được crash khi mở lại, cột mới phải hoạt động đúng.
+///
+/// LƯU Ý (từ bản sửa BUG-01/02 — migration version 10): dòng `so_sanh` CŨ ở
+/// đây SẼ bị xoá sạch khi mở lên (không còn "giữ nguyên" như tên test cũ mô
+/// tả) — đây là hành vi CÓ CHỦ ĐÍCH: version 10 xoá sạch mọi dòng
+/// `content_type='so_sanh'` để tự "chữa lành" dữ liệu cũ/sai (nội dung lỗi
+/// thời hoặc mang id UUID từ nút debug cũ), sau đó `onOpen` tự seed lại từ
+/// `expert_knowledge_seed.json`. Trong môi trường test Dart VM thuần (không
+/// có `TestWidgetsFlutterBinding`/asset channel thật) bước seed lại này thất
+/// bại NGẦM (best-effort, xem `ExpertKnowledgeSeedService.seedIfEmpty`), nên
+/// kết quả ở đây là 0 dòng `so_sanh` sau khi mở — đúng như kỳ vọng, không
+/// phải bug của test.
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -65,17 +75,14 @@ void main() {
       AppDatabase.debugPathOverride = dbPath;
       final expertRepo = ExpertKnowledgeRepository(AppDatabase.instance);
 
+      // Version 10 xoá sạch mọi dòng content_type='so_sanh' cũ (bất kể nội
+      // dung/id) rồi thử seed lại — thất bại ngầm trong môi trường test
+      // thuần (không có asset channel thật), nên kết quả đúng là RỖNG.
       final all = await expertRepo.getAll();
-      expect(all, hasLength(1));
-      final oldChunk = all.single;
-      expect(oldChunk.id, 'old-chunk-1');
-      expect(oldChunk.content, 'Nội dung so sánh cũ, chưa phân loại');
-      expect(oldChunk.linhVuc, 'quan_he_xa_hoi');
-      expect(oldChunk.phanLoai, isNull);
-      expect(oldChunk.embedding.length, 3);
+      expect(all, isEmpty);
 
-      // Bước 3 — chunk ingest MỚI sau migration phải dùng đúng cột mới,
-      // không lỗi vì cột đã tồn tại (không bị ALTER TABLE trùng lần 2).
+      // Bước 3 — cột `phan_loai` vẫn hoạt động đúng cho dòng ingest MỚI sau
+      // migration, không lỗi vì cột đã tồn tại (không bị ALTER TABLE trùng lần 2).
       final newChunk = await expertRepo.add(
         content: 'Nội dung so sánh mới, đã phân loại',
         contentType: 'so_sanh',
@@ -86,13 +93,13 @@ void main() {
         embedding: [0.4, 0.5],
       );
       final queried = await expertRepo.query(linhVuc: 'quan_he_xa_hoi', ageInMonths: 60, contentType: 'so_sanh');
-      expect(queried, hasLength(2));
+      expect(queried, hasLength(1));
       expect(queried.firstWhere((c) => c.id == newChunk.id).phanLoai, 'thuong_gap');
 
       // ignore: avoid_print
       print(
-        'PASS: migration version 2 → 3 giữ nguyên dữ liệu expert_knowledge_chunks cũ '
-        '(phan_loai = NULL), không crash, chunk mới dùng đúng cột phan_loai',
+        'PASS: migration version 2 → 3 không crash, cột phan_loai hoạt động đúng cho chunk mới; '
+        'dòng so_sanh cũ bị xoá sạch bởi migration version 10 (đúng thiết kế sửa BUG-01/02)',
       );
     } finally {
       final db = await AppDatabase.instance.database;

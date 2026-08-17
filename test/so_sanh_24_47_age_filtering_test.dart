@@ -78,7 +78,7 @@ void main() {
     }
 
     // Nạp dữ liệu 24-47 tháng (196 entry)
-    final file2447 = File('so_sanh_24_47_thang.json');
+    final file2447 = File('assets/reference/so_sanh_24_47_thang.json');
     if (file2447.existsSync()) {
       final json2447 =
           jsonDecode(file2447.readAsStringSync()) as Map<String, dynamic>;

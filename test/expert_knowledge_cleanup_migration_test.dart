@@ -13,10 +13,18 @@ import 'package:iris_app/data/repositories/expert_knowledge_repository.dart';
 import 'package:iris_app/domain/services/embedding_codec.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// Test migration schema version 8 -> 9:
+/// Test migration schema version 8 -> 9 (chạy qua đường `AppDatabase` thật,
+/// hiện đã ở version 10):
 /// 1. Xoá sạch dữ liệu tĩnh `content_type IN ('chia_se_phu_huynh', 'bac_si')` trong `expert_knowledge_chunks`.
-/// 2. Giữ nguyên 100% dữ liệu `content_type='so_sanh'` trong `expert_knowledge_chunks`.
-/// 3. Mọi bảng khác (children, screenings, assessments, overview_summaries...) không bị ảnh hưởng.
+/// 2. Mọi bảng khác (children, screenings, assessments, overview_summaries...) không bị ảnh hưởng.
+///
+/// LƯU Ý (từ bản sửa BUG-01/02 — migration version 10): dòng `so_sanh` KHÔNG
+/// còn được giữ nguyên qua migration như tên gọi ban đầu của test — version
+/// 10 xoá sạch mọi dòng `content_type='so_sanh'` (bất kể nội dung/id) để tự
+/// "chữa lành" dữ liệu cũ/sai, rồi `onOpen` tự seed lại từ
+/// `expert_knowledge_seed.json`. Trong môi trường test Dart VM thuần (không
+/// có asset channel thật) bước seed lại thất bại ngầm (best-effort), nên kết
+/// quả `so_sanh` sau khi mở là RỖNG — đúng thiết kế mới, không phải bug.
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -99,21 +107,11 @@ void main() {
       final expertRepo = ExpertKnowledgeRepository(AppDatabase.instance);
 
       final allAfter = await expertRepo.getAll();
-      // Chỉ còn lại 2 dòng so_sanh, 2 dòng chia_se_phu_huynh & bac_si đã bị xoá
-      expect(allAfter, hasLength(2));
-
-      final contentTypes = allAfter.map((c) => c.contentType).toSet();
-      expect(contentTypes, contains('so_sanh'));
-      expect(contentTypes, isNot(contains('chia_se_phu_huynh')));
-      expect(contentTypes, isNot(contains('bac_si')));
-
-      final soSanh1 = allAfter.firstWhere((c) => c.id == 'chunk-ss-1');
-      expect(soSanh1.content, 'So sánh bình thường - ngôn ngữ');
-      expect(soSanh1.phanLoai, 'binh_thuong');
-
-      final soSanh2 = allAfter.firstWhere((c) => c.id == 'chunk-ss-2');
-      expect(soSanh2.content, 'So sánh cần quan sát - nhận thức');
-      expect(soSanh2.phanLoai, 'roi_loan_pho_tu_ky');
+      // chia_se_phu_huynh/bac_si bị xoá bởi migration v9; 2 dòng so_sanh cũ
+      // (chunk-ss-1/2) bị xoá bởi migration v10 (xoá sạch mọi so_sanh cũ để
+      // seed lại từ file mới) — seed lại thất bại ngầm trong môi trường test
+      // thuần, nên kết quả cuối là RỖNG hoàn toàn.
+      expect(allAfter, isEmpty);
 
       final db = await AppDatabase.instance.database;
       await db.close();

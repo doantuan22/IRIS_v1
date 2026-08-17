@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Design tokens của IRIS. Mọi quyết định thị giác dùng chung được gom tại
 /// đây để toàn bộ ứng dụng đổi đồng bộ khi bảng màu hoặc kích thước thay đổi.
@@ -71,9 +72,6 @@ abstract final class IrisSizes {
   static const iconSmall = 20.0;
   static const iconMedium = 24.0;
   static const iconLarge = 36.0;
-  static const mascotCompact = 64.0;
-  static const mascotSmall = 88.0;
-  static const mascotMedium = 132.0;
   static const maxBubbleWidthFactor = 0.78;
 }
 
@@ -88,9 +86,10 @@ abstract final class IrisShadows {
 }
 
 abstract final class IrisMotion {
-  static const press = Duration(milliseconds: 140);
-  static const component = Duration(milliseconds: 220);
-  static const screen = Duration(milliseconds: 320);
+  static const press = Duration(milliseconds: 180);
+  static const component = Duration(milliseconds: 300);
+  static const question = Duration(milliseconds: 420);
+  static const screen = Duration(milliseconds: 500);
 }
 
 /// Một nguồn duy nhất cho màu và icon của lĩnh vực.
@@ -150,11 +149,10 @@ abstract final class IrisTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: IrisColors.canvas,
-      fontFamily: 'Roboto',
       visualDensity: VisualDensity.standard,
     );
 
-    final textTheme = base.textTheme.copyWith(
+    final textTheme = GoogleFonts.nunitoTextTheme(base.textTheme).copyWith(
       headlineLarge: base.textTheme.headlineLarge?.copyWith(
         color: IrisColors.primaryDark,
         fontWeight: FontWeight.w800,
@@ -224,7 +222,11 @@ abstract final class IrisTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: textTheme.titleLarge,
+        titleTextStyle: GoogleFonts.fredoka(
+          color: IrisColors.primaryDark,
+          fontWeight: FontWeight.w600,
+          fontSize: 22,
+        ),
         iconTheme: const IconThemeData(color: IrisColors.primaryDark),
       ),
       cardTheme: CardThemeData(

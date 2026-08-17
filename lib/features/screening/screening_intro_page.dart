@@ -54,11 +54,27 @@ class ScreeningIntroPage extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
-            const IrisMascot(
-              asset: IrisAssets.mascotWaving,
-              height: IrisSizes.mascotMedium,
-              semanticLabel: 'Gấu IRIS vẫy chào',
+            const SizedBox(height: IrisSpacing.md),
+            Center(
+              child: Container(
+                width: 126,
+                height: 126,
+                margin: const EdgeInsets.symmetric(vertical: IrisSpacing.xs),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF4FF),
+                  borderRadius: const BorderRadius.all(Radius.circular(28)),
+                  border: Border.all(color: IrisColors.primarySoft),
+                  boxShadow: IrisShadows.soft,
+                ),
+                alignment: Alignment.center,
+                child: const IrisAssetIcon(
+                  asset: IrisAssets.featureAssessment,
+                  size: 108,
+                  semanticLabel: 'Minh hoạ bảng kiểm sàng lọc',
+                ),
+              ),
             ),
+            const SizedBox(height: IrisSpacing.md),
             FilledButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(

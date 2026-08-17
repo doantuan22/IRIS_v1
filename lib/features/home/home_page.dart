@@ -8,6 +8,7 @@ import '../../data/repositories/child_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
 import '../../domain/services/active_child_service.dart';
+import '../../domain/services/screening_change_service.dart';
 import '../ai_chat/ai_chat_page.dart';
 import '../assessment/domain_list_page.dart';
 import '../child_profile/create_profile/create_profile_page.dart';
@@ -17,6 +18,7 @@ import '../multi_child_dashboard/multi_child_dashboard_page.dart';
 import '../screening/screening_history_list_page.dart';
 import '../screening/screening_intro_page.dart';
 import '../video_recording/video_preparation_page.dart';
+import 'notifications_tab.dart';
 
 /// Trang chủ — điểm vào chính của app, xoay quanh khái niệm "1 hồ sơ trẻ
 /// đang hoạt động" (active child, lưu bền vững qua `ActiveChildService`).
@@ -113,9 +115,12 @@ class _HomePageState extends State<HomePage> {
         }
 
         final tabs = [
-          _HomeTabContent(child: activeChild),
+          _HomeTabContent(
+            child: activeChild,
+            onOpenAccount: () => setState(() => _tabIndex = 3),
+          ),
           AiChatPage(child: activeChild),
-          const _NotificationsPlaceholderTab(),
+          const NotificationsTab(),
           _AccountTab(child: activeChild, onChanged: _reloadActiveChild),
         ];
 
@@ -158,8 +163,9 @@ class _HomePageState extends State<HomePage> {
 /// dạng mờ, sau khi sàng lọc xong).
 class _HomeTabContent extends StatefulWidget {
   final Child child;
+  final VoidCallback onOpenAccount;
 
-  const _HomeTabContent({required this.child});
+  const _HomeTabContent({required this.child, required this.onOpenAccount});
 
   @override
   State<_HomeTabContent> createState() => _HomeTabContentState();
@@ -172,7 +178,14 @@ class _HomeTabContentState extends State<_HomeTabContent> {
   @override
   void initState() {
     super.initState();
+    ScreeningChangeService.instance.addListener(_reload);
     _reload();
+  }
+
+  @override
+  void dispose() {
+    ScreeningChangeService.instance.removeListener(_reload);
+    super.dispose();
   }
 
   @override
@@ -203,90 +216,118 @@ class _HomeTabContentState extends State<_HomeTabContent> {
   Widget build(BuildContext context) {
     final child = widget.child;
     return Scaffold(
-      appBar: AppBar(title: const Text('IRIS')),
+      appBar: AppBar(
+        title: const IrisBrandWordmark(fontSize: 30),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: IrisAiStatusLamp(),
+          ),
+        ],
+      ),
       body: FutureBuilder<bool>(
         future: _hasScreeningFuture,
         builder: (context, snapshot) {
           final hasScreening = snapshot.data;
-          return ListView(
-            padding: IrisSpacing.page,
+          return Stack(
             children: [
-              Card(
-                child: Padding(
-                  padding: IrisSpacing.card,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        child.name,
-                        style: Theme.of(context).textTheme.titleLarge,
+              const IrisPageBackdrop(),
+              ListView(
+                padding: IrisSpacing.page,
+                children: [
+                  Container(
+                    padding: IrisSpacing.card,
+                    decoration: BoxDecoration(
+                      color: IrisColors.surface.withValues(alpha: 0.93),
+                      borderRadius: IrisRadii.cardBorder,
+                      border: Border.all(color: IrisColors.divider),
+                      boxShadow: IrisShadows.soft,
+                    ),
+                    child: Row(
+                      children: [
+                        IrisGenderAvatar(gender: child.gender, size: 54),
+                        const SizedBox(width: IrisSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                child.name,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 3),
+                              Text(formatAgeLabel(child)),
+                            ],
+                          ),
+                        ),
+                        Semantics(
+                          button: true,
+                          label: 'Mở tab tài khoản',
+                          child: InkWell(
+                            onTap: widget.onOpenAccount,
+                            customBorder: const CircleBorder(),
+                            child: const IrisRoundArrow(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: IrisSpacing.lg),
+                  if (hasScreening == false) ...[
+                    FilledButton.icon(
+                      onPressed: _openScreening,
+                      icon: const IrisAssetIcon(
+                        asset: IrisAssets.iconScreening,
+                        size: IrisSizes.iconMedium,
                       ),
-                      const SizedBox(height: 4),
-                      Text(formatAgeLabel(child)),
-                    ],
+                      label: const Text('Sàng lọc'),
+                    ),
+                    const SizedBox(height: IrisSpacing.sm),
+                  ],
+                  _HomeFeatureButton(
+                    label: 'Đánh giá 7 lĩnh vực',
+                    asset: IrisAssets.featureAssessment,
+                    color: const Color(0xFFE8F2FF),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DomainListPage(child: child),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (hasScreening == false) ...[
-                FilledButton.icon(
-                  onPressed: _openScreening,
-                  icon: const IrisAssetIcon(
-                    asset: IrisAssets.iconScreening,
-                    size: IrisSizes.iconMedium,
+                  const SizedBox(height: IrisSpacing.sm),
+                  _HomeFeatureButton(
+                    label: 'Quay video quan sát',
+                    asset: IrisAssets.featureVideo,
+                    color: const Color(0xFFE8F7FF),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => VideoPreparationPage(child: child),
+                      ),
+                    ),
                   ),
-                  label: const Text('Sàng lọc'),
-                ),
-                const SizedBox(height: 8),
-              ],
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => DomainListPage(child: child),
+                  const SizedBox(height: IrisSpacing.sm),
+                  _HomeFeatureButton(
+                    label: 'Lịch sử',
+                    asset: IrisAssets.featureHistory,
+                    color: const Color(0xFFF0EDFF),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HistoryPage(child: child),
+                      ),
+                    ),
                   ),
-                ),
-                icon: const IrisAssetIcon(
-                  asset: IrisAssets.iconAssessment,
-                  size: IrisSizes.iconMedium,
-                ),
-                label: const Text('Đánh giá 7 lĩnh vực'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => VideoPreparationPage(child: child),
+                  const SizedBox(height: IrisSpacing.sm),
+                  _HomeFeatureButton(
+                    label: 'Kết nối chuyên gia/trung tâm',
+                    asset: IrisAssets.featureExpert,
+                    color: const Color(0xFFFFEDF1),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ExpertConnectPage(child: child),
+                      ),
+                    ),
                   ),
-                ),
-                icon: const IrisAssetIcon(
-                  asset: IrisAssets.iconVideo,
-                  size: IrisSizes.iconMedium,
-                ),
-                label: const Text('Quay video quan sát'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => HistoryPage(child: child)),
-                ),
-                icon: const IrisAssetIcon(
-                  asset: IrisAssets.iconHistory,
-                  size: IrisSizes.iconMedium,
-                ),
-                label: const Text('Lịch sử'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ExpertConnectPage(child: child),
-                  ),
-                ),
-                icon: const IrisAssetIcon(
-                  asset: IrisAssets.iconExpert,
-                  size: IrisSizes.iconMedium,
-                ),
-                label: const Text('Kết nối chuyên gia/trung tâm'),
+                ],
               ),
             ],
           );
@@ -296,16 +337,62 @@ class _HomeTabContentState extends State<_HomeTabContent> {
   }
 }
 
-class _NotificationsPlaceholderTab extends StatelessWidget {
-  const _NotificationsPlaceholderTab();
+class _HomeFeatureButton extends StatelessWidget {
+  final String label;
+  final String asset;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _HomeFeatureButton({
+    required this.label,
+    required this.asset,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Thông báo')),
-      body: const Center(child: Text('Chưa có nội dung')),
-    );
-  }
+  Widget build(BuildContext context) => Material(
+    color: IrisColors.surface,
+    borderRadius: IrisRadii.cardBorder,
+    child: InkWell(
+      onTap: onPressed,
+      borderRadius: IrisRadii.cardBorder,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 76),
+        padding: const EdgeInsets.symmetric(
+          horizontal: IrisSpacing.md,
+          vertical: IrisSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: IrisRadii.cardBorder,
+          border: Border.all(color: IrisColors.divider),
+          boxShadow: IrisShadows.soft,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: IrisRadii.inputBorder,
+              ),
+              alignment: Alignment.center,
+              child: IrisAssetIcon(asset: asset, size: 52),
+            ),
+            const SizedBox(width: IrisSpacing.sm),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            const IrisRoundArrow(),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// Tab "Tài khoản" — thông tin hồ sơ đang hoạt động + 3 hành động quản lý:
@@ -379,67 +466,160 @@ class _AccountTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Tài khoản')),
-      body: ListView(
-        padding: IrisSpacing.page,
+      body: Stack(
         children: [
-          Card(
-            child: Padding(
-              padding: IrisSpacing.card,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    child.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${formatAgeLabel(child)} • ${child.gender ?? "chưa rõ giới tính"}',
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Người đánh giá: ${child.nguoiDanhGia ?? "Chưa cập nhật"}',
-                  ),
-                  const SizedBox(height: 4),
-                  Text('Vai trò: ${child.vaiTro ?? "Chưa cập nhật"}'),
-                ],
+          const IrisPageBackdrop(),
+          ListView(
+            padding: IrisSpacing.page,
+            children: [
+              Container(
+                padding: IrisSpacing.card,
+                decoration: BoxDecoration(
+                  color: IrisColors.surface.withValues(alpha: .95),
+                  borderRadius: IrisRadii.cardBorder,
+                  border: Border.all(color: IrisColors.divider),
+                  boxShadow: IrisShadows.soft,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IrisGenderAvatar(gender: child.gender, size: 66),
+                    const SizedBox(width: IrisSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            child.name,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatAgeLabel(child),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: IrisColors.primary),
+                          ),
+                          const SizedBox(height: IrisSpacing.sm),
+                          Text(
+                            'Người đánh giá: ${child.nguoiDanhGia ?? "Chưa cập nhật"}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Vai trò: ${child.vaiTro ?? "Chưa cập nhật"}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const ScreeningHistoryListPage(),
+              const SizedBox(height: IrisSpacing.lg),
+              _AccountActionTile(
+                label: 'Lịch sử sàng lọc',
+                leading: const IrisAssetIcon(
+                  asset: IrisAssets.iconScreening,
+                  size: 34,
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ScreeningHistoryListPage(),
+                  ),
+                ),
               ),
-            ),
-            icon: const IrisAssetIcon(
-              asset: IrisAssets.iconScreening,
-              size: IrisSizes.iconMedium,
-            ),
-            label: const Text('Lịch sử sàng lọc'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _changeAccount(context),
-            icon: const Icon(Icons.swap_horiz),
-            label: const Text('Đổi tài khoản'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _createProfile(context),
-            icon: const Icon(Icons.person_add_outlined),
-            label: const Text('Tạo hồ sơ trẻ mới'),
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: IrisColors.danger),
-            onPressed: () => _deleteAccount(context),
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Xoá tài khoản'),
+              const SizedBox(height: IrisSpacing.sm),
+              _AccountActionTile(
+                label: 'Đổi tài khoản',
+                leading: const Icon(
+                  Icons.swap_horiz_rounded,
+                  color: IrisColors.primary,
+                ),
+                onPressed: () => _changeAccount(context),
+              ),
+              const SizedBox(height: IrisSpacing.sm),
+              _AccountActionTile(
+                label: 'Tạo hồ sơ trẻ mới',
+                leading: const Icon(
+                  Icons.person_add_alt_1_rounded,
+                  color: IrisColors.primary,
+                ),
+                onPressed: () => _createProfile(context),
+              ),
+              const SizedBox(height: IrisSpacing.lg),
+              _AccountActionTile(
+                label: 'Xoá tài khoản',
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: IrisColors.danger,
+                ),
+                color: IrisColors.danger,
+                onPressed: () => _deleteAccount(context),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+class _AccountActionTile extends StatelessWidget {
+  final String label;
+  final Widget leading;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _AccountActionTile({
+    required this.label,
+    required this.leading,
+    required this.onPressed,
+    this.color = IrisColors.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: IrisColors.surface.withValues(alpha: .96),
+    borderRadius: IrisRadii.cardBorder,
+    child: InkWell(
+      onTap: onPressed,
+      borderRadius: IrisRadii.cardBorder,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 66),
+        padding: const EdgeInsets.symmetric(
+          horizontal: IrisSpacing.md,
+          vertical: IrisSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: IrisRadii.cardBorder,
+          border: Border.all(color: color.withValues(alpha: .28)),
+          boxShadow: IrisShadows.soft,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .10),
+                borderRadius: IrisRadii.inputBorder,
+              ),
+              child: leading,
+            ),
+            const SizedBox(width: IrisSpacing.md),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: color),
+              ),
+            ),
+            IrisRoundArrow(size: 38),
+          ],
+        ),
+      ),
+    ),
+  );
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/iris_assets.dart';
-import '../../core/theme/iris_theme.dart';
-import '../../core/widgets/iris_ui.dart';
 import '../../domain/models/child.dart';
 import 'screening_questionnaire_page.dart';
 
@@ -31,11 +29,13 @@ class ScreeningToolConfirmPage extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
-            const Center(
-              child: IrisMascot(
-                asset: IrisAssets.mascotClipboard,
-                height: IrisSizes.mascotSmall,
-                semanticLabel: 'Gấu IRIS cầm bảng hồ sơ',
+            Center(
+              child: Image.asset(
+                IrisAssets.screeningChecklistIllustration,
+                width: 132,
+                height: 132,
+                fit: BoxFit.contain,
+                semanticLabel: 'Minh hoạ bảng kiểm sàng lọc',
               ),
             ),
             const SizedBox(height: 16),

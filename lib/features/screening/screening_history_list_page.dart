@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/iris_assets.dart';
 import '../../core/theme/iris_theme.dart';
 import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
@@ -15,10 +14,7 @@ class _ScreeningHistoryData {
   final Child? child;
   final List<Screening> screenings;
 
-  const _ScreeningHistoryData({
-    required this.child,
-    required this.screenings,
-  });
+  const _ScreeningHistoryData({required this.child, required this.screenings});
 }
 
 /// Màn hình "Lịch sử sàng lọc" — hiển thị danh sách các lần làm bài sàng lọc
@@ -148,9 +144,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text('Lịch sử sàng lọc — ${child.name}'),
-          ),
+          appBar: AppBar(title: Text('Lịch sử sàng lọc — ${child.name}')),
           body: screenings.isEmpty
               ? _buildEmptyState(child)
               : _buildHistoryList(child, screenings),
@@ -166,18 +160,18 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const IrisMascot(
-              asset: IrisAssets.mascotClipboard,
-              height: IrisSizes.mascotMedium,
-              semanticLabel: 'Chưa có lịch sử sàng lọc',
+            const IrisIconChip(
+              icon: Icons.history_rounded,
+              color: IrisColors.primary,
+              size: 72,
             ),
             const SizedBox(height: 16),
             Text(
               'Chưa có lịch sử sàng lọc cho ${child.name}',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -249,11 +243,8 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                             Expanded(
                               child: Text(
                                 screening.resultSummary ?? 'Kết quả sàng lọc',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
                             if (screening.score != null) ...[
@@ -282,9 +273,8 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                         const SizedBox(height: 6),
                         Text(
                           'Ngày thực hiện: ${_formatDateTime(screening.performedAt)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).hintColor,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Theme.of(context).hintColor),
                         ),
                       ],
                     ),

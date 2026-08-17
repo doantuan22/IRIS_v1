@@ -9,6 +9,7 @@ import 'tables/children_table.dart';
 import 'tables/domain_overview_labels_table.dart';
 import 'tables/expert_knowledge_chunks_table.dart';
 import 'tables/history_logs_table.dart';
+import 'tables/notifications_table.dart';
 import 'tables/overview_summaries_table.dart';
 import 'tables/profile_chunks_table.dart';
 import 'tables/screening_domain_scores_table.dart';
@@ -46,7 +47,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 10,
+      version: 11,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -84,6 +85,7 @@ class AppDatabase {
         await db.execute(overviewSummariesTableCreate);
         await db.execute(screeningResponsesTableCreate);
         await db.execute(screeningDomainScoresTableCreate);
+        await db.execute(notificationsTableCreate);
       },
       // Version 2 — thêm 2 cột `nguoi_danh_gia`/`vai_tro` vào `children` cho
       // hồ sơ trẻ đã tồn tại từ trước (cài mới đã có sẵn 2 cột này qua
@@ -218,6 +220,10 @@ class AppDatabase {
               );
             } catch (_) {}
           }
+        }
+        // Version 11 — thêm bảng `notifications` lưu thông báo kết nối AI và hệ thống.
+        if (oldVersion < 11) {
+          await db.execute(notificationsTableCreate);
         }
       },
     );

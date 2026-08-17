@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/api_config.dart';
 import '../../core/theme/iris_assets.dart';
 import '../../core/theme/iris_theme.dart';
 import '../../core/widgets/iris_ui.dart';
@@ -9,6 +8,7 @@ import '../../data/repositories/ai_conversation_repository.dart';
 import '../../data/repositories/ai_repository.dart';
 import '../../domain/models/ai_conversation.dart';
 import '../../domain/models/child.dart';
+import '../../domain/services/ai_connectivity_service.dart';
 
 /// Hỏi đáp AI — RAG trên dữ liệu hồ sơ trẻ + dữ liệu tham khảo chuyên môn,
 /// thông qua AiRepository. Chưa streaming, chưa làm đẹp giao diện.
@@ -58,10 +58,10 @@ class _AiChatPageState extends State<AiChatPage> {
     final question = _questionController.text.trim();
     if (question.isEmpty) return;
 
-    if (!ApiConfig.hasAiConfig) {
+    if (!AiConnectivityService.instance.isConnected) {
       setState(
         () => _errorMessage =
-            'Chưa cấu hình API key, tính năng AI hiện không khả dụng.',
+            'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
       );
       return;
     }
@@ -88,33 +88,37 @@ class _AiChatPageState extends State<AiChatPage> {
       appBar: AppBar(title: Text('Hỏi đáp AI — ${widget.child.name}')),
       body: Column(
         children: [
-          if (!ApiConfig.hasAiConfig)
-            Container(
-              width: double.infinity,
-              color: IrisColors.dangerSoft,
-              padding: const EdgeInsets.symmetric(
-                horizontal: IrisSpacing.md,
-                vertical: IrisSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  const IrisMascot(
-                    asset: IrisAssets.mascotShield,
-                    height: IrisSizes.iconChip,
-                    semanticLabel: 'Gấu IRIS cầm khiên an toàn',
+          ValueListenableBuilder<AiConnectivityState>(
+            valueListenable: AiConnectivityService.instance.stateNotifier,
+            builder: (context, connectivityState, _) {
+              if (!connectivityState.isConnected) {
+                return Container(
+                  width: double.infinity,
+                  color: IrisColors.dangerSoft,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: IrisSpacing.md,
+                    vertical: IrisSpacing.sm,
                   ),
-                  const SizedBox(width: IrisSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Chưa cấu hình API key, tính năng AI hiện không khả dụng.',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onErrorContainer,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.cloud_off, color: IrisColors.danger),
+                      const SizedBox(width: IrisSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           Expanded(
             child: FutureBuilder<List<AiConversation>>(
               future: _conversationsFuture,

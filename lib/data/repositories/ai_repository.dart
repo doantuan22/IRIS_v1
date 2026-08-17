@@ -76,6 +76,7 @@ class AiRepository {
     final guardrailResult = _guardrailService.determineState(
       retrievedProfileChunks: profileChunks,
       hasScreeningResult: hasScreeningResult,
+      userQuestion: question,
     );
 
     final String systemPrompt;
@@ -102,18 +103,68 @@ class AiRepository {
         );
     }
 
-    final answer = await _groqApiClient.generate(
+    final rawAnswer = await _groqApiClient.generate(
       systemPrompt: systemPrompt,
       userQuestion: question,
     );
 
+    final cleanAnswer = sanitizeAiAnswer(rawAnswer);
+
     await _aiConversationRepository.save(
       childId: child.id,
       question: question,
-      answer: answer,
+      answer: cleanAnswer,
       state: _stateToInt(guardrailResult.state),
     );
 
-    return AiAnswer(answer: answer, state: guardrailResult.state);
+    return AiAnswer(answer: cleanAnswer, state: guardrailResult.state);
+  }
+
+  /// Làm sạch ký tự Markdown thô (**, *, -, #, bảng biểu...) để đảm bảo
+  /// câu trả lời hiển thị dưới dạng văn xuôi tự nhiên, sạch đẹp trên UI.
+  static String sanitizeAiAnswer(String raw) {
+    var text = raw;
+
+    // 1. Gỡ bỏ bullet points markdown (- , * , + , • ) và đánh số ở đầu dòng
+    text = text.replaceAll(RegExp(r'^\s*[-*+•]\s+', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), '');
+
+    // 2. Gỡ bỏ headers markdown: #, ##, ### ở đầu dòng
+    text = text.replaceAll(RegExp(r'^\s*#{1,6}\s+', multiLine: true), '');
+
+    // 3. Gỡ bỏ markdown bold/italic: **text**, *text*, __text__, _text_
+    text = text.replaceAllMapped(RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '');
+    text = text.replaceAllMapped(RegExp(r'__([^_]+)__'), (m) => m.group(1) ?? '');
+    text = text.replaceAllMapped(RegExp(r'\*([^*]+)\*'), (m) => m.group(1) ?? '');
+    text = text.replaceAllMapped(RegExp(r'_([^_]+)_'), (m) => m.group(1) ?? '');
+
+    // 4. Gỡ bỏ blockquote markdown: > ở đầu dòng
+    text = text.replaceAll(RegExp(r'^\s*>\s*', multiLine: true), '');
+
+    // 5. Gỡ bỏ bảng markdown (|---|) và chuyển hàng thành văn xuôi
+    final lines = text.split('\n');
+    final cleanLines = <String>[];
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('|') && trimmed.contains('---')) continue;
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        final cells = trimmed
+            .split('|')
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
+            .toList();
+        if (cells.isNotEmpty) {
+          cleanLines.add(cells.join(': '));
+        }
+      } else {
+        cleanLines.add(line);
+      }
+    }
+    text = cleanLines.join('\n');
+
+    // 6. Gỡ bỏ nhiều dòng trống liên tiếp
+    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+
+    return text.trim();
   }
 }

@@ -12,6 +12,7 @@ import '../../../data/repositories/overview_summary_repository.dart';
 import '../../../domain/models/child.dart';
 import '../../../domain/models/domain_overview_label.dart';
 import '../../../domain/models/overview_summary.dart';
+import '../../../domain/services/ai_connectivity_service.dart';
 import '../../expert_connect/expert_connect_page.dart';
 
 const String _disclaimerText =
@@ -111,6 +112,15 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
 
   Future<void> _compute() async {
     if (_computing) return;
+
+    if (!AiConnectivityService.instance.isConnected) {
+      setState(
+        () => _computeError =
+            'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
+      );
+      return;
+    }
+
     setState(() {
       _computing = true;
       _computeError = null;
@@ -130,6 +140,15 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
 
   Future<void> _retryDescription(OverviewSummary summary) async {
     if (_generatingDescription) return;
+
+    if (!AiConnectivityService.instance.isConnected) {
+      setState(
+        () => _computeError =
+            'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
+      );
+      return;
+    }
+
     setState(() => _generatingDescription = true);
     try {
       final updated = await _overviewRepository
@@ -183,6 +202,42 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              ValueListenableBuilder<AiConnectivityState>(
+                valueListenable: AiConnectivityService.instance.stateNotifier,
+                builder: (context, connectivityState, _) {
+                  if (!connectivityState.isConnected &&
+                      connectivityState.hasIssue) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: IrisSpacing.md,
+                        vertical: IrisSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: IrisColors.dangerSoft,
+                        borderRadius: IrisRadii.cardBorder,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.cloud_off, color: IrisColors.danger),
+                          const SizedBox(width: IrisSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
               if (!state.isComplete)
                 _buildIncomplete(state.doneDomainCount)
               else
@@ -299,10 +354,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 children: [
                   Row(
                     children: [
-                      const IrisMascot(
-                        asset: IrisAssets.mascotPointing,
-                        height: IrisSizes.iconChip,
-                        semanticLabel: 'Gấu IRIS chỉ dẫn',
+                      const IrisSparkle(
+                        size: IrisSizes.iconChip,
+                        color: IrisColors.primary,
                       ),
                       const SizedBox(width: IrisSpacing.xs),
                       Text(
@@ -401,18 +455,8 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                 )
               : const Text('Tính toán lại'),
         ),
-        if (summary.tier == tierChuyenMonSom) ...[
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ExpertConnectPage(child: widget.child),
-              ),
-            ),
-            icon: const Icon(Icons.support_agent_outlined),
-            label: const Text('Kết nối chuyên gia/trung tâm'),
-          ),
-        ],
+        const SizedBox(height: 12),
+        _ExpertConnectBanner(tier: summary.tier, child: widget.child),
       ],
     );
   }
@@ -436,6 +480,56 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Giọng điệu banner mời liên hệ trung tâm thay đổi theo mức tổng quan,
+/// nhưng LUÔN hiển thị ở cả 3 mức — trước đây chỉ hiện ở [tierChuyenMonSom].
+const Map<String, String> _expertConnectBannerText = {
+  tierThuongGap:
+      'Bé đang trong giới hạn thường gặp. Nếu muốn yên tâm hơn, bạn vẫn có '
+      'thể tham khảo thêm ý kiến từ chuyên gia/trung tâm.',
+  tierCanTheoDoi:
+      'Một số lĩnh vực có điểm cần theo dõi. Bạn nên cân nhắc liên hệ '
+      'chuyên gia/trung tâm để được đánh giá sâu hơn.',
+  tierChuyenMonSom:
+      'Nên tìm đánh giá chuyên môn sớm. Hãy liên hệ chuyên gia/trung tâm '
+      'dưới đây để được hỗ trợ kịp thời.',
+};
+
+class _ExpertConnectBanner extends StatelessWidget {
+  final String tier;
+  final Child child;
+
+  const _ExpertConnectBanner({required this.tier, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final text =
+        _expertConnectBannerText[tier] ??
+        _expertConnectBannerText[tierCanTheoDoi]!;
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(text, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ExpertConnectPage(child: child),
+                ),
+              ),
+              icon: const Icon(Icons.support_agent_outlined),
+              label: const Text('Kết nối chuyên gia/trung tâm'),
+            ),
+          ],
+        ),
       ),
     );
   }

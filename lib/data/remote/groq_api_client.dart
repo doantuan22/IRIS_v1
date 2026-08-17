@@ -44,31 +44,53 @@ class GroqApiClient {
       );
     }
 
-    final http.Response response;
-    try {
-      response = await _client
-          .post(
-            Uri.parse(ApiConfig.groqGenerationEndpoint),
-            headers: {
-              'Authorization': 'Bearer ${ApiConfig.groqApiKey}',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: jsonEncode({
-              'model': ApiConfig.groqModelFast,
-              'messages': [
-                {'role': 'system', 'content': systemPrompt},
-                {'role': 'user', 'content': userQuestion},
-              ],
-            }),
-          )
-          .timeout(_timeout);
-    } on TimeoutException {
-      throw GroqApiException(
-        'Hết thời gian chờ khi gọi Groq API (quá ${_timeout.inSeconds} giây)',
-      );
-    } catch (e) {
-      throw GroqApiException('Không gọi được Groq API: $e');
+    http.Response response;
+    var attempts = 0;
+    const maxAttempts = 3;
+
+    while (true) {
+      attempts++;
+      try {
+        response = await _client
+            .post(
+              Uri.parse(ApiConfig.groqGenerationEndpoint),
+              headers: {
+                'Authorization': 'Bearer ${ApiConfig.groqApiKey}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: jsonEncode({
+                'model': ApiConfig.groqModelFast,
+                'messages': [
+                  {'role': 'system', 'content': systemPrompt},
+                  {'role': 'user', 'content': userQuestion},
+                ],
+              }),
+            )
+            .timeout(_timeout);
+      } on TimeoutException {
+        throw GroqApiException(
+          'Hết thời gian chờ khi gọi Groq API (quá ${_timeout.inSeconds} giây)',
+        );
+      } catch (e) {
+        throw GroqApiException('Không gọi được Groq API: $e');
+      }
+
+      if (response.statusCode == 429 && attempts < maxAttempts) {
+        var waitSeconds = 4;
+        final match = RegExp(
+          r'try again in (\d+(\.\d+)?)s',
+        ).firstMatch(response.body);
+        if (match != null) {
+          final parsed = double.tryParse(match.group(1)!);
+          if (parsed != null) {
+            waitSeconds = parsed.ceil() + 1;
+          }
+        }
+        await Future.delayed(Duration(seconds: waitSeconds));
+        continue;
+      }
+      break;
     }
 
     if (response.statusCode != 200) {

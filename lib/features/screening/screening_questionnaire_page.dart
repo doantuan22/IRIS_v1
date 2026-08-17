@@ -6,6 +6,7 @@ import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
+import '../../domain/services/screening_change_service.dart';
 import '../../domain/services/screening_loader_service.dart';
 import '../../domain/services/screening_scoring_service.dart';
 import 'screening_result_page.dart';
@@ -16,7 +17,8 @@ import 'screening_result_page.dart';
 class ScreeningQuestionnairePage extends StatefulWidget {
   final Child child;
   final bool isOnboarding;
-  final ScreeningQuestionnaireData? questionnaireData; // Cho phép inject trong test
+  final ScreeningQuestionnaireData?
+  questionnaireData; // Cho phép inject trong test
   final ScreeningRepository? screeningRepository;
   final HistoryLogRepository? historyLogRepository;
 
@@ -45,6 +47,7 @@ class _ScreeningQuestionnairePageState
   int _currentIndex = 0;
   final Map<String, String> _answers = {}; // cau_hoi_id -> '0'|'1'|'2'|'N/A'
   bool _isSubmitting = false;
+  bool _isAdvancing = false;
 
   @override
   void initState() {
@@ -61,22 +64,24 @@ class _ScreeningQuestionnairePageState
     ScreeningQuestion question,
     String value,
   ) {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isAdvancing) return;
 
     setState(() {
       _answers[question.id] = value;
+      _isAdvancing = true;
     });
 
     if (_currentIndex < data.cauHoi.length - 1) {
-      Future.delayed(const Duration(milliseconds: 140), () {
+      Future.delayed(const Duration(milliseconds: 650), () {
         if (!mounted) return;
         setState(() {
           _currentIndex++;
+          _isAdvancing = false;
         });
       });
     } else {
       // Đã là câu cuối cùng (câu 50)
-      Future.delayed(const Duration(milliseconds: 140), () {
+      Future.delayed(const Duration(milliseconds: 650), () {
         if (!mounted) return;
         _finishAndSave(data);
       });
@@ -84,7 +89,7 @@ class _ScreeningQuestionnairePageState
   }
 
   void _previousQuestion() {
-    if (_currentIndex > 0 && !_isSubmitting) {
+    if (_currentIndex > 0 && !_isSubmitting && !_isAdvancing) {
       setState(() {
         _currentIndex--;
       });
@@ -92,7 +97,7 @@ class _ScreeningQuestionnairePageState
   }
 
   void _nextQuestion(int totalQuestions) {
-    if (_currentIndex < totalQuestions - 1 && !_isSubmitting) {
+    if (_currentIndex < totalQuestions - 1 && !_isSubmitting && !_isAdvancing) {
       setState(() {
         _currentIndex++;
       });
@@ -140,6 +145,7 @@ class _ScreeningQuestionnairePageState
         responses: responsesList,
         domainScores: domainScoresList,
       );
+      ScreeningChangeService.instance.notifyScreeningSaved();
 
       try {
         await _historyLogRepository.add(
@@ -249,193 +255,214 @@ class _ScreeningQuestionnairePageState
               : SafeArea(
                   child: SingleChildScrollView(
                     padding: IrisSpacing.page,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Hàng thông tin tiến độ & lĩnh vực
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: domainColor.withValues(alpha: 0.15),
-                                borderRadius: IrisRadii.pillBorder,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    IrisDomainStyle.iconOf(
-                                      currentQuestion.linhVuc,
-                                    ),
-                                    size: 16,
-                                    color: domainColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    domainName,
-                                    style: TextStyle(
-                                      color: domainColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (currentQuestion.tieuLinhVuc.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  currentQuestion.tieuLinhVuc,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context).hintColor,
-                                      ),
-                                  overflow: TextOverflow.ellipsis,
+                    child: AnimatedSwitcher(
+                      duration: IrisMotion.question,
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final slide = Tween<Offset>(
+                          begin: const Offset(.06, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(position: slide, child: child),
+                        );
+                      },
+                      child: Column(
+                        key: ValueKey(currentQuestion.id),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Hàng thông tin tiến độ & lĩnh vực
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
                                 ),
+                                decoration: BoxDecoration(
+                                  color: domainColor.withValues(alpha: 0.15),
+                                  borderRadius: IrisRadii.pillBorder,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      IrisDomainStyle.iconOf(
+                                        currentQuestion.linhVuc,
+                                      ),
+                                      size: 16,
+                                      color: domainColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      domainName,
+                                      style: TextStyle(
+                                        color: domainColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (currentQuestion.tieuLinhVuc.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    currentQuestion.tieuLinhVuc,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context).hintColor,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              Text(
+                                'Câu ${_currentIndex + 1}/$totalQuestions',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: IrisColors.primaryDark,
+                                    ),
                               ),
                             ],
-                            const Spacer(),
-                            Text(
-                              'Câu ${_currentIndex + 1}/$totalQuestions',
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: IrisColors.primaryDark,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Card câu hỏi chính
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: IrisRadii.cardBorder,
-                            side: BorderSide(
-                              color: domainColor.withValues(alpha: 0.4),
-                              width: 1.5,
-                            ),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  currentQuestion.noiDung,
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        height: 1.45,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                if (currentQuestion.goiYQuanSat.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: IrisColors.neutralSoft,
-                                      borderRadius: IrisRadii.inputBorder,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Icon(
-                                          Icons.lightbulb_outline,
-                                          size: 18,
-                                          color: IrisColors.warning,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Gợi ý: ${currentQuestion.goiYQuanSat}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 16),
 
-                        // 4 Lựa chọn trả lời
-                        _AnswerOptionTile(
-                          value: '0',
-                          title: '0 — Không / Hiếm khi',
-                          subtitle: 'Biểu hiện không xuất hiện hoặc rất ít',
-                          isSelected: selectedAnswer == '0',
-                          selectedColor: IrisColors.success,
-                          onTap: () =>
-                              _selectAnswer(data, currentQuestion, '0'),
-                        ),
-                        const SizedBox(height: 10),
-                        _AnswerOptionTile(
-                          value: '1',
-                          title: '1 — Thỉnh thoảng / Không ổn định',
-                          subtitle:
-                              'Biểu hiện có xuất hiện nhưng không ổn định',
-                          isSelected: selectedAnswer == '1',
-                          selectedColor: IrisColors.warning,
-                          onTap: () =>
-                              _selectAnswer(data, currentQuestion, '1'),
-                        ),
-                        const SizedBox(height: 10),
-                        _AnswerOptionTile(
-                          value: '2',
-                          title: '2 — Thường xuyên / Rõ rệt',
-                          subtitle:
-                              'Lặp lại nhiều tình huống hoặc ảnh hưởng rõ rệt',
-                          isSelected: selectedAnswer == '2',
-                          selectedColor: IrisColors.danger,
-                          onTap: () =>
-                              _selectAnswer(data, currentQuestion, '2'),
-                        ),
-                        const SizedBox(height: 10),
-                        _AnswerOptionTile(
-                          value: 'N/A',
-                          title: 'N/A — Không tính điểm',
-                          subtitle:
-                              'Chưa phù hợp độ tuổi hoặc chưa có cơ hội quan sát',
-                          isSelected: selectedAnswer == 'N/A',
-                          selectedColor: IrisColors.neutral,
-                          onTap: () =>
-                              _selectAnswer(data, currentQuestion, 'N/A'),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Nút điều hướng quay lại / tiếp
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            TextButton.icon(
-                              onPressed:
-                                  _currentIndex > 0 ? _previousQuestion : null,
-                              icon: const Icon(Icons.arrow_back),
-                              label: const Text('Quay lại câu trước'),
-                            ),
-                            if (selectedAnswer != null &&
-                                _currentIndex < totalQuestions - 1)
-                              FilledButton.tonalIcon(
-                                onPressed: () =>
-                                    _nextQuestion(totalQuestions),
-                                icon: const Icon(Icons.arrow_forward),
-                                label: const Text('Tiếp theo'),
+                          // Card câu hỏi chính
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: IrisRadii.cardBorder,
+                              side: BorderSide(
+                                color: domainColor.withValues(alpha: 0.4),
+                                width: 1.5,
                               ),
-                          ],
-                        ),
-                      ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    currentQuestion.noiDung,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          height: 1.45,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  if (currentQuestion
+                                      .goiYQuanSat
+                                      .isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: IrisColors.neutralSoft,
+                                        borderRadius: IrisRadii.inputBorder,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Icon(
+                                            Icons.lightbulb_outline,
+                                            size: 18,
+                                            color: IrisColors.warning,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Gợi ý: ${currentQuestion.goiYQuanSat}',
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // 4 Lựa chọn trả lời
+                          _AnswerOptionTile(
+                            value: '0',
+                            title: '0 — Không / Hiếm khi',
+                            subtitle: 'Biểu hiện không xuất hiện hoặc rất ít',
+                            isSelected: selectedAnswer == '0',
+                            selectedColor: IrisColors.success,
+                            onTap: () =>
+                                _selectAnswer(data, currentQuestion, '0'),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
+                            value: '1',
+                            title: '1 — Thỉnh thoảng / Không ổn định',
+                            subtitle:
+                                'Biểu hiện có xuất hiện nhưng không ổn định',
+                            isSelected: selectedAnswer == '1',
+                            selectedColor: IrisColors.warning,
+                            onTap: () =>
+                                _selectAnswer(data, currentQuestion, '1'),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
+                            value: '2',
+                            title: '2 — Thường xuyên / Rõ rệt',
+                            subtitle:
+                                'Lặp lại nhiều tình huống hoặc ảnh hưởng rõ rệt',
+                            isSelected: selectedAnswer == '2',
+                            selectedColor: IrisColors.danger,
+                            onTap: () =>
+                                _selectAnswer(data, currentQuestion, '2'),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
+                            value: 'N/A',
+                            title: 'N/A — Không tính điểm',
+                            subtitle:
+                                'Chưa phù hợp độ tuổi hoặc chưa có cơ hội quan sát',
+                            isSelected: selectedAnswer == 'N/A',
+                            selectedColor: IrisColors.neutral,
+                            onTap: () =>
+                                _selectAnswer(data, currentQuestion, 'N/A'),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Nút điều hướng quay lại / tiếp
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton.icon(
+                                onPressed: _currentIndex > 0
+                                    ? _previousQuestion
+                                    : null,
+                                icon: const Icon(Icons.arrow_back),
+                                label: const Text('Quay lại câu trước'),
+                              ),
+                              if (selectedAnswer != null &&
+                                  _currentIndex < totalQuestions - 1)
+                                FilledButton.tonalIcon(
+                                  onPressed: () =>
+                                      _nextQuestion(totalQuestions),
+                                  icon: const Icon(Icons.arrow_forward),
+                                  label: const Text('Tiếp theo'),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -464,64 +491,71 @@ class _AnswerOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: isSelected
-          ? selectedColor.withValues(alpha: 0.12)
-          : IrisColors.surface,
-      shape: RoundedRectangleBorder(
+    return AnimatedContainer(
+      duration: IrisMotion.component,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? selectedColor.withValues(alpha: 0.12)
+            : IrisColors.surface,
         borderRadius: IrisRadii.cardBorder,
-        side: BorderSide(
+        border: Border.all(
           color: isSelected ? selectedColor : IrisColors.divider,
           width: isSelected ? 2.0 : 1.0,
         ),
+        boxShadow: isSelected ? IrisShadows.soft : const [],
       ),
-      child: InkWell(
+      child: Material(
+        color: Colors.transparent,
         borderRadius: IrisRadii.cardBorder,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected ? selectedColor : Colors.transparent,
-                  border: Border.all(
-                    color: isSelected ? selectedColor : IrisColors.divider,
-                    width: 2,
+        child: InkWell(
+          borderRadius: IrisRadii.cardBorder,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? selectedColor : Colors.transparent,
+                    border: Border.all(
+                      color: isSelected ? selectedColor : IrisColors.divider,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, size: 18, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? IrisColors.primaryDark
+                              : IrisColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: isSelected
-                    ? const Icon(Icons.check, size: 18, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? IrisColors.primaryDark
-                            : IrisColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).hintColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

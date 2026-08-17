@@ -7,6 +7,7 @@ import '../../../../data/repositories/history_log_repository.dart';
 import '../../../../data/repositories/profile_chunk_repository.dart';
 import '../../../../domain/models/assessment.dart';
 import '../../../../domain/models/child.dart';
+import '../../../../domain/services/ai_connectivity_service.dart';
 
 /// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiện ở đầu Mô tả biểu
 /// hiện để người dùng hiểu đang mô tả về khía cạnh nào.
@@ -139,6 +140,9 @@ class _DescriptionPageState extends State<DescriptionPage> {
   /// cho AI" (`_retryEmbedding`) — không tạo bản ghi `assessments` mới, chỉ
   /// cập nhật chunk RAG.
   Future<bool> _embedAndSaveChunk(String content) async {
+    if (!AiConnectivityService.instance.isConnected) {
+      return false;
+    }
     try {
       final embedding = await _nvidiaApiClient.embed(content);
       await _profileChunkRepository.add(

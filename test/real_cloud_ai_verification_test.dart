@@ -60,7 +60,7 @@ void main() {
       final createdChunk = await chunkRepo.add(
         childId: child.id,
         content: sampleText,
-        linhVuc: 'hanh_vi',
+        linhVuc: 'ngon_ngu',
         embedding: embedding,
       );
 

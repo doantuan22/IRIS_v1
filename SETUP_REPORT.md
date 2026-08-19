@@ -4,7 +4,53 @@ Ghi nhận thực tế những gì đã xóa/sửa trong đợt dọn dẹp repo
 `AUDIT_DON_DEP_REPO.md` (audit đầy đủ, đã được duyệt từng mục trước khi
 thực thi).
 
-Thời điểm: 2026-08-19.
+Thời điểm: 2026-08-19 (đợt 1 — dọn rác ảnh/log), 2026-08-20 (đợt 2 — xóa
+toàn bộ `test/`).
+
+---
+
+## Đợt 2 (2026-08-20) — Xóa toàn bộ thư mục `test/`
+
+Quyết định của chủ dự án: xóa sạch toàn bộ bộ test hiện có (43 file .dart,
+đã được audit kỹ ở đợt 1 và xác nhận không có file nào test tính năng chết)
+để chuẩn bị viết lại từ đầu theo kiến trúc hạ tầng thương mại sắp triển khai.
+Đây là quyết định phá bỏ hoàn toàn có chủ đích, không phải kết quả audit —
+khác với đợt 1 (chỉ xóa rác, giữ nguyên toàn bộ test).
+
+**Đã xóa**: toàn bộ thư mục `test/` — 43 file `.dart`.
+
+**Đã kiểm tra, KHÔNG đụng tới** (theo đúng yêu cầu chỉ liệt kê, không tự xóa):
+- `pubspec.yaml` — `dev_dependencies` giữ nguyên 100%:
+  - `flutter_test` (SDK) — chỉ dùng trong `test/`, không dùng ở `lib/`.
+  - `flutter_lints` — cấu hình lint chung cho `flutter analyze`, không
+    riêng cho test.
+  - `sqflite_common_ffi` — chỉ dùng trong `test/` (để chạy SQLite trên Dart
+    VM thuần); `lib/data/local/database.dart` chỉ nhắc tên package này
+    trong 1 dòng docstring, không import/dùng thật.
+  - `url_launcher_platform_interface` — chỉ dùng trong `test/` (mock
+    `url_launcher`), không dùng ở `lib/`.
+  - → Cả 4 dependency này AN TOÀN GIỮ LẠI để dùng khi viết bộ test mới sau
+    này; không có dependency nào chỉ tồn tại để phục vụ 1 tính năng đã mất
+    ý nghĩa.
+- CI/CD: **không tìm thấy** file nào trong `.github/workflows/` (thư mục
+  `.github/` chỉ có `.github/modernize/java-upgrade/` — công cụ hỗ trợ
+  nâng cấp Java, không liên quan Flutter/test). Không có script `.sh`/`.ps1`/
+  `.yml` nào gọi `flutter test` trong repo.
+- `analysis_options.yaml`: không có rule/exclude riêng cho `test/` — file
+  chỉ include `package:flutter_lints/flutter.yaml`, áp dụng chung cho toàn
+  bộ project, không cần sửa gì sau khi xóa `test/`.
+- `lib/`, `assets/`, mọi file `.md`: không đụng tới.
+
+**Kiểm tra sau khi xóa**: `flutter analyze` → **0 issues** (xác nhận
+`lib/` không import ngược bất kỳ gì từ `test/`, đúng như dự đoán).
+
+**2 commit của đợt 2**: không cần commit checkpoint riêng (working tree đã
+sạch từ cuối đợt 1) — chỉ có 1 commit xóa:
+`chore: xóa toàn bộ test suite cũ, chuẩn bị viết lại theo kiến trúc mới`.
+
+---
+
+## Đợt 1 (2026-08-19) — Dọn rác ảnh/log debug
 
 ## Đã xóa (142 file, ~21MB) — theo đúng danh sách đã duyệt
 

@@ -1,9 +1,26 @@
 /// 1 câu hỏi trong bộ sàng lọc mới (4 mức tuổi × 20 câu × 5 lĩnh vực).
 class ScreeningQuestion {
+  /// Khóa duy nhất của câu hỏi trong toàn bộ 80 câu (4 mức × 20 câu),
+  /// khớp `screening_answers.cau_hoi_id`.
   final String id;
+
+  /// 1 trong 5 mã lĩnh vực chuẩn (`screeningDomains` trong
+  /// `screening_domains.dart`). Với lĩnh vực `van_dong`, đây LUÔN là
+  /// `'van_dong'` dù câu hỏi thuộc nhóm con thô hay tinh — việc CHẤM ĐIỂM
+  /// gộp chung cả 4 câu vận động vào 1 lĩnh vực duy nhất, phân biệt nhóm
+  /// con chỉ để HIỂN THỊ qua [nhomVanDong].
   final String linhVuc;
-  final String? nhomVanDong; // 'tho' | 'tinh', CHỈ khi linhVuc == 'van_dong'
+
+  /// `'tho'` | `'tinh'` — CHỈ khác `null` khi [linhVuc] == `'van_dong'`.
+  /// Đây là field DUY NHẤT tách vận động thô/tinh; tuyệt đối không dùng
+  /// field này để nhóm câu hỏi khi tính điểm (xem
+  /// `ScreeningScoringService._calculateDomainScore`).
+  final String? nhomVanDong;
+
+  /// Thứ tự câu hỏi TRONG lĩnh vực (1-4), không phải thứ tự trong cả bài.
   final int thuTuTrongLinhVuc;
+
+  /// Nội dung câu hỏi hiển thị cho người dùng.
   final String noiDung;
 
   const ScreeningQuestion({
@@ -75,14 +92,29 @@ class ScreeningQuestionnaireData {
   }
 }
 
-/// Điểm 1 lĩnh vực sau khi chấm.
+/// Điểm 1 lĩnh vực sau khi chấm — xem `_calculateDomainScore` để biết cách
+/// tính từng field.
 class DomainScoreCalculation {
   final String linhVuc;
+
+  /// Tổng điểm thô (0-3) của các câu ĐÃ trả lời (không tính N/A) — tối đa
+  /// 12 nếu cả 4 câu đều đạt điểm 3.
   final int diemTho;
+
+  /// Số câu có điểm 0-3 (không N/A), tối đa 4.
   final int soCauTraLoi;
+
+  /// Số câu N/A (không tính vào [diemTho]/[soCauTraLoi]), tối đa 4.
   final int soCauNa;
-  final double? diemQuyDoi12; // null nếu chưa đủ dữ liệu
-  final String mucLinhVuc; // 'du_lieu_du' | 'chua_du_du_lieu'
+
+  /// Điểm quy đổi về thang 12, `null` khi [mucLinhVuc] =
+  /// [mucLinhVucChuaDuDuLieu] (≥2 câu N/A). Đây là giá trị DUY NHẤT của
+  /// lĩnh vực này tham gia thuật toán phân giai đoạn — không dùng
+  /// [diemTho] trực tiếp vì số câu trả lời có thể khác 4 khi có N/A.
+  final double? diemQuyDoi12;
+
+  /// [mucLinhVucDuDuLieu] | [mucLinhVucChuaDuDuLieu].
+  final String mucLinhVuc;
 
   const DomainScoreCalculation({
     required this.linhVuc,
@@ -175,10 +207,29 @@ typedef ScreeningRawAnswer = ({int? diem, bool laNa});
 class ScreeningScoringService {
   /// Chấm điểm toàn bài dựa trên [answers] (cau_hoi_id -> điểm/N/A) và
   /// [questions] (đúng 20 câu của mức tuổi đang làm).
+  ///
+  /// Thứ tự xử lý, đúng "Thứ tự ra quyết định" (mục 6) của tài liệu gốc
+  /// `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx`:
+  /// 1. Tính điểm từng lĩnh vực (gộp theo `linhVuc`, KHÔNG tách
+  ///    `nhomVanDong` — xem [_calculateDomainScore]).
+  /// 2. Nếu bất kỳ lĩnh vực nào chưa đủ dữ liệu (≥2 câu N/A) → dừng ngay,
+  ///    trả `giaiDoanChuaDuDuLieu`, KHÔNG tính điểm tổng — vì tổng chỉ có ý
+  ///    nghĩa khi cả 5 lĩnh vực đều có số liệu đáng tin.
+  /// 3. Nếu đủ dữ liệu: kiểm tra ĐIỀU KIỆN GIAI ĐOẠN 3 TRƯỚC (tổng <35
+  ///    HOẶC có lĩnh vực <6/12), rồi mới tới Giai đoạn 2. Thứ tự ưu tiên
+  ///    này (3→2→1, không phải chấm điểm cộng dồn rồi so ngưỡng cuối) là
+  ///    quy tắc CỐT LÕI của thuật toán: nếu chỉ dùng tổng điểm, 1 lĩnh vực
+  ///    yếu rõ rệt có thể bị các lĩnh vực mạnh khác "bù điểm" che lấp (ví
+  ///    dụ tài liệu gốc mục 8: Ngôn ngữ 5/12 nhưng 4 lĩnh vực còn lại cao
+  ///    → tổng 47/60 nằm ở vùng "theo dõi" nếu chỉ nhìn tổng, nhưng vì có
+  ///    lĩnh vực <6 nên PHẢI xếp Giai đoạn 3).
   static ScreeningScoreResult calculateScore({
     required Map<String, ScreeningRawAnswer> answers,
     required List<ScreeningQuestion> questions,
   }) {
+    // Gộp câu hỏi theo linhVuc (KHÔNG theo nhomVanDong) — đây là bước đảm
+    // bảo van_dong (2 câu thô + 2 câu tinh) được chấm như 1 lĩnh vực duy
+    // nhất thay vì tách thành 2 lĩnh vực con.
     final questionsByDomain = <String, List<ScreeningQuestion>>{};
     for (final q in questions) {
       questionsByDomain.putIfAbsent(q.linhVuc, () => []).add(q);
@@ -205,6 +256,10 @@ class ScreeningScoringService {
     final tong60 = domain12Values.fold<double>(0, (sum, v) => sum + v);
     final minDomain12 = domain12Values.reduce((a, b) => a < b ? a : b);
 
+    // Kiểm tra Giai đoạn 3 TRƯỚC Giai đoạn 2, Giai đoạn 2 TRƯỚC Giai đoạn
+    // 1 — đúng thứ tự ưu tiên đã giải thích ở docstring trên. Đảo ngược
+    // thứ tự (kiểm tra GĐ1 trước) sẽ làm sai hoàn toàn ý nghĩa "chống bù
+    // điểm" của thuật toán.
     final String giaiDoan;
     if (tong60 < nguongTong60GiaiDoan3 || minDomain12 < nguongDomain12GiaiDoan3) {
       giaiDoan = giaiDoan3;
@@ -222,6 +277,25 @@ class ScreeningScoringService {
     );
   }
 
+  /// Tính điểm 1 lĩnh vực (4 câu — với `van_dong`, [domainQuestions] gồm
+  /// CẢ 2 câu tho + 2 câu tinh, xem [calculateScore]).
+  ///
+  /// Quy tắc "chưa đủ dữ liệu" (mục 3 tài liệu gốc): 1 câu N/A vẫn được
+  /// phép quy đổi bù (coi như "chưa có cơ hội quan sát", không tính là
+  /// điểm kém); nhưng ≥2 câu N/A trong CÙNG 1 lĩnh vực thì mẫu số còn lại
+  /// quá nhỏ để tin cậy → đánh dấu [mucLinhVucChuaDuDuLieu], không chấm
+  /// điểm lĩnh vực đó (và kéo theo không chấm được điểm tổng — xem
+  /// [calculateScore]).
+  ///
+  /// Công thức quy đổi khi đủ dữ liệu (>=3 câu có điểm):
+  /// `domain12 = diemTho / (3 * soCauTraLoi) * 12`
+  /// Lý do quy đổi thay vì lấy thẳng [diemTho]: mẫu số `3 * soCauTraLoi` là
+  /// điểm TỐI ĐA CÓ THỂ ĐẠT với đúng [soCauTraLoi] câu đã trả lời (mỗi câu
+  /// tối đa 3 điểm) — quy đổi tỷ lệ này về thang 12 (thang chuẩn cho 4
+  /// câu) để 1 lĩnh vực có 3/4 câu (1 câu N/A) không bị mặc định thấp hơn
+  /// lĩnh vực có đủ 4/4 câu chỉ vì thiếu 1 cơ hội quan sát. Làm tròn 1 chữ
+  /// số thập phân theo đúng tài liệu gốc (mục 3, ví dụ: 3,2,3,N/A → tổng
+  /// thô 8/9 → 8/9×12 = 10,7/12).
   static DomainScoreCalculation _calculateDomainScore(
     String linhVuc,
     List<ScreeningQuestion> domainQuestions,
@@ -233,6 +307,8 @@ class ScreeningScoringService {
 
     for (final q in domainQuestions) {
       final answer = answers[q.id];
+      // Câu chưa trả lời (không có trong `answers`) được coi như N/A —
+      // KHÔNG ép về điểm 0, tránh phạt oan trẻ chưa có cơ hội quan sát.
       if (answer == null || answer.laNa) {
         soCauNa++;
         continue;
@@ -253,7 +329,7 @@ class ScreeningScoringService {
     }
 
     final raw = diemTho / (3 * soCauTraLoi) * 12;
-    final rounded = (raw * 10).round() / 10;
+    final rounded = (raw * 10).round() / 10; // làm tròn 1 chữ số thập phân
 
     return DomainScoreCalculation(
       linhVuc: linhVuc,

@@ -123,7 +123,6 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
         childName: widget.child?.name ?? 'Trẻ',
         giaiDoan: result.giaiDoan,
         tongDiem60: result.tongDiem60,
-        coCanhBao: result.needsImmediateProfessionalEvaluation,
         breakdownWidget: _buildDomainBreakdown(
           result.domainResults.map(
             (d) => (
@@ -174,7 +173,6 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
           childName: data.child.name,
           giaiDoan: data.session.giaiDoan,
           tongDiem60: data.session.tongDiem60,
-          coCanhBao: data.session.coCanhBao,
           breakdownWidget: _buildDomainBreakdown(
             data.domainResults.map(
               (d) => (
@@ -194,7 +192,6 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
     required String childName,
     required String giaiDoan,
     required double? tongDiem60,
-    required bool coCanhBao,
     required Widget breakdownWidget,
     required Child effectiveChild,
   }) {
@@ -261,39 +258,6 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            if (coCanhBao) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: IrisColors.dangerSoft,
-                  borderRadius: IrisRadii.cardBorder,
-                  border: Border.all(
-                    color: IrisColors.danger.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.priority_high_rounded,
-                      color: IrisColors.danger,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Bạn đã báo có lo ngại rõ rệt / mất kỹ năng đã từng '
-                        'có — khuyến nghị tìm đánh giá chuyên môn ngay, độc '
-                        'lập với điểm số ở trên.',
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(height: 1.45),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
 
             Text(
               'Điểm theo 5 lĩnh vực',

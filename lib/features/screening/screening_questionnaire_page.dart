@@ -13,8 +13,7 @@ import 'screening_result_page.dart';
 
 /// Màn hình làm bài sàng lọc mới — Mô hình 1 câu hỏi / 1 màn hình, đúng bộ
 /// 20 câu của mức tuổi trẻ (xác định tự động qua `childAgeInMonths()`).
-/// Sau câu cuối, hỏi thêm 1 màn "cờ cảnh báo" trước khi tính điểm và hiển
-/// thị kết quả.
+/// Sau câu cuối, tính điểm và chuyển thẳng sang màn kết quả.
 class ScreeningQuestionnairePage extends StatefulWidget {
   final Child child;
   final bool isOnboarding;
@@ -49,7 +48,6 @@ class _ScreeningQuestionnairePageState
   final Map<String, ScreeningRawAnswer> _answers = {}; // cau_hoi_id -> answer
   bool _isSubmitting = false;
   bool _isAdvancing = false;
-  bool _showingWarningStep = false;
 
   @override
   void initState() {
@@ -62,12 +60,13 @@ class _ScreeningQuestionnairePageState
   }
 
   void _selectAnswer(
-    List<ScreeningQuestion> questions,
+    ScreeningTierQuestionnaire tier,
     ScreeningQuestion question,
     ScreeningRawAnswer value,
   ) {
     if (_isSubmitting || _isAdvancing) return;
 
+    final questions = tier.cauHoi;
     setState(() {
       _answers[question.id] = value;
       _isAdvancing = true;
@@ -82,13 +81,11 @@ class _ScreeningQuestionnairePageState
         });
       });
     } else {
-      // Đã là câu cuối cùng — chuyển sang màn hỏi cờ cảnh báo.
+      // Đã là câu cuối cùng — tính điểm và lưu kết quả ngay, không còn màn
+      // trung gian nào nữa.
       Future.delayed(const Duration(milliseconds: 650), () {
         if (!mounted) return;
-        setState(() {
-          _isAdvancing = false;
-          _showingWarningStep = true;
-        });
+        _finishAndSave(tier);
       });
     }
   }
@@ -101,10 +98,7 @@ class _ScreeningQuestionnairePageState
     }
   }
 
-  Future<void> _finishAndSave(
-    ScreeningTierQuestionnaire tier,
-    bool coCanhBao,
-  ) async {
+  Future<void> _finishAndSave(ScreeningTierQuestionnaire tier) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
@@ -112,7 +106,6 @@ class _ScreeningQuestionnairePageState
       final result = ScreeningScoringService.calculateScore(
         answers: _answers,
         questions: tier.cauHoi,
-        coCanhBao: coCanhBao,
       );
 
       final answersList = tier.cauHoi.map((q) {
@@ -142,7 +135,10 @@ class _ScreeningQuestionnairePageState
         mucTuoiLamBai: tier.mucTuoi,
         tongDiem60: result.tongDiem60,
         giaiDoan: result.giaiDoan,
-        coCanhBao: coCanhBao,
+        // Màn hỏi "cờ cảnh báo" đã bị bỏ khỏi luồng làm bài (theo yêu cầu
+        // tinh chỉnh UI) — cột co_canh_bao trong schema vẫn giữ nguyên
+        // (không migration) nhưng từ nay luôn ghi false/0.
+        coCanhBao: false,
         ngayThucHien: DateTime.now(),
         answers: answersList,
         domainResults: domainResultsList,
@@ -220,13 +216,6 @@ class _ScreeningQuestionnairePageState
                 'Chưa có bộ câu hỏi cho mức ${screeningAgeTierLabel(ageTier.tier)}.',
               ),
             ),
-          );
-        }
-
-        if (_showingWarningStep) {
-          return _WarningFlagStep(
-            isSubmitting: _isSubmitting,
-            onAnswer: (coCanhBao) => _finishAndSave(tier, coCanhBao),
           );
         }
 
@@ -351,7 +340,7 @@ class _ScreeningQuestionnairePageState
                                 selectedAnswer.diem == 0,
                             selectedColor: IrisColors.danger,
                             onTap: () => _selectAnswer(
-                              questions,
+                              tier,
                               currentQuestion,
                               (diem: 0, laNa: false),
                             ),
@@ -365,7 +354,7 @@ class _ScreeningQuestionnairePageState
                                 selectedAnswer.diem == 1,
                             selectedColor: IrisColors.warning,
                             onTap: () => _selectAnswer(
-                              questions,
+                              tier,
                               currentQuestion,
                               (diem: 1, laNa: false),
                             ),
@@ -379,7 +368,7 @@ class _ScreeningQuestionnairePageState
                                 selectedAnswer.diem == 2,
                             selectedColor: IrisColors.primary,
                             onTap: () => _selectAnswer(
-                              questions,
+                              tier,
                               currentQuestion,
                               (diem: 2, laNa: false),
                             ),
@@ -393,7 +382,7 @@ class _ScreeningQuestionnairePageState
                                 selectedAnswer.diem == 3,
                             selectedColor: IrisColors.success,
                             onTap: () => _selectAnswer(
-                              questions,
+                              tier,
                               currentQuestion,
                               (diem: 3, laNa: false),
                             ),
@@ -405,7 +394,7 @@ class _ScreeningQuestionnairePageState
                                 selectedAnswer != null && selectedAnswer.laNa,
                             selectedColor: IrisColors.neutral,
                             onTap: () => _selectAnswer(
-                              questions,
+                              tier,
                               currentQuestion,
                               (diem: null, laNa: true),
                             ),
@@ -425,70 +414,6 @@ class _ScreeningQuestionnairePageState
                 ),
         );
       },
-    );
-  }
-}
-
-class _WarningFlagStep extends StatelessWidget {
-  final bool isSubmitting;
-  final ValueChanged<bool> onAnswer;
-
-  const _WarningFlagStep({required this.isSubmitting, required this.onAnswer});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sàng lọc — Câu hỏi bổ sung')),
-      body: isSubmitting
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Đang tính điểm và lưu kết quả...'),
-                ],
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Trẻ có biểu hiện MẤT đi kỹ năng đã từng làm được trước đó, '
-                    'hoặc bạn có lo ngại RÕ RỆT về sự phát triển của trẻ '
-                    'không, dù các câu trả lời ở trên như thế nào?',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Câu trả lời này độc lập với điểm số — nếu "Có", IRIS sẽ '
-                    'luôn khuyến nghị tìm đánh giá chuyên môn ngay bất kể kết '
-                    'quả các câu hỏi trước.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () => onAnswer(true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: IrisColors.danger,
-                    ),
-                    child: const Text('Có'),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => onAnswer(false),
-                    child: const Text('Không'),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }

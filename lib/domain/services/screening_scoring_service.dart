@@ -108,23 +108,13 @@ const String giaiDoanChuaDuDuLieu = 'chua_du_du_lieu';
 class ScreeningScoreResult {
   final double? tongDiem60; // null nếu bất kỳ lĩnh vực nào chưa đủ dữ liệu
   final String giaiDoan; // '1' | '2' | '3' | 'chua_du_du_lieu'
-  final bool coCanhBao;
   final List<DomainScoreCalculation> domainResults;
 
   const ScreeningScoreResult({
     required this.tongDiem60,
     required this.giaiDoan,
-    required this.coCanhBao,
     required this.domainResults,
   });
-
-  /// `true` khi cần hiển thị khuyến nghị đánh giá chuyên môn NGAY — độc lập
-  /// hoàn toàn với [giaiDoan]/[tongDiem60] (cờ `co_canh_bao` do người dùng
-  /// tự báo "mất kỹ năng đã từng có / lo ngại phát triển rõ rệt" ở màn hỏi
-  /// riêng trước khi xem kết quả). KHÔNG ghi đè [giaiDoan] — [giaiDoan] vẫn
-  /// luôn được tính đúng theo điểm số thực tế, UI hiển thị cả 2 tín hiệu
-  /// song song.
-  bool get needsImmediateProfessionalEvaluation => coCanhBao;
 }
 
 /// Ngưỡng thang điểm 60 — GIẢ ĐỊNH NỘI BỘ của dự án, CHƯA chuẩn hóa lâm
@@ -147,14 +137,10 @@ typedef ScreeningRawAnswer = ({int? diem, bool laNa});
 /// không I/O). Thay thế hoàn toàn thuật toán 50 câu/7 lĩnh vực cũ.
 class ScreeningScoringService {
   /// Chấm điểm toàn bài dựa trên [answers] (cau_hoi_id -> điểm/N/A) và
-  /// [questions] (đúng 20 câu của mức tuổi đang làm). [coCanhBao] là cờ
-  /// "mất kỹ năng đã từng có / lo ngại phát triển rõ rệt" người dùng tự
-  /// báo — KHÔNG ảnh hưởng tới cách tính [ScreeningScoreResult.giaiDoan],
-  /// chỉ quyết định [ScreeningScoreResult.needsImmediateProfessionalEvaluation].
+  /// [questions] (đúng 20 câu của mức tuổi đang làm).
   static ScreeningScoreResult calculateScore({
     required Map<String, ScreeningRawAnswer> answers,
     required List<ScreeningQuestion> questions,
-    required bool coCanhBao,
   }) {
     final questionsByDomain = <String, List<ScreeningQuestion>>{};
     for (final q in questions) {
@@ -172,7 +158,6 @@ class ScreeningScoringService {
       return ScreeningScoreResult(
         tongDiem60: null,
         giaiDoan: giaiDoanChuaDuDuLieu,
-        coCanhBao: coCanhBao,
         domainResults: domainResults,
       );
     }
@@ -196,7 +181,6 @@ class ScreeningScoringService {
     return ScreeningScoreResult(
       tongDiem60: tong60,
       giaiDoan: giaiDoan,
-      coCanhBao: coCanhBao,
       domainResults: domainResults,
     );
   }

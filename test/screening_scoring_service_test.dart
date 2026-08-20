@@ -147,7 +147,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: tier.cauHoi,
-        coCanhBao: false,
       );
       expect(result.tongDiem60, 60.0);
       expect(result.giaiDoan, giaiDoan1);
@@ -173,7 +172,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: tier.cauHoi,
-        coCanhBao: false,
       );
       final ngonNguResult = result.domainResults.firstWhere(
         (d) => d.linhVuc == 'ngon_ngu_giao_tiep',
@@ -198,7 +196,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: tier.cauHoi,
-        coCanhBao: false,
       );
       final tuLapResult = result.domainResults.firstWhere(
         (d) => d.linhVuc == 'tu_lap',
@@ -209,28 +206,6 @@ void main() {
       expect(result.giaiDoan, giaiDoanChuaDuDuLieu);
     });
 
-    test('co_canh_bao=true -> needsImmediateProfessionalEvaluation=true, ĐỘC LẬP với giai_doan tính từ điểm số', () {
-      final tier = tierFor('5_tuoi');
-      final answersFullScore = <String, ScreeningRawAnswer>{
-        for (final q in tier.cauHoi) q.id: (diem: 3, laNa: false),
-      };
-      final resultHighScore = ScreeningScoringService.calculateScore(
-        answers: answersFullScore,
-        questions: tier.cauHoi,
-        coCanhBao: true,
-      );
-      // Điểm tuyệt đối (Giai đoạn 1) nhưng vẫn phải khuyến nghị đánh giá
-      // ngay do co_canh_bao — giai_doan KHÔNG bị ép đổi thành khác.
-      expect(resultHighScore.giaiDoan, giaiDoan1);
-      expect(resultHighScore.needsImmediateProfessionalEvaluation, isTrue);
-
-      final resultNoFlag = ScreeningScoringService.calculateScore(
-        answers: answersFullScore,
-        questions: tier.cauHoi,
-        coCanhBao: false,
-      );
-      expect(resultNoFlag.needsImmediateProfessionalEvaluation, isFalse);
-    });
   });
 
   group('Vận động thô + tinh PHẢI gộp thành 1 lĩnh vực "van_dong" duy nhất', () {
@@ -242,7 +217,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: tier.cauHoi,
-        coCanhBao: false,
       );
       final vanDongResults = result.domainResults
           .where((d) => d.linhVuc.startsWith('van_dong'))
@@ -281,7 +255,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: vanDongQuestions,
-        coCanhBao: false,
       );
       final vanDong = result.domainResults.single;
       expect(vanDong.diemTho, 10);
@@ -316,7 +289,6 @@ void main() {
       final result = ScreeningScoringService.calculateScore(
         answers: answers,
         questions: vanDongQuestions,
-        coCanhBao: false,
       );
       final vanDong = result.domainResults.single;
       expect(vanDong.soCauTraLoi, 3);
@@ -339,10 +311,7 @@ void main() {
       tier3t = questionnaireData.forTier('3_tuoi')!;
     });
 
-    ScreeningScoreResult buildScore(
-      Map<String, int> domainRawTotals, {
-      bool coCanhBao = false,
-    }) {
+    ScreeningScoreResult buildScore(Map<String, int> domainRawTotals) {
       final answers = <String, ScreeningRawAnswer>{};
       for (final domain in domainRawTotals.keys) {
         final questions = tier3t.cauHoi
@@ -358,7 +327,6 @@ void main() {
       return ScreeningScoringService.calculateScore(
         answers: answers,
         questions: tier3t.cauHoi,
-        coCanhBao: coCanhBao,
       );
     }
 

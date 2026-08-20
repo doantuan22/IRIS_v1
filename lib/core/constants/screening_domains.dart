@@ -1,3 +1,24 @@
+import 'package:flutter/material.dart';
+
+/// Màu PHÂN BIỆT 5 lĩnh vực sàng lọc trên màn kết quả (thanh % breakdown).
+/// CHỈ để nhận diện trực quan từng lĩnh vực — KHÔNG mang ý nghĩa mức độ
+/// nghiêm trọng/chẩn đoán, mỗi lĩnh vực CỐ ĐỊNH 1 màu bất kể điểm số cao
+/// hay thấp. Cố tình KHÔNG dùng thang đỏ-vàng-xanh lá (success/warning/
+/// danger của `IrisColors`) để tránh người dùng hiểu nhầm thành tín hiệu
+/// "nguy hiểm/bình thường".
+const Map<String, Color> screeningDomainColors = {
+  'ngon_ngu_giao_tiep': Color(0xFF4C7CF3), // xanh lam
+  'nhan_thuc_giai_quyet_van_de': Color(0xFF8B7CF6), // tím
+  'van_dong': Color(0xFF36B6D9), // xanh ngọc
+  'xa_hoi_cam_xuc': Color(0xFF20C4B0), // xanh lục lam
+  'tu_lap': Color(0xFFC2478D), // hồng cánh sen
+};
+
+/// Trả về màu của 1 lĩnh vực sàng lọc — fallback `IrisColors.primary`-style
+/// (xanh lam trung tính) nếu gặp code lạ, không bao giờ trả `null`.
+Color screeningDomainColorOf(String code) =>
+    screeningDomainColors[code] ?? const Color(0xFF1769E8);
+
 /// 1 trong 5 lĩnh vực của bộ sàng lọc mới (4 mức tuổi × 20 câu). [code] khớp
 /// giá trị `linh_vuc` lưu trong `screening_answers`/`screening_domain_results`.
 ///

@@ -344,7 +344,10 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
   ) {
     return Column(
       children: items.map((d) {
-        final domainColor = IrisDomainStyle.colorOf(d.linhVuc);
+        // Màu CỐ ĐỊNH theo lĩnh vực (screeningDomainColorOf) — chỉ để phân
+        // biệt trực quan giữa 5 lĩnh vực, KHÔNG đổi theo điểm số, tuyệt đối
+        // không dùng thang đỏ-vàng-xanh lá kiểu báo động/an toàn.
+        final domainColor = screeningDomainColorOf(d.linhVuc);
         final domainName = screeningDomains
             .firstWhere(
               (dom) => dom.code == d.linhVuc,
@@ -353,27 +356,51 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
             )
             .label;
         final score = d.diemQuyDoi12;
+        final percent = score != null ? (score / 12.0).clamp(0.0, 1.0) : 0.0;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    domainName,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        domainName,
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Text(
+                      score != null
+                          ? '${score.toStringAsFixed(1)}/12'
+                          : 'Chưa đủ dữ liệu',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: score != null
+                            ? domainColor
+                            : Theme.of(context).hintColor,
+                        fontStyle: score == null
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  score != null ? '${score.toStringAsFixed(1)}/12' : 'Chưa đủ dữ liệu',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: score != null ? domainColor : Theme.of(context).hintColor,
-                    fontStyle: score == null ? FontStyle.italic : FontStyle.normal,
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: percent,
+                    minHeight: 10,
+                    backgroundColor: IrisColors.neutralSoft,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      score != null ? domainColor : IrisColors.neutral,
+                    ),
                   ),
                 ),
               ],

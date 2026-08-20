@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/screening_domains.dart';
 import '../../../data/local/database.dart';
 import '../../../data/repositories/child_repository.dart';
 import '../../../domain/models/child.dart';
 import '../../../domain/services/active_child_service.dart';
 import '../../screening/screening_intro_page.dart';
 
-enum _AgeInputMode { dob, ageMonths }
+enum _AgeInputMode { dob, ageTier }
 
 /// Bước 1-2 — Tạo hồ sơ trẻ: tên, ngày sinh HOẶC số tháng tuổi, giới tính.
 class CreateProfilePage extends StatefulWidget {
@@ -19,7 +20,6 @@ class CreateProfilePage extends StatefulWidget {
 class _CreateProfilePageState extends State<CreateProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageMonthsController = TextEditingController();
   final _nguoiDanhGiaController = TextEditingController();
 
   final _childRepository = ChildRepository(AppDatabase.instance);
@@ -27,6 +27,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
   _AgeInputMode _ageInputMode = _AgeInputMode.dob;
   DateTime? _selectedDob;
+  String? _selectedAgeTier;
   String? _gender;
   String? _vaiTro;
   bool _saving = false;
@@ -34,7 +35,6 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _ageMonthsController.dispose();
     _nguoiDanhGiaController.dispose();
     super.dispose();
   }
@@ -56,25 +56,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
     if (_ageInputMode == _AgeInputMode.dob) {
       return _selectedDob == null ? 'Vui lòng chọn ngày sinh' : null;
     }
-    final text = _ageMonthsController.text.trim();
-    if (text.isEmpty) return 'Vui lòng nhập số tháng tuổi';
-    final months = int.tryParse(text);
-    if (months == null || months < 1 || months > 120) {
-      return 'Số tháng tuổi không hợp lệ (1-120 tháng)';
-    }
-    return null;
-  }
-
-  String? get _previewAgeText {
-    final text = _ageMonthsController.text.trim();
-    if (text.isEmpty) return null;
-    final m = int.tryParse(text);
-    if (m == null || m <= 0 || m > 120) return null;
-    final years = m ~/ 12;
-    final rem = m % 12;
-    if (years <= 0) return '≈ $rem tháng tuổi';
-    if (rem == 0) return '≈ $years tuổi';
-    return '≈ $years tuổi $rem tháng';
+    return _selectedAgeTier == null ? 'Vui lòng chọn 1 mức tuổi' : null;
   }
 
   Future<void> _submit() async {
@@ -90,9 +72,20 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
     setState(() => _saving = true);
     try {
+      // Khi chọn trực tiếp 1 mức tuổi (không có ngày sinh), quy đổi thành
+      // `dob` gần đúng bằng THÁNG ĐẠI DIỆN giữa dải mỗi mức
+      // (`ScreeningAgeTierRange.representativeMonths`) — GIẢ ĐỊNH LÀM VIỆC
+      // của dự án, CẦN CHUYÊN GIA XÁC NHẬN LẠI trước khi dùng chính thức
+      // (chưa phải thang đo lâm sàng đã kiểm định). `childAgeInMonths()`
+      // dùng cho phần Đánh giá 7 lĩnh vực đọc `dob` như bình thường, không
+      // bị ảnh hưởng bởi cách quy đổi này.
       final dob = _ageInputMode == _AgeInputMode.dob
           ? _selectedDob
-          : dobFromAgeInMonths(int.parse(_ageMonthsController.text.trim()));
+          : dobFromAgeInMonths(
+              screeningAgeTierRanges
+                  .firstWhere((r) => r.tier == _selectedAgeTier)
+                  .representativeMonths,
+            );
 
       final created = await _childRepository.create(
         name: _nameController.text.trim(),
@@ -173,21 +166,40 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                       ),
                     ),
                   const RadioListTile<_AgeInputMode>(
-                    title: Text('Theo số tháng tuổi'),
-                    value: _AgeInputMode.ageMonths,
+                    title: Text('Không rõ ngày sinh — chọn mức tuổi'),
+                    value: _AgeInputMode.ageTier,
                   ),
-                  if (_ageInputMode == _AgeInputMode.ageMonths)
+                  if (_ageInputMode == _AgeInputMode.ageTier)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, bottom: 8),
-                      child: TextFormField(
-                        controller: _ageMonthsController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Số tháng tuổi *',
-                          hintText: 'Ví dụ: trẻ 1 tuổi rưỡi thì nhập 18',
-                          helperText: _previewAgeText,
-                        ),
-                        onChanged: (_) => setState(() {}),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 8,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: 8,
+                            children: screeningAgeTierRanges.map((range) {
+                              return ChoiceChip(
+                                label: Text(screeningAgeTierLabel(range.tier)),
+                                selected: _selectedAgeTier == range.tier,
+                                onSelected: (_) => setState(
+                                  () => _selectedAgeTier = range.tier,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Dải tháng tuổi hiện dùng là giả định làm việc, '
+                            'sẽ dùng tháng đại diện giữa dải để ước tính ngày '
+                            'sinh gần đúng.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Theme.of(context).hintColor),
+                          ),
+                        ],
                       ),
                     ),
                 ],

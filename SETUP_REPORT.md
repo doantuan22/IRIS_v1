@@ -269,3 +269,82 @@ lặp ở nơi khác.
 Không tạo migration version DB mới (đúng yêu cầu — cả 2 vấn đề đều không
 đổi cấu trúc bảng). Không đụng `domains.dart`, dữ liệu dải tuổi 12-23, hay
 bất kỳ phần nào ngoài phạm vi bộ sàng lọc mới.
+
+---
+
+## Đợt 4 — Tinh chỉnh UI màn làm bài + màn kết quả, bỏ màn cờ cảnh báo
+
+4 phần độc lập, mỗi phần 1 commit riêng.
+
+### Phần 1 — Chuẩn hóa text 5 lựa chọn trả lời
+
+Nguồn cũ: hardcode trực tiếp trong `screening_questionnaire_page.dart`
+("0 — Chưa làm được", "1 — Có hỗ trợ"...). Thêm 1 nguồn duy nhất
+`screeningAnswerOptionLabels`/`screeningAnswerOptionLabelNa` trong
+`screening_domains.dart`, dùng lại ở UI. **Chỉ đổi label hiển thị** — xác
+nhận `diem`/`laNa` truyền vào `_selectAnswer()` giữ nguyên 0/1/2/3/N/A,
+không đổi cách lưu DB.
+
+### Phần 2 — Bỏ màn cờ cảnh báo
+
+**Audit trước khi sửa** (bắt buộc) — liệt kê đủ 7 nơi dùng
+`co_canh_bao`/`coCanhBao`: bảng `screening_sessions` (schema),
+`screening_repository.dart`, `screening_session.dart` (model),
+`screening_scoring_service.dart` (tham số + `needsImmediateProfessionalEvaluation`),
+`child_debug_page.dart` (chỉ đọc debug), `screening_questionnaire_page.dart`
+(màn hỏi), `screening_result_page.dart` (banner). **Không có nơi nào khác**
+trong codebase dùng field này ngoài luồng sàng lọc — chọn cách A: giữ
+nguyên cột DB (không migration), gỡ logic tính/dùng trong service chấm
+điểm, luôn ghi `co_canh_bao=false` khi lưu.
+
+Đã bỏ: `_WarningFlagStep`, `_showingWarningStep`; sau câu 20 đi thẳng vào
+`_finishAndSave()`. Gỡ tham số `coCanhBao` khỏi `calculateScore()`, gỡ field
+`coCanhBao`/getter `needsImmediateProfessionalEvaluation` khỏi
+`ScreeningScoreResult`. Gỡ banner "Bạn đã báo có lo ngại rõ rệt..." ở màn
+kết quả.
+
+### Phần 3 — Mô tả ý nghĩa giai đoạn
+
+Thêm `screeningGiaiDoanLabel()`/`screeningGiaiDoanDescription()` — nguồn
+DUY NHẤT, dùng lại ở 3 nơi từng hardcode riêng (`screening_result_page.dart`,
+`screening_history_list_page.dart`, `assessment_summary_page.dart`). Mô tả
+phỏng theo nguyên văn bảng "Ý nghĩa sử dụng" (mục 5) tài liệu
+`Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx`. Trường hợp
+"Chưa đủ dữ liệu" trả `null` — giữ nguyên hiện trạng (trước đây không có
+mô tả riêng), không tự bịa nội dung. Dòng cảnh báo "không dùng để chẩn
+đoán" giữ nguyên, không bị thay thế.
+
+### Phần 4 — Thanh % màu cho 5 lĩnh vực
+
+Thêm `screeningDomainColors`/`screeningDomainColorOf()` — 5 màu CỐ ĐỊNH
+theo lĩnh vực (xanh lam/tím/xanh ngọc/xanh lục lam/hồng cánh sen), KHÔNG
+dùng `success`/`warning`/`danger` (đỏ-vàng-xanh lá) để tránh hiểu nhầm tín
+hiệu nguy hiểm/bình thường — màu chỉ phân biệt lĩnh vực, không đổi theo
+điểm số. `_buildDomainBreakdown()` đổi sang `LinearProgressIndicator`
+(% = domain12/12), vẫn giữ số liệu chính xác dạng chữ nhỏ cạnh thanh bar.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues thật sau mỗi phần.
+- `flutter test`: **30/30 PASS** (đã bỏ 1 test case cho tính năng cờ cảnh
+  báo đã gỡ) — 3 ví dụ mẫu A/B/C vẫn PASS nguyên vẹn, không bị ảnh hưởng.
+- **Verify tích hợp thật trên emulator Pixel_7**: tạo hồ sơ "Be_UI_Test2"
+  (mức 4 tuổi), làm hết 20 câu thật (chọn "Làm được độc lập và thường
+  xuyên" mỗi câu):
+  - 5 lựa chọn hiển thị đúng text chuẩn hóa, không số thứ tự.
+  - Sau câu 20 đi thẳng vào "Kết quả sàng lọc" — xác nhận không còn màn
+    trung gian nào.
+  - Kết quả hiện: `60.0/60 · Giai đoạn 1 · "Phát triển tương đối phù hợp
+    theo bộ câu hỏi. Tiếp tục tạo cơ hội phát triển và theo dõi định
+    kỳ."` — đúng mô tả đã thêm.
+  - Cả 5 lĩnh vực hiện dạng `"100, <tên lĩnh vực>\n12.0/12"` (100 = %
+    progress bar qua accessibility announce, kèm số liệu "12.0/12" chữ nhỏ
+    cạnh thanh — đúng yêu cầu giữ cả 2, không thay thế hoàn toàn bằng %).
+  - Dòng cảnh báo "không dùng để chẩn đoán" vẫn còn nguyên.
+
+### Commit của Đợt 4
+
+11. `832366d` — Phần 1: chuẩn hóa text 5 lựa chọn.
+12. `35a7af1` — Phần 2: bỏ màn cờ cảnh báo.
+13. `531d798` — Phần 3: mô tả ý nghĩa giai đoạn.
+14. `3af7f8e` — Phần 4: thanh % màu cho 5 lĩnh vực.

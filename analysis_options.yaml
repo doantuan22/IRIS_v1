@@ -24,5 +24,14 @@ linter:
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
+    # Siết thêm 4 rule cho giai đoạn chuẩn hóa thương mại (xem
+    # DE_XUAT_CHUAN_HOA_REPO.md mục 7) — chọn rule cụ thể thay vì đổi hẳn
+    # sang bộ lint khắt khe (very_good_analysis) để tránh phát sinh hàng
+    # loạt warning không kiểm soát được trong 1 đợt.
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    require_trailing_commas: true
+    prefer_single_quotes: true
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

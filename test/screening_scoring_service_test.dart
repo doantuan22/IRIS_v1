@@ -233,6 +233,103 @@ void main() {
     });
   });
 
+  group('Vận động thô + tinh PHẢI gộp thành 1 lĩnh vực "van_dong" duy nhất', () {
+    test('van_dong chỉ có ĐÚNG 1 dòng kết quả (không tách van_dong_tho/van_dong_tinh)', () {
+      final tier = questionnaireData.forTier('2_tuoi')!;
+      final answers = <String, ScreeningRawAnswer>{
+        for (final q in tier.cauHoi) q.id: (diem: 3, laNa: false),
+      };
+      final result = ScreeningScoringService.calculateScore(
+        answers: answers,
+        questions: tier.cauHoi,
+        coCanhBao: false,
+      );
+      final vanDongResults = result.domainResults
+          .where((d) => d.linhVuc.startsWith('van_dong'))
+          .toList();
+      expect(
+        vanDongResults,
+        hasLength(1),
+        reason: 'phải đúng 1 dòng linh_vuc=van_dong, không tách van_dong_tho/van_dong_tinh riêng',
+      );
+      expect(vanDongResults.single.linhVuc, 'van_dong');
+    });
+
+    test('domain12 của van_dong tính GỘP trên cả 4 câu (2 tho + 2 tinh), không phải 2 phép tính riêng', () {
+      // tho=3,3 · tinh=2,2 -> tổng thô 10/12 câu trả lời đủ 4 câu
+      // -> domain12 = 10/(3*4)*12 = 10.0 (gộp chung, KHÔNG phải
+      // trung bình cộng 2 phép tính con (3+3)/6*12=12.0 và (2+2)/6*12=8.0).
+      final tier = questionnaireData.forTier('3_tuoi')!;
+      final vanDongQuestions = tier.cauHoi
+          .where((q) => q.linhVuc == 'van_dong')
+          .toList();
+      final thoQuestions = vanDongQuestions
+          .where((q) => q.nhomVanDong == 'tho')
+          .toList();
+      final tinhQuestions = vanDongQuestions
+          .where((q) => q.nhomVanDong == 'tinh')
+          .toList();
+      expect(thoQuestions, hasLength(2));
+      expect(tinhQuestions, hasLength(2));
+
+      final answers = <String, ScreeningRawAnswer>{
+        thoQuestions[0].id: (diem: 3, laNa: false),
+        thoQuestions[1].id: (diem: 3, laNa: false),
+        tinhQuestions[0].id: (diem: 2, laNa: false),
+        tinhQuestions[1].id: (diem: 2, laNa: false),
+      };
+      final result = ScreeningScoringService.calculateScore(
+        answers: answers,
+        questions: vanDongQuestions,
+        coCanhBao: false,
+      );
+      final vanDong = result.domainResults.single;
+      expect(vanDong.diemTho, 10);
+      expect(vanDong.soCauTraLoi, 4);
+      expect(
+        vanDong.diemQuyDoi12,
+        10.0,
+        reason: 'domain12 = 10/(3*4)*12 = 10.0, tính gộp trên cả 4 câu van_dong',
+      );
+    });
+
+    test('1 câu N/A trong nhóm "tho" -> quy đổi tính trên 3 câu còn lại của CẢ van_dong (không tính rớt riêng theo nhóm con)', () {
+      final tier = questionnaireData.forTier('4_tuoi')!;
+      final vanDongQuestions = tier.cauHoi
+          .where((q) => q.linhVuc == 'van_dong')
+          .toList();
+      final thoQuestions = vanDongQuestions
+          .where((q) => q.nhomVanDong == 'tho')
+          .toList();
+      final tinhQuestions = vanDongQuestions
+          .where((q) => q.nhomVanDong == 'tinh')
+          .toList();
+
+      // tho[0]=N/A, tho[1]=3, tinh[0]=3, tinh[1]=2 -> 3 câu có điểm
+      // (tổng thô 8), 1 câu N/A -> domain12 = 8/(3*3)*12 = 10.7
+      final answers = <String, ScreeningRawAnswer>{
+        thoQuestions[0].id: (diem: null, laNa: true),
+        thoQuestions[1].id: (diem: 3, laNa: false),
+        tinhQuestions[0].id: (diem: 3, laNa: false),
+        tinhQuestions[1].id: (diem: 2, laNa: false),
+      };
+      final result = ScreeningScoringService.calculateScore(
+        answers: answers,
+        questions: vanDongQuestions,
+        coCanhBao: false,
+      );
+      final vanDong = result.domainResults.single;
+      expect(vanDong.soCauTraLoi, 3);
+      expect(vanDong.soCauNa, 1);
+      expect(vanDong.mucLinhVuc, mucLinhVucDuDuLieu);
+      expect(
+        vanDong.diemQuyDoi12,
+        10.7,
+        reason: '1 câu N/A trong nhóm tho vẫn quy đổi trên 3 câu còn lại của CẢ lĩnh vực van_dong, không tính rớt riêng theo tho/tinh',
+      );
+    });
+  });
+
   group('3 ví dụ chấm điểm mẫu — mục 9 tài liệu "Hướng dẫn chấm điểm..."', () {
     // Dựng bộ câu trả lời để domain12 khớp đúng số liệu ví dụ, dùng câu hỏi
     // thật của mức 3 tuổi (không quan trọng mức nào vì thuật toán không phụ

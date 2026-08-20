@@ -39,19 +39,32 @@ class _LoadedState {
   final Map<String, DomainOverviewLabel> labels;
   final OverviewSummary? summary;
 
+  /// Văn bản "Chân dung biểu hiện" sinh theo N lĩnh vực đã có (1 <= N < 7) —
+  /// CHỈ có ý nghĩa khi chưa đủ 7/7 ([isComplete] == false). `null` nghĩa là
+  /// chưa gọi được AI (lỗi mạng...), không phải "chưa có lĩnh vực nào".
+  /// KHÔNG lưu DB — sinh lại mỗi lần tải trang, luôn phản ánh dữ liệu mới
+  /// nhất, không dùng cache kết quả cũ.
+  final String? partialSummaryText;
+
   const _LoadedState({
     required this.doneDomainCount,
     required this.labels,
     this.summary,
+    this.partialSummaryText,
   });
 
   bool get isComplete => doneDomainCount >= domains.length;
 }
 
-/// "Chân dung toàn cảnh" — tổng hợp 7 nhãn lĩnh vực (AI hỗ trợ gắn nhãn
-/// từng lĩnh vực) thành 1 trong 3 mức tổng quan, tính 100% BẰNG CODE (xem
-/// `overview_tier_calculator.dart`) — AI KHÔNG được quyết định mức cuối
-/// cùng. Chỉ khả dụng khi trẻ đã có mô tả (Phần 1) cho ĐỦ CẢ 7 lĩnh vực.
+/// "Chân dung toàn cảnh" — khả dụng ngay khi trẻ có mô tả (Phần 1) cho ÍT
+/// NHẤT 1 lĩnh vực, với 2 chế độ hiển thị RIÊNG BIỆT:
+/// - Chưa đủ 7/7 (`_buildPartial`): CHỈ có văn bản tổng hợp theo đúng N lĩnh
+///   vực đã có (`OverviewRepository.generatePartialSummaryDescription`),
+///   TUYỆT ĐỐI không có mức tổng quan/tier.
+/// - Đủ 7/7 (`_buildReady`): tổng hợp 7 nhãn lĩnh vực (AI hỗ trợ gắn nhãn
+///   từng lĩnh vực) thành 1 trong 3 mức tổng quan, tính 100% BẰNG CODE (xem
+///   `overview_tier_calculator.dart`) — AI KHÔNG được quyết định mức cuối
+///   cùng.
 class OverviewPortraitPage extends StatefulWidget {
   final Child child;
 
@@ -94,10 +107,21 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
         .map((a) => a.linhVuc)
         .toSet();
 
+    if (doneDomains.isEmpty) {
+      return _LoadedState(doneDomainCount: 0, labels: const {});
+    }
+
     if (doneDomains.length < domains.length) {
+      // Đường dẫn ĐỘC LẬP với luồng 7/7 bên dưới — xem
+      // `OverviewRepository.generatePartialSummaryDescription`: KHÔNG gắn
+      // nhãn, KHÔNG tính tier, KHÔNG lưu DB, chỉ sinh văn bản theo đúng N
+      // lĩnh vực đã có mô tả.
+      final partialSummary = await _overviewRepository
+          .generatePartialSummaryDescription(widget.child);
       return _LoadedState(
         doneDomainCount: doneDomains.length,
         labels: const {},
+        partialSummaryText: partialSummary,
       );
     }
 
@@ -238,8 +262,10 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                   return const SizedBox.shrink();
                 },
               ),
-              if (!state.isComplete)
+              if (state.doneDomainCount == 0)
                 _buildIncomplete(state.doneDomainCount)
+              else if (!state.isComplete)
+                _buildPartial(state)
               else
                 _buildReady(state),
               if (_computeError != null) ...[
@@ -272,8 +298,8 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
         const SizedBox(height: 8),
         LinearProgressIndicator(value: total == 0 ? 0 : doneCount / total),
         const SizedBox(height: 16),
-        const Text(
-          'Cần hoàn thành mô tả biểu hiện (Phần 1) cho đủ cả 7 lĩnh vực trước khi tổng hợp '
+        const IrisParagraph(
+          'Cần hoàn thành mô tả biểu hiện (Phần 1) cho ít nhất 1 lĩnh vực trước khi xem '
           'Chân dung toàn cảnh.',
         ),
         const SizedBox(height: 16),
@@ -281,6 +307,78 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Quay lại tiếp tục mô tả'),
         ),
+      ],
+    );
+  }
+
+  /// Nhánh hiển thị khi trẻ đã có mô tả cho ÍT NHẤT 1 nhưng CHƯA ĐỦ 7 lĩnh
+  /// vực — CHỈ hiển thị văn bản tổng hợp theo đúng N lĩnh vực đã có, TUYỆT
+  /// ĐỐI KHÔNG hiển thị bất kỳ card/nhãn/màu "Mức tổng quan" nào (tier chỉ
+  /// tính và hiện khi đủ 7/7, xem `_buildReady`).
+  Widget _buildPartial(_LoadedState state) {
+    final total = domains.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Chân dung dựa trên ${state.doneDomainCount}/$total lĩnh vực đã đánh giá — '
+          'mức độ tổng quan sẽ hiển thị sau khi hoàn thành đủ 7 lĩnh vực.',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 16),
+        if (state.partialSummaryText != null &&
+            state.partialSummaryText!.isNotEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const IrisSparkle(
+                        size: IrisSizes.iconChip,
+                        color: IrisColors.primary,
+                      ),
+                      const SizedBox(width: IrisSpacing.xs),
+                      Text(
+                        'Chân dung biểu hiện',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  IrisParagraph(
+                    state.partialSummaryText!,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Chưa thể tạo mô tả tổng hợp bằng AI.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 16),
+        OutlinedButton(onPressed: _reload, child: const Text('Tổng hợp lại')),
       ],
     );
   }
@@ -366,7 +464,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(
+                  IrisParagraph(
                     summary.moTaTongHop!,
                     style: Theme.of(
                       context,
@@ -474,7 +572,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
           const Icon(Icons.info_outline, size: 20),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: IrisParagraph(
               _disclaimerText,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -517,7 +615,7 @@ class _ExpertConnectBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(text, style: Theme.of(context).textTheme.bodyMedium),
+            IrisParagraph(text, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).push(

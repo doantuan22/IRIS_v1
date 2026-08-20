@@ -83,7 +83,10 @@ class OverviewComputationResult {
 /// vực (AI hỗ trợ, xem `PromptBuilder.buildDomainOverviewLabelPrompt`) rồi
 /// [computeAndSaveOverview] tổng hợp mức cuối cùng 100% BẰNG CODE
 /// (`overview_tier_calculator.dart`) — 2 bước tách biệt rõ ràng đúng nguyên
-/// tắc "AI không tự quyết định kết luận cuối".
+/// tắc "AI không tự quyết định kết luận cuối". Riêng
+/// [generatePartialSummaryDescription] là ĐƯỜNG DẪN THỨ 3, HOÀN TOÀN TÁCH
+/// BIỆT với 2 hàm trên — dùng khi trẻ CHƯA đủ 7/7 lĩnh vực, chỉ sinh văn bản
+/// theo N lĩnh vực đã có, KHÔNG bao giờ tính hay đụng tới tier.
 class OverviewRepository {
   final AssessmentRepository _assessmentRepository;
   final ExpertKnowledgeRepository _expertKnowledgeRepository;
@@ -300,6 +303,56 @@ class OverviewRepository {
       summary: summary,
       soThieu: tierResult.soThieu,
     );
+  }
+
+  /// Tổng hợp văn bản "Chân dung biểu hiện" khi trẻ CHƯA đủ 7/7 lĩnh vực
+  /// (N từ 1-6 lĩnh vực đã có mô tả) — ĐỘC LẬP HOÀN TOÀN với
+  /// [labelAllDomains]/[computeAndSaveOverview]: KHÔNG gắn nhãn so sánh với
+  /// dữ liệu chuyên gia (nhãn chỉ có ý nghĩa cho việc tính tier), KHÔNG tính
+  /// tier, KHÔNG lưu vào `overview_summaries` — trả trực tiếp cho UI, gọi
+  /// lại là tổng hợp lại theo dữ liệu mới nhất (không cache). Trả `null` nếu
+  /// chưa có lĩnh vực nào có mô tả, hoặc nếu gọi AI lỗi.
+  Future<String?> generatePartialSummaryDescription(Child child) async {
+    final assessments = await _assessmentRepository.getForChild(child.id);
+    final descriptionsByDomain = <String, List<Assessment>>{};
+    for (final a in assessments.where((a) => a.contentType == 'mo_ta')) {
+      descriptionsByDomain.putIfAbsent(a.linhVuc, () => []).add(a);
+    }
+    if (descriptionsByDomain.isEmpty) return null;
+
+    final doneDomains = domains.where(
+      (d) => descriptionsByDomain.containsKey(d.code),
+    );
+
+    final buffer = StringBuffer();
+    for (final domain in doneDomains) {
+      buffer.writeln('### Lĩnh vực: ${domain.label}');
+      buffer.writeln('- Mô tả người dùng:');
+      for (final a in descriptionsByDomain[domain.code]!) {
+        buffer.writeln('  + ${a.content}');
+      }
+      buffer.writeln();
+    }
+
+    try {
+      final systemPrompt = _promptBuilder
+          .buildPartialOverviewPortraitSummaryPrompt(
+            childName: child.name,
+            doneDomainCount: descriptionsByDomain.length,
+            domainsSummaryText: buffer.toString().trim(),
+          );
+      final response = await _groqApiClient.generate(
+        systemPrompt: systemPrompt,
+        userQuestion:
+            'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
+      );
+      final trimmed = response.trim();
+      return trimmed.isNotEmpty ? trimmed : null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Lỗi khi sinh mô tả tổng hợp từng phần cho trẻ ${child.id}: $e');
+      return null;
+    }
   }
 
   /// Sinh lại đoạn mô tả tổng hợp cho 1 bản ghi [summary] đã có sẵn (dùng khi thử lại

@@ -122,4 +122,32 @@ CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS):
 2. KHÔNG được đưa ra kết luận chẩn đoán y khoa, KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định về tình trạng của trẻ — chỉ mô tả những biểu hiện quan sát được một cách khách quan.
 3. Sử dụng văn phong trung lập, nhẹ nhàng, đồng cảm và dễ hiểu đối với phụ huynh (không dùng thuật ngữ y khoa phức tạp).
 4. BẮT BUỘC kết thúc đoạn văn bằng một câu nhắc nhở: Đây là bức tranh tổng hợp mang tính tham khảo hỗ trợ theo dõi sự phát triển của trẻ, phụ huynh nên trao đổi thêm với các chuyên gia y tế/giáo dục chuyên biệt nếu có băn khoăn hoặc cần đánh giá chuyên sâu hơn.''';
+
+  /// System prompt sinh "Chân dung biểu hiện" khi trẻ CHƯA hoàn thành đủ 7/7
+  /// lĩnh vực (N từ 1-6) — dùng cho luồng xem trước theo dữ liệu từng phần,
+  /// TÁCH BIỆT HOÀN TOÀN với [buildOverviewPortraitSummaryPrompt] (không
+  /// dùng chung 1 hàm với flag, xem `OverviewRepository`). KHÔNG nhận
+  /// `tierLabel` — ở bước này CHƯA có tier (tier chỉ tính được khi đủ 7/7,
+  /// xem `overview_tier_calculator.dart`), và AI TUYỆT ĐỐI không được tự suy
+  /// đoán/generalize sang các lĩnh vực còn thiếu.
+  String buildPartialOverviewPortraitSummaryPrompt({
+    required String childName,
+    required int doneDomainCount,
+    required String domainsSummaryText,
+  }) =>
+      '''
+$_baseIdentity
+
+NHIỆM VỤ: Viết một đoạn văn xuôi tổng hợp (độ dài khoảng 100-180 từ) phác hoạ bức tranh biểu hiện ("Chân dung biểu hiện") về sự phát triển của trẻ $childName, dựa CHỈ trên $doneDomainCount lĩnh vực đã có mô tả dưới đây. Trẻ CHƯA hoàn thành đủ 7 lĩnh vực đánh giá, nên đây chỉ là bức tranh từng phần, chưa phải tổng quan đầy đủ.
+
+THÔNG TIN ĐÁNH GIÁ $doneDomainCount LĨNH VỰC ĐÃ CÓ MÔ TẢ:
+$domainsSummaryText
+
+CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS):
+1. Chỉ được mô tả và tổng hợp dựa trên đúng $doneDomainCount lĩnh vực có dữ liệu ở trên, TUYỆT ĐỐI không thêm thông tin ngoài dữ liệu, không tự suy diễn nguyên nhân.
+2. TUYỆT ĐỐI KHÔNG suy diễn, không generalize, không đưa ra bất kỳ nhận định nào về các lĩnh vực CHƯA có dữ liệu trong danh sách trên — chỉ mô tả đúng các lĩnh vực đã liệt kê, không đoán trước biểu hiện ở lĩnh vực còn thiếu.
+3. TUYỆT ĐỐI KHÔNG đưa ra bất kỳ nhận định về "mức độ tổng quan"/"mức độ phát triển chung" của trẻ — việc này CHƯA thể xác định khi chưa đủ 7/7 lĩnh vực, không được ngụ ý hay ám chỉ dưới bất kỳ hình thức nào (kể cả gợi ý qua ngôn từ tích cực/tiêu cực).
+4. KHÔNG được đưa ra kết luận chẩn đoán y khoa, KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định về tình trạng của trẻ — chỉ mô tả những biểu hiện quan sát được một cách khách quan.
+5. Sử dụng văn phong trung lập, nhẹ nhàng, đồng cảm và dễ hiểu đối với phụ huynh (không dùng thuật ngữ y khoa phức tạp).
+6. BẮT BUỘC kết thúc đoạn văn bằng một câu nhắc nhở: Đây mới là bức tranh dựa trên $doneDomainCount/7 lĩnh vực đã đánh giá, phụ huynh nên tiếp tục hoàn thành các lĩnh vực còn lại để có bức tranh tổng quan đầy đủ hơn.''';
 }

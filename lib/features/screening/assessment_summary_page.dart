@@ -88,18 +88,6 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
         'Có thể xem lại chân dung tổng thể hoặc bổ sung mô tả mới nếu có quan sát thêm.';
   }
 
-  String _giaiDoanLabel(String giaiDoan) {
-    switch (giaiDoan) {
-      case giaiDoan1:
-        return 'Giai đoạn 1';
-      case giaiDoan2:
-        return 'Giai đoạn 2';
-      case giaiDoan3:
-        return 'Giai đoạn 3';
-      default:
-        return 'Chưa đủ dữ liệu';
-    }
-  }
 
   void _startAssessment() {
     Navigator.of(context).pushReplacement(
@@ -149,7 +137,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                         Text(
                           'Kết quả sàng lọc gần nhất: '
                           '${screening.tongDiem60 != null ? "${screening.tongDiem60!.toStringAsFixed(1)}/60" : "(chưa đủ dữ liệu)"} — '
-                          '${_giaiDoanLabel(screening.giaiDoan)}',
+                          '${screeningGiaiDoanLabel(screening.giaiDoan)}',
                         ),
                         const SizedBox(height: 4),
                         Text('Mức tuổi làm bài: ${screeningAgeTierLabel(screening.mucTuoiLamBai)}'),

@@ -104,6 +104,43 @@ const String giaiDoan2 = '2';
 const String giaiDoan3 = '3';
 const String giaiDoanChuaDuDuLieu = 'chua_du_du_lieu';
 
+/// Nhãn ngắn hiển thị cho từng giá trị `giai_doan`.
+String screeningGiaiDoanLabel(String giaiDoan) {
+  switch (giaiDoan) {
+    case giaiDoan1:
+      return 'Giai đoạn 1';
+    case giaiDoan2:
+      return 'Giai đoạn 2';
+    case giaiDoan3:
+      return 'Giai đoạn 3';
+    default:
+      return 'Chưa đủ dữ liệu';
+  }
+}
+
+/// Mô tả ý nghĩa ngắn gọn cho từng giá trị `giai_doan`, phỏng theo NGUYÊN
+/// VĂN bảng "Ý nghĩa sử dụng" trong
+/// `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx` (mục 5),
+/// rút gọn nhẹ cho vừa màn hình di động — không đổi ý nghĩa. Trả `null`
+/// cho `chua_du_du_lieu` — giữ nguyên hiện trạng (trước đây KHÔNG có mô tả
+/// riêng cho trường hợp này, chỉ có nhãn ngắn), không tự bịa thêm nội
+/// dung mới. Nguồn DUY NHẤT cho mô tả này, không hardcode lặp lại ở UI.
+String? screeningGiaiDoanDescription(String giaiDoan) {
+  switch (giaiDoan) {
+    case giaiDoan1:
+      return 'Phát triển tương đối phù hợp theo bộ câu hỏi. Tiếp tục tạo '
+          'cơ hội phát triển và theo dõi định kỳ.';
+    case giaiDoan2:
+      return 'Có lĩnh vực cần theo dõi và tăng cường hỗ trợ. Nên đánh giá '
+          'lại sau một khoảng thời gian theo dõi phù hợp.';
+    case giaiDoan3:
+      return 'Có lĩnh vực cần được quan tâm nhiều hơn. Nên tìm đánh giá '
+          'thêm từ bác sĩ/chuyên gia phát triển trẻ em.';
+    default:
+      return null;
+  }
+}
+
 /// Kết quả chấm điểm toàn bài.
 class ScreeningScoreResult {
   final double? tongDiem60; // null nếu bất kỳ lĩnh vực nào chưa đủ dữ liệu

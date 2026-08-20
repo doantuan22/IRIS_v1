@@ -89,19 +89,6 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
     );
   }
 
-  String _giaiDoanLabel(String giaiDoan) {
-    switch (giaiDoan) {
-      case giaiDoan1:
-        return 'Giai đoạn 1';
-      case giaiDoan2:
-        return 'Giai đoạn 2';
-      case giaiDoan3:
-        return 'Giai đoạn 3';
-      default:
-        return 'Chưa đủ dữ liệu';
-    }
-  }
-
   Color _giaiDoanColor(String giaiDoan) {
     switch (giaiDoan) {
       case giaiDoan1:
@@ -196,6 +183,7 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
     required Child effectiveChild,
   }) {
     final levelColor = _giaiDoanColor(giaiDoan);
+    final giaiDoanDescription = screeningGiaiDoanDescription(giaiDoan);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Kết quả sàng lọc')),
@@ -244,7 +232,7 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                         borderRadius: IrisRadii.pillBorder,
                       ),
                       child: Text(
-                        _giaiDoanLabel(giaiDoan),
+                        screeningGiaiDoanLabel(giaiDoan),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
@@ -253,6 +241,15 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                             ),
                       ),
                     ),
+                    if (giaiDoanDescription != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        giaiDoanDescription,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(height: 1.45),
+                      ),
+                    ],
                   ],
                 ),
               ),

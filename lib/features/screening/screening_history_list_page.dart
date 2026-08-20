@@ -109,19 +109,6 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
     }
   }
 
-  String _giaiDoanLabel(String giaiDoan) {
-    switch (giaiDoan) {
-      case giaiDoan1:
-        return 'Giai đoạn 1';
-      case giaiDoan2:
-        return 'Giai đoạn 2';
-      case giaiDoan3:
-        return 'Giai đoạn 3';
-      default:
-        return 'Chưa đủ dữ liệu';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<_ScreeningHistoryData>(
@@ -261,7 +248,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                _giaiDoanLabel(screening.giaiDoan),
+                                screeningGiaiDoanLabel(screening.giaiDoan),
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),

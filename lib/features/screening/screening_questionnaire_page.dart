@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/screening_domains.dart';
 import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -327,7 +328,7 @@ class _ScreeningQuestionnairePageState
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(20),
-                              child: Text(
+                              child: IrisParagraph(
                                 currentQuestion.noiDung,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
@@ -346,11 +347,10 @@ class _ScreeningQuestionnairePageState
                                 !selectedAnswer.laNa &&
                                 selectedAnswer.diem == 0,
                             selectedColor: IrisColors.danger,
-                            onTap: () => _selectAnswer(
-                              tier,
-                              currentQuestion,
-                              (diem: 0, laNa: false),
-                            ),
+                            onTap: () => _selectAnswer(tier, currentQuestion, (
+                              diem: 0,
+                              laNa: false,
+                            )),
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
@@ -360,11 +360,10 @@ class _ScreeningQuestionnairePageState
                                 !selectedAnswer.laNa &&
                                 selectedAnswer.diem == 1,
                             selectedColor: IrisColors.warning,
-                            onTap: () => _selectAnswer(
-                              tier,
-                              currentQuestion,
-                              (diem: 1, laNa: false),
-                            ),
+                            onTap: () => _selectAnswer(tier, currentQuestion, (
+                              diem: 1,
+                              laNa: false,
+                            )),
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
@@ -374,11 +373,10 @@ class _ScreeningQuestionnairePageState
                                 !selectedAnswer.laNa &&
                                 selectedAnswer.diem == 2,
                             selectedColor: IrisColors.primary,
-                            onTap: () => _selectAnswer(
-                              tier,
-                              currentQuestion,
-                              (diem: 2, laNa: false),
-                            ),
+                            onTap: () => _selectAnswer(tier, currentQuestion, (
+                              diem: 2,
+                              laNa: false,
+                            )),
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
@@ -388,11 +386,10 @@ class _ScreeningQuestionnairePageState
                                 !selectedAnswer.laNa &&
                                 selectedAnswer.diem == 3,
                             selectedColor: IrisColors.success,
-                            onTap: () => _selectAnswer(
-                              tier,
-                              currentQuestion,
-                              (diem: 3, laNa: false),
-                            ),
+                            onTap: () => _selectAnswer(tier, currentQuestion, (
+                              diem: 3,
+                              laNa: false,
+                            )),
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
@@ -400,11 +397,10 @@ class _ScreeningQuestionnairePageState
                             isSelected:
                                 selectedAnswer != null && selectedAnswer.laNa,
                             selectedColor: IrisColors.neutral,
-                            onTap: () => _selectAnswer(
-                              tier,
-                              currentQuestion,
-                              (diem: null, laNa: true),
-                            ),
+                            onTap: () => _selectAnswer(tier, currentQuestion, (
+                              diem: null,
+                              laNa: true,
+                            )),
                           ),
                           const SizedBox(height: 24),
 

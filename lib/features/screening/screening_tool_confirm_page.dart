@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/iris_assets.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../domain/models/child.dart';
 import 'screening_questionnaire_page.dart';
 
@@ -34,7 +35,7 @@ class ScreeningToolConfirmPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Công cụ sàng lọc sẽ dùng cho ${child.name} (${formatAgeLabel(child)}):',
+              'Công cụ sàng lọc sẽ dùng cho ${child.name}:',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -59,11 +60,14 @@ class ScreeningToolConfirmPage extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Gồm 20 câu hỏi quan sát biểu hiện qua 5 lĩnh vực phát triển '
-                      '(Ngôn ngữ-giao tiếp, Nhận thức-giải quyết vấn đề, Vận động, '
-                      'Xã hội-cảm xúc, Tự lập), chọn đúng bộ theo độ tuổi trẻ (2-5 tuổi). '
-                      'Mỗi câu có 4 mức lựa chọn (0-3) và N/A.',
+                    const IrisParagraph(
+                      'Bạn sẽ quan sát và trả lời 20 câu hỏi trải đều trên 5 '
+                      'lĩnh vực phát triển: Ngôn ngữ - Giao tiếp, Nhận thức - '
+                      'Giải quyết vấn đề, Vận động, Xã hội - Cảm xúc và Tự '
+                      'lập. Bộ câu hỏi được chọn tự động theo đúng độ tuổi '
+                      'của trẻ (2-5 tuổi). Với mỗi câu, bạn chọn 1 trong 4 '
+                      'mức độ biểu hiện, hoặc "Chưa quan sát được" nếu chưa '
+                      'có đủ thông tin để trả lời.',
                     ),
                   ],
                 ),

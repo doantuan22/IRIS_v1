@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/domains.dart';
 import '../../core/theme/iris_theme.dart';
 import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
@@ -9,23 +10,6 @@ import '../../domain/models/assessment.dart';
 import '../../domain/models/child.dart';
 import 'nine_domains/comparison_video/comparison_video_page.dart';
 import 'nine_domains/description/description_page.dart';
-
-/// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực, hiển thị ở đầu màn Hub lĩnh vực.
-const Map<String, String> _domainIntroText = {
-  'nhan_thuc':
-      'Khả năng của trẻ trong việc hiểu, ghi nhớ, suy luận và giải quyết vấn đề phù hợp với độ tuổi.',
-  'cam_xuc': 'Cách trẻ nhận biết, thể hiện và điều tiết cảm xúc của bản thân.',
-  'giac_quan':
-      'Cách trẻ tiếp nhận và phản ứng với các kích thích giác quan (âm thanh, ánh sáng, xúc giác...).',
-  'quan_he_xa_hoi':
-      'Khả năng của trẻ trong việc tương tác, giao tiếp, ứng xử, tuân thủ quy tắc và thích nghi với các tình huống xã hội.',
-  'ngon_ngu':
-      'Khả năng hiểu và sử dụng ngôn ngữ để giao tiếp với người xung quanh.',
-  'sinh_hoc':
-      'Các yếu tố phát triển thể chất và sinh học liên quan đến sự phát triển chung của trẻ.',
-  'sinh_hoat_ca_nhan':
-      'Khả năng tự thực hiện các hoạt động sinh hoạt cá nhân hàng ngày phù hợp với độ tuổi.',
-};
 
 /// Màn hình Hub trung tâm của 1 lĩnh vực đánh giá.
 /// Cho phép người dùng tự do lựa chọn 1 trong 2 phần:
@@ -79,7 +63,7 @@ class _DomainHubPageState extends State<DomainHubPage> {
   @override
   Widget build(BuildContext context) {
     final intro =
-        _domainIntroText[widget.linhVuc] ??
+        domainIntroText[widget.linhVuc] ??
         'Đánh giá các biểu hiện phát triển của trẻ trong lĩnh vực này.';
     final accent = IrisDomainStyle.colorOf(widget.linhVuc);
 
@@ -124,7 +108,7 @@ class _DomainHubPageState extends State<DomainHubPage> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        IrisParagraph(
                           intro,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
@@ -249,7 +233,7 @@ class _DomainHubPageState extends State<DomainHubPage> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          IrisParagraph(
                             'Ghi nhận những gì bạn quan sát được hàng ngày về bé. Đây là dữ liệu thực tế duy nhất dùng để đánh giá và tổng hợp chân dung của trẻ.',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: Theme.of(context).hintColor),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/iris_ui.dart';
 import '../../../../data/local/database.dart';
 import '../../../../data/repositories/expert_knowledge_repository.dart';
 import '../../../../domain/models/child.dart';
@@ -92,7 +93,7 @@ class _ComparisonVideoPageState extends State<ComparisonVideoPage>
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  'So sánh nhanh (${formatAgeLabel(widget.child)})',
+                  'So sánh nhanh',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -232,7 +233,7 @@ class ComparisonItemList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(item.content),
+            IrisParagraph(item.content),
             if (videoPath != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

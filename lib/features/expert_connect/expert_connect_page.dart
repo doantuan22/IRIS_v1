@@ -108,7 +108,9 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở website. Vui lòng thử lại.')),
+        const SnackBar(
+          content: Text('Không thể mở website. Vui lòng thử lại.'),
+        ),
       );
     }
   }
@@ -144,7 +146,7 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 4),
-                            Text(info.description),
+                            IrisParagraph(info.description),
                           ],
                         ),
                       ),
@@ -172,7 +174,7 @@ class _ExpertConnectPageState extends State<ExpertConnectPage> {
                     const Icon(Icons.info_outline, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: IrisParagraph(
                         _notDiagnosisDisclaimer,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -236,7 +238,7 @@ class _TuongMinhCenterCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
+            IrisParagraph(
               'Thành lập 15/12/2016, chuyên can thiệp cho trẻ tự kỷ và trẻ có '
               'rối loạn phát triển khác. Đội ngũ chuyên gia và giáo dục viên '
               'nhiều kinh nghiệm trong chăm sóc và can thiệp trẻ tự kỷ.',

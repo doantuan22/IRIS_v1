@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/domains.dart';
 import '../../core/constants/screening_domains.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -88,7 +89,6 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
         'Có thể xem lại chân dung tổng thể hoặc bổ sung mô tả mới nếu có quan sát thêm.';
   }
 
-
   void _startAssessment() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => DomainListPage(child: widget.child)),
@@ -140,7 +140,9 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                           '${screeningGiaiDoanLabel(screening.giaiDoan)}',
                         ),
                         const SizedBox(height: 4),
-                        Text('Mức tuổi làm bài: ${screeningAgeTierLabel(screening.mucTuoiLamBai)}'),
+                        Text(
+                          'Mức tuổi làm bài: ${screeningAgeTierLabel(screening.mucTuoiLamBai)}',
+                        ),
                         const SizedBox(height: 4),
                         Text('Ngày thực hiện: ${screening.ngayThucHien}'),
                       ],
@@ -185,7 +187,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      Text(_buildSuggestion(data)),
+                      IrisParagraph(_buildSuggestion(data)),
                     ],
                   ),
                 ),

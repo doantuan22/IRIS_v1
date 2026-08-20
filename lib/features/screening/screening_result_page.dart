@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/screening_domains.dart';
 import '../../core/theme/iris_theme.dart';
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../data/repositories/screening_repository.dart';
@@ -252,11 +253,11 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                     ),
                     if (giaiDoanDescription != null) ...[
                       const SizedBox(height: 12),
-                      Text(
+                      IrisParagraph(
                         giaiDoanDescription,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(height: 1.45),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(height: 1.45),
                       ),
                     ],
                   ],
@@ -307,10 +308,11 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                               ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        IrisParagraph(
                           _disclaimerText,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(height: 1.45),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(height: 1.45),
                         ),
                       ],
                     ),
@@ -333,9 +335,8 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                 }
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (_) => AssessmentSummaryPage(
-                      child: effectiveChild,
-                    ),
+                    builder: (_) =>
+                        AssessmentSummaryPage(child: effectiveChild),
                   ),
                 );
               },
@@ -348,8 +349,7 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
   }
 
   Widget _buildDomainBreakdown(
-    Iterable<({String linhVuc, double? diemQuyDoi12, String mucLinhVuc})>
-    items,
+    Iterable<({String linhVuc, double? diemQuyDoi12, String mucLinhVuc})> items,
   ) {
     return Column(
       children: items.map((d) {
@@ -360,8 +360,7 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
         final domainName = screeningDomains
             .firstWhere(
               (dom) => dom.code == d.linhVuc,
-              orElse: () =>
-                  ScreeningDomain(code: d.linhVuc, label: d.linhVuc),
+              orElse: () => ScreeningDomain(code: d.linhVuc, label: d.linhVuc),
             )
             .label;
         final score = d.diemQuyDoi12;
@@ -379,8 +378,9 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
                     Expanded(
                       child: Text(
                         domainName,
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     Text(

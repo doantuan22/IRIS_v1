@@ -391,3 +391,25 @@ class IrisDomainIcon extends StatelessWidget {
     );
   }
 }
+
+/// Đoạn văn mô tả dài dùng chung toàn app — mặc định canh 2 lề
+/// (`TextAlign.justify`) để các đoạn văn nhiều mệnh đề (mô tả, cảnh báo,
+/// văn bản do AI sinh...) không bị so le lề phải như `Text` thường. Cho
+/// phép override [style]/[textAlign] cho các trường hợp cần khác (VD vẫn
+/// muốn `center` ở 1 dòng ngắn).
+class IrisParagraph extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  final TextAlign textAlign;
+
+  const IrisParagraph(
+    this.text, {
+    super.key,
+    this.style,
+    this.textAlign = TextAlign.justify,
+  });
+
+  @override
+  Widget build(BuildContext context) =>
+      Text(text, style: style, textAlign: textAlign);
+}

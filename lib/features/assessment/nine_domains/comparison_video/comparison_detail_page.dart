@@ -88,7 +88,7 @@ class _ComparisonDetailPageState extends State<ComparisonDetailPage>
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  'So sánh chi tiết (${formatAgeLabel(widget.child)})',
+                  'So sánh chi tiết',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),

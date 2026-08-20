@@ -21,3 +21,22 @@ const List<Domain> domains = [
   Domain(code: 'sinh_hoc', label: 'Sinh học'),
   Domain(code: 'sinh_hoat_ca_nhan', label: 'Sinh hoạt cá nhân'),
 ];
+
+/// Định nghĩa ngắn 1-2 câu cho mỗi lĩnh vực — dùng chung cho `DescriptionPage`
+/// và `DomainHubPage` (trước đây là 2 bản sao trùng nội dung ở từng file,
+/// hợp nhất về đây để tránh lệch nhau khi sửa).
+const Map<String, String> domainIntroText = {
+  'nhan_thuc':
+      'Khả năng của trẻ trong việc hiểu, ghi nhớ, suy luận và giải quyết vấn đề phù hợp với độ tuổi.',
+  'cam_xuc': 'Cách trẻ nhận biết, thể hiện và điều tiết cảm xúc của bản thân.',
+  'giac_quan':
+      'Cách trẻ tiếp nhận và phản ứng với các kích thích giác quan (âm thanh, ánh sáng, xúc giác...).',
+  'quan_he_xa_hoi':
+      'Khả năng của trẻ trong việc tương tác, giao tiếp, ứng xử, tuân thủ quy tắc và thích nghi với các tình huống xã hội.',
+  'ngon_ngu':
+      'Khả năng hiểu và sử dụng ngôn ngữ để giao tiếp với người xung quanh.',
+  'sinh_hoc':
+      'Các yếu tố phát triển thể chất và sinh học liên quan đến sự phát triển chung của trẻ.',
+  'sinh_hoat_ca_nhan':
+      'Khả năng tự thực hiện các hoạt động sinh hoạt cá nhân hàng ngày phù hợp với độ tuổi.',
+};

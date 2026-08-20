@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../core/widgets/iris_ui.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/video_repository.dart';
 import '../../domain/models/video.dart';
@@ -193,7 +194,7 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 4),
-            Text(_video.expertNote!),
+            IrisParagraph(_video.expertNote!),
           ],
           if (!kIsWeb && kDebugMode && _video.status != 'reviewed') ...[
             const SizedBox(height: 24),

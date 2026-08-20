@@ -404,3 +404,101 @@ lúc thêm comment.
 16. `330a93d` — Phần 1: đổi tên file dữ liệu + sửa tham chiếu.
 17. `3b6ada3` — Phần 2a: comment service chấm điểm + 3 model + bảng SQL.
 18. `97098bc` — Phần 2b: comment repository + các màn hình UI.
+
+## Đợt 6 — Tinh chỉnh UI/UX 3 màn + tách logic chân dung theo N lĩnh vực
+
+Giai đoạn A: audit hiển thị tuổi trẻ toàn app (A1), đoạn text dài chưa
+justify toàn app (A2), và đọc code thật logic "Xem chân dung" hiện tại
+(A3) — ghi trong `KE_HOACH_TINH_CHINH_UI_CHAN_DUNG.md`, chờ duyệt trước
+khi sửa. 2 điểm mở đã chốt trước khi vào Giai đoạn B: (1) giữ nguyên 9 vị
+trí tuổi "Nhóm 2" (subtitle định danh trên Trang chủ/danh sách hồ
+sơ/dashboard/chi tiết hồ sơ), chỉ xóa 3 vị trí "Nhóm 1" (tuổi trong ngoặc
+cạnh tên/tiêu đề); (2) nút "Xem chân dung" khi 0/7 lĩnh vực là MỜ NHƯNG
+VẪN HIỂN THỊ, không ẩn hẳn.
+
+### B1 — Màn Tạo hồ sơ trẻ
+
+Đổi "Không rõ ngày sinh — chọn mức tuổi" → "Chọn theo độ tuổi". Xóa dòng
+"Dải tháng tuổi hiện dùng là giả định làm việc..." khỏi UI người dùng —
+comment kỹ thuật tương đương ở chỗ quy đổi `dob` (đã có sẵn từ trước) giữ
+nguyên cho dev/reviewer.
+
+### B2 — Xóa tuổi thừa + viết lại mô tả sàng lọc + canh 2 lề toàn app
+
+Xóa `(${formatAgeLabel(...)})` tại đúng 3 vị trí Nhóm 1
+(`screening_tool_confirm_page.dart`, `comparison_detail_page.dart`,
+`comparison_video_page.dart`). Viết lại đoạn mô tả bộ câu hỏi sàng lọc cho
+tự nhiên hơn, giữ nguyên thông tin (20 câu, 5 lĩnh vực, thang 0-3 + N/A).
+
+Thêm widget dùng chung `IrisParagraph` (`core/widgets/iris_ui.dart`) — mặc
+định `textAlign: TextAlign.justify`, cho override `style`/`textAlign` khi
+cần — áp dụng tại 18 vị trí đoạn mô tả dài theo audit A2 (văn bản chân
+dung do AI sinh, nhận xét chuyên gia mô phỏng, nội dung so sánh chuyên
+gia, mô tả trung tâm Tường Minh, các disclaimer, mô tả 7 lĩnh vực, câu hỏi
+sàng lọc...). Hợp nhất `_domainIntroTextTemp`/`_domainIntroText` (2 bản
+sao trùng nội dung ở `description_page.dart`/`domain_hub_page.dart`) về 1
+constant chung `domainIntroText` trong `core/constants/domains.dart`.
+
+### B3 — Nút "Xem chân dung" trên hub 7 lĩnh vực
+
+Trước đây nút chỉ tồn tại trên cây widget khi đủ 7/7 lĩnh vực (đặt phía
+trên `GridView`). Sửa `domain_list_page.dart`: nút luôn hiển thị — mờ
+(`onPressed: null`) khi 0/7, sáng lên và điều hướng sang Chân dung toàn
+cảnh từ 1/7 trở lên — dời xuống cuối màn hình, sau danh sách 7 thẻ lĩnh
+vực. Card "Tiếp tục ngay" giữ nguyên logic cũ (đã đúng sẵn: tự ẩn khi đủ
+7/7), không sửa.
+
+### B4 — Tách "tổng hợp văn bản theo N lĩnh vực" khỏi "tính tier" (thay đổi logic)
+
+Trọng tâm rủi ro cao nhất của đợt này. Trước khi sửa, audit A3 xác nhận có
+3 lớp gate cứng yêu cầu đủ 7/7 (`OverviewPortraitPage._load()`,
+`OverviewRepository.computeAndSaveOverview()`,
+`OverviewRepository.labelAllDomains()`), và việc sinh văn bản chân dung
+đang phụ thuộc trực tiếp vào việc tính tier thành công (gọi nối tiếp
+trong cùng 1 hàm).
+
+Thêm 2 entrypoint MỚI, HOÀN TOÀN TÁCH BIỆT với pipeline 7/7 cũ (không dùng
+chung hàm/flag `bool partial`):
+- `OverviewRepository.generatePartialSummaryDescription(Child)`: đọc đúng
+  N lĩnh vực (1-6) đã có mô tả, KHÔNG gọi `labelAllDomains`/`labelDomain`
+  (bước gắn nhãn chỉ có ý nghĩa cho tier), KHÔNG tính tier, KHÔNG lưu
+  `overview_summaries` — trả thẳng cho UI, luôn tổng hợp lại theo dữ liệu
+  DB mới nhất mỗi lần gọi (không cache).
+- `PromptBuilder.buildPartialOverviewPortraitSummaryPrompt()`: không nhận
+  `tierLabel` (chưa có tier ở bước này), thêm guardrail rõ ràng cấm suy
+  diễn/generalize sang lĩnh vực chưa có dữ liệu và cấm mọi nhận định về
+  "mức độ tổng quan" dưới mọi hình thức (kể cả gợi ý ngầm qua ngôn từ).
+
+`OverviewPortraitPage._load()` bỏ điều kiện chặn cứng
+`doneDomains.length < domains.length`. Thêm nhánh `_buildPartial` cho
+1<=N<7: CHỈ hiện văn bản tổng hợp (hoặc thông báo lỗi + nút "Tổng hợp
+lại" nếu AI lỗi) kèm đúng 1 dòng trạng thái "Chân dung dựa trên N/7 lĩnh
+vực đã đánh giá — mức độ tổng quan sẽ hiển thị sau khi hoàn thành đủ 7
+lĩnh vực" — TUYỆT ĐỐI không có bất kỳ card/nhãn/màu mức độ nào trong nhánh
+này. Nhánh N=7 (`_buildReady`, có tier, giữ nguyên `_ExpertConnectBanner`)
+không thay đổi. `overview_tier_calculator.dart` và mọi ngưỡng tier giữ
+nguyên 100%, không đụng tới.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues thật trong `lib/` (3 info `avoid_dynamic_calls`
+  trong `scripts/ingest_*.dart` là pre-existing, không liên quan đợt này).
+- `flutter test`: **30/30 PASS** (bộ test `screening_scoring_service_test.dart`
+  hiện có) — không có regression, đúng như kỳ vọng vì đợt này không đụng
+  tới bộ sàng lọc/logic chấm điểm.
+- **Chưa verify được trên thiết bị/emulator thật** trong phiên làm việc
+  này (không có thiết bị/emulator khả dụng trong môi trường thực thi) —
+  các kịch bản cần người thực hiện xác nhận trực tiếp trên app: B1 (label
+  mới + hết dòng giả định), B2 (hết tuổi ở 3 vị trí Nhóm 1, còn nguyên ở
+  Nhóm 2, mô tả sàng lọc + canh lề), B3 (nút mờ ở 0/7, sáng từ 1/7, đúng vị
+  trí cuối màn), B4 (chân dung N<7 đúng nội dung/không suy diễn/không hiện
+  tier, cập nhật đúng khi làm thêm lĩnh vực, tier + "Tiếp tục ngay" đúng
+  hành vi khi đủ 7/7).
+
+### Commit của Đợt 6
+
+19. `1774ebb` — Giai đoạn A: kế hoạch tinh chỉnh UI (audit, chưa code).
+20. `223151b` — B1: label + bỏ dòng giả định màn tạo hồ sơ.
+21. `c6142de` — B2: xóa tuổi thừa + viết lại mô tả sàng lọc + canh 2 lề.
+22. `89bc03f` — B3: nút "Xem chân dung" luôn hiện, mờ/sáng theo doneCount.
+23. `d43124a` — B4: tách tổng hợp chân dung N lĩnh vực khỏi tính tier.

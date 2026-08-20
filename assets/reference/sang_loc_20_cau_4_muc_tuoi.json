@@ -1,0 +1,590 @@
+[
+  {
+    "muc_tuoi": "2_tuoi",
+    "thang_tuoi_min": 24,
+    "thang_tuoi_max": 35,
+    "cau_hoi": [
+      {
+        "id": "sl_2t_ngon_ngu_giao_tiep_01",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể chủ động ghép ít nhất hai từ có nghĩa để diễn đạt điều mình muốn hoặc đang quan tâm không?"
+      },
+      {
+        "id": "sl_2t_ngon_ngu_giao_tiep_02",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể hiểu và thực hiện một yêu cầu đơn giản chỉ bằng lời nói, chẳng hạn “lấy giày” hoặc “đưa mẹ cái cốc” không?"
+      },
+      {
+        "id": "sl_2t_ngon_ngu_giao_tiep_03",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Khi được hỏi, trẻ có thể chỉ đúng ít nhất 3–4 bộ phận cơ thể quen thuộc không?"
+      },
+      {
+        "id": "sl_2t_ngon_ngu_giao_tiep_04",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có chủ động dùng lời nói hoặc cử chỉ có ý nghĩa để cho người khác biết mình muốn gì không?"
+      },
+      {
+        "id": "sl_2t_nhan_thuc_giai_quyet_van_de_01",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể chọn đúng đồ vật hoặc tranh được gọi tên trong số ít nhất 3 lựa chọn khác nhau không?"
+      },
+      {
+        "id": "sl_2t_nhan_thuc_giai_quyet_van_de_02",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể hoàn thành một bảng ghép hình/khối đơn giản gồm 2–3 hình dạng lớn mà không cần người lớn làm thay không?"
+      },
+      {
+        "id": "sl_2t_nhan_thuc_giai_quyet_van_de_03",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có biết thao tác với nút bấm, công tắc, nắp hộp hoặc bộ phận đơn giản của đồ chơi để tạo ra kết quả mong muốn không?"
+      },
+      {
+        "id": "sl_2t_nhan_thuc_giai_quyet_van_de_04",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Khi chơi, trẻ có biết kết hợp các đồ vật có liên quan với nhau, chẳng hạn đặt thức ăn đồ chơi vào đĩa hoặc cho búp bê uống bằng cốc không?"
+      },
+      {
+        "id": "sl_2t_van_dong_tho_01",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tự chạy trên mặt phẳng mà không cần người lớn giữ hoặc dìu không?"
+      },
+      {
+        "id": "sl_2t_van_dong_tho_02",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể đá một quả bóng đang đứng yên về phía trước không?"
+      },
+      {
+        "id": "sl_2t_van_dong_tinh_03",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể xếp chồng một số khối hoặc đồ vật nhỏ lên nhau bằng tay không?"
+      },
+      {
+        "id": "sl_2t_van_dong_tinh_04",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể dùng bút sáp hoặc bút chì để tạo các nét vẽ trên giấy một cách có chủ đích không?"
+      },
+      {
+        "id": "sl_2t_xa_hoi_cam_xuc_01",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có chú ý đến những trẻ khác và chơi gần các bạn trong cùng một không gian không?"
+      },
+      {
+        "id": "sl_2t_xa_hoi_cam_xuc_02",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trong tình huống mới hoặc chưa quen, trẻ có nhìn người chăm sóc để tìm tín hiệu về cách phản ứng không?"
+      },
+      {
+        "id": "sl_2t_xa_hoi_cam_xuc_03",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có bắt chước những hành động quen thuộc của người lớn trong sinh hoạt hoặc khi chơi không?"
+      },
+      {
+        "id": "sl_2t_xa_hoi_cam_xuc_04",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có bắt đầu nhận ra khi người khác buồn, đau hoặc khó chịu và thể hiện một phản ứng đơn giản, chẳng hạn nhìn, lại gần hoặc đưa đồ vật không?"
+      },
+      {
+        "id": "sl_2t_tu_lap_01",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tự xúc một phần bữa ăn bằng thìa không?"
+      },
+      {
+        "id": "sl_2t_tu_lap_02",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể tự uống nước bằng cốc mở mà không cần người lớn cầm cốc giúp không?"
+      },
+      {
+        "id": "sl_2t_tu_lap_03",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể ra dấu hoặc phát âm để báo cho người lớn biết khi tã bị ướt/bẩn, hoặc khi muốn đi vệ sinh không?"
+      },
+      {
+        "id": "sl_2t_tu_lap_04",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể cất một số đồ chơi hoặc đồ dùng quen thuộc về đúng chỗ khi được người lớn nhắc không?"
+      }
+    ]
+  },
+  {
+    "muc_tuoi": "3_tuoi",
+    "thang_tuoi_min": 36,
+    "thang_tuoi_max": 47,
+    "cau_hoi": [
+      {
+        "id": "sl_3t_ngon_ngu_giao_tiep_01",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể nói thành câu gồm từ ba từ trở lên để diễn đạt nhu cầu, suy nghĩ hoặc sự việc đơn giản không?"
+      },
+      {
+        "id": "sl_3t_ngon_ngu_giao_tiep_02",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể hiểu và thực hiện một yêu cầu gồm hai bước liên tiếp, chẳng hạn “lấy dép rồi mang lại đây” không?"
+      },
+      {
+        "id": "sl_3t_ngon_ngu_giao_tiep_03",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể trả lời phù hợp những câu hỏi đơn giản như “ai?”, “cái gì?” hoặc “ở đâu?” không?"
+      },
+      {
+        "id": "sl_3t_ngon_ngu_giao_tiep_04",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể duy trì một cuộc trao đổi với người khác qua ít nhất hai lượt hỏi – đáp liên tiếp không?"
+      },
+      {
+        "id": "sl_3t_nhan_thuc_giai_quyet_van_de_01",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể ghép những đồ vật hoặc hình ảnh giống nhau với nhau không?"
+      },
+      {
+        "id": "sl_3t_nhan_thuc_giai_quyet_van_de_02",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể phân loại một số đồ vật theo một đặc điểm rõ ràng, chẳng hạn theo màu sắc, hình dạng hoặc loại đồ vật không?"
+      },
+      {
+        "id": "sl_3t_nhan_thuc_giai_quyet_van_de_03",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể hoàn thành một trò chơi ghép hình đơn giản bằng cách đặt các mảnh vào đúng vị trí không?"
+      },
+      {
+        "id": "sl_3t_nhan_thuc_giai_quyet_van_de_04",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Khi gặp một trở ngại đơn giản trong lúc chơi, trẻ có biết thử cách khác để đạt được điều mình muốn thay vì dừng lại ngay không?"
+      },
+      {
+        "id": "sl_3t_van_dong_tho_01",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể bật nhảy bằng hai chân cùng lúc và tiếp đất mà không cần người lớn đỡ không?"
+      },
+      {
+        "id": "sl_3t_van_dong_tho_02",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể đi lên hoặc xuống cầu thang bằng chân mà không phải bò không?"
+      },
+      {
+        "id": "sl_3t_van_dong_tinh_03",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể xâu các vật có lỗ lớn, chẳng hạn hạt lớn hoặc vòng, vào dây không?"
+      },
+      {
+        "id": "sl_3t_van_dong_tinh_04",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Sau khi được làm mẫu, trẻ có thể dùng bút để vẽ hoặc sao chép một hình tròn đơn giản không?"
+      },
+      {
+        "id": "sl_3t_xa_hoi_cam_xuc_01",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có chủ động tham gia chơi cùng khi thấy những trẻ khác đang chơi không?"
+      },
+      {
+        "id": "sl_3t_xa_hoi_cam_xuc_02",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể tham gia trò chơi giả vờ, chẳng hạn nấu ăn, chăm sóc búp bê hoặc đóng vai một nhân vật quen thuộc không?"
+      },
+      {
+        "id": "sl_3t_xa_hoi_cam_xuc_03",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Khi phải tạm xa người chăm sóc trong một tình huống quen thuộc, trẻ có thể dần bình tĩnh và tham gia hoạt động khác không?"
+      },
+      {
+        "id": "sl_3t_xa_hoi_cam_xuc_04",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể dùng lời nói để diễn đạt những cảm xúc hoặc nhu cầu cơ bản thay vì chủ yếu phản ứng bằng khóc, la hét hoặc hành vi không?"
+      },
+      {
+        "id": "sl_3t_tu_lap_01",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tự ăn bằng thìa hoặc nĩa trong phần lớn bữa ăn không?"
+      },
+      {
+        "id": "sl_3t_tu_lap_02",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể tự mặc hoặc cởi một số loại quần áo đơn giản, chẳng hạn quần lưng thun hoặc áo khoác rộng không?"
+      },
+      {
+        "id": "sl_3t_tu_lap_03",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể chủ động thực hiện một số bước đơn giản khi đi vệ sinh không? (N/A nếu chưa bắt đầu tập ngồi bô)"
+      },
+      {
+        "id": "sl_3t_tu_lap_04",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể tự rửa và lau khô tay sau khi được nhắc thực hiện không?"
+      }
+    ]
+  },
+  {
+    "muc_tuoi": "4_tuoi",
+    "thang_tuoi_min": 48,
+    "thang_tuoi_max": 59,
+    "cau_hoi": [
+      {
+        "id": "sl_4t_ngon_ngu_giao_tiep_01",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể nói thành những câu tương đối đầy đủ gồm bốn từ trở lên để diễn đạt rõ điều mình muốn nói không?"
+      },
+      {
+        "id": "sl_4t_ngon_ngu_giao_tiep_02",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể kể lại một việc đã xảy ra trong ngày bằng một vài câu có liên quan với nhau không?"
+      },
+      {
+        "id": "sl_4t_ngon_ngu_giao_tiep_03",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể trả lời những câu hỏi đơn giản về công dụng hoặc đặc điểm của đồ vật quen thuộc không?"
+      },
+      {
+        "id": "sl_4t_ngon_ngu_giao_tiep_04",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể duy trì cuộc trò chuyện qua nhiều lượt, biết lắng nghe và trả lời phù hợp với nội dung đang trao đổi không?"
+      },
+      {
+        "id": "sl_4t_nhan_thuc_giai_quyet_van_de_01",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể nhận biết và gọi tên một số màu sắc hoặc hình dạng cơ bản không?"
+      },
+      {
+        "id": "sl_4t_nhan_thuc_giai_quyet_van_de_02",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể sắp xếp một số đồ vật theo đặc điểm đơn giản như lớn – nhỏ, dài – ngắn hoặc nhiều – ít không?"
+      },
+      {
+        "id": "sl_4t_nhan_thuc_giai_quyet_van_de_03",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Khi nghe một câu chuyện quen thuộc, trẻ có thể đoán hoặc nói được sự việc có khả năng xảy ra tiếp theo không?"
+      },
+      {
+        "id": "sl_4t_nhan_thuc_giai_quyet_van_de_04",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể hoàn thành một trò chơi ghép hình hoặc nhiệm vụ tìm điểm giống – khác đơn giản mà không cần người lớn làm thay không?"
+      },
+      {
+        "id": "sl_4t_van_dong_tho_01",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể đứng hoặc nhảy bằng một chân trong một khoảng ngắn mà không cần bám vào vật khác không?"
+      },
+      {
+        "id": "sl_4t_van_dong_tho_02",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể đón được một quả bóng lớn được ném nhẹ về phía mình bằng hai tay không?"
+      },
+      {
+        "id": "sl_4t_van_dong_tinh_03",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể cầm bút bằng các ngón tay thay vì nắm cả bàn tay và điều khiển bút để tạo hình có chủ đích không?"
+      },
+      {
+        "id": "sl_4t_van_dong_tinh_04",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể dùng kéo dành cho trẻ em để cắt giấy theo một đường đơn giản không?"
+      },
+      {
+        "id": "sl_4t_xa_hoi_cam_xuc_01",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tham gia trò chơi tưởng tượng cùng người khác và duy trì một vai chơi đơn giản không?"
+      },
+      {
+        "id": "sl_4t_xa_hoi_cam_xuc_02",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có chủ động tìm đến hoặc tham gia chơi cùng những trẻ khác khi có cơ hội không?"
+      },
+      {
+        "id": "sl_4t_xa_hoi_cam_xuc_03",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể nhận ra khi người khác đang buồn hoặc bị đau và thể hiện hành vi quan tâm hoặc an ủi phù hợp không?"
+      },
+      {
+        "id": "sl_4t_xa_hoi_cam_xuc_04",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Khi buồn, giận hoặc thất vọng, trẻ có thể dần bình tĩnh trở lại bằng lời nhắc hoặc hướng dẫn đơn giản của người lớn không?"
+      },
+      {
+        "id": "sl_4t_tu_lap_01",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tự mặc và cởi phần lớn quần áo hằng ngày (chưa cần thành thạo cài khuy, kéo khóa) không?"
+      },
+      {
+        "id": "sl_4t_tu_lap_02",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể tự đi vệ sinh và thực hiện các bước vệ sinh cần thiết sau đó mà chỉ cần nhắc khi cần không?"
+      },
+      {
+        "id": "sl_4t_tu_lap_03",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể tự rửa tay, lau khô tay và thực hiện các bước vệ sinh cá nhân quen thuộc không?"
+      },
+      {
+        "id": "sl_4t_tu_lap_04",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể tự lấy, sử dụng và cất lại những đồ dùng quen thuộc trong sinh hoạt hằng ngày không?"
+      }
+    ]
+  },
+  {
+    "muc_tuoi": "5_tuoi",
+    "thang_tuoi_min": 60,
+    "thang_tuoi_max": 71,
+    "cau_hoi": [
+      {
+        "id": "sl_5t_ngon_ngu_giao_tiep_01",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể kể lại một câu chuyện hoặc sự việc gồm ít nhất hai sự kiện theo trình tự mà người nghe có thể hiểu được không?"
+      },
+      {
+        "id": "sl_5t_ngon_ngu_giao_tiep_02",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Sau khi nghe một câu chuyện ngắn, trẻ có thể trả lời đúng những câu hỏi đơn giản về nhân vật hoặc sự việc chính không?"
+      },
+      {
+        "id": "sl_5t_ngon_ngu_giao_tiep_03",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể duy trì một cuộc trò chuyện qua nhiều lượt, biết trả lời và bổ sung thông tin liên quan đến chủ đề đang nói không?"
+      },
+      {
+        "id": "sl_5t_ngon_ngu_giao_tiep_04",
+        "linh_vuc": "ngon_ngu_giao_tiep",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể diễn đạt nhu cầu, suy nghĩ hoặc trải nghiệm của mình bằng lời nói đủ rõ để người không thường xuyên chăm sóc trẻ vẫn có thể hiểu phần lớn nội dung không?"
+      },
+      {
+        "id": "sl_5t_nhan_thuc_giai_quyet_van_de_01",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể đếm đúng một nhóm đồ vật có số lượng nhỏ bằng cách đếm mỗi vật một lần không?"
+      },
+      {
+        "id": "sl_5t_nhan_thuc_giai_quyet_van_de_02",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể nhận biết một số chữ số hoặc ký hiệu quen thuộc khi nhìn thấy chúng trong sinh hoạt hằng ngày không?"
+      },
+      {
+        "id": "sl_5t_nhan_thuc_giai_quyet_van_de_03",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể hiểu và sử dụng đúng một số khái niệm về trình tự hoặc thời gian như “trước – sau”, “hôm nay – ngày mai” trong tình huống quen thuộc không?"
+      },
+      {
+        "id": "sl_5t_nhan_thuc_giai_quyet_van_de_04",
+        "linh_vuc": "nhan_thuc_giai_quyet_van_de",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể tập trung vào một hoạt động không sử dụng màn hình, chẳng hạn nghe kể chuyện, vẽ hoặc làm thủ công, trong khoảng 5–10 phút không?"
+      },
+      {
+        "id": "sl_5t_van_dong_tho_01",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể nhảy liên tiếp bằng một chân trong vài nhịp mà vẫn giữ được thăng bằng không?"
+      },
+      {
+        "id": "sl_5t_van_dong_tho_02",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tho",
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể bắt được một quả bóng được ném nhẹ từ khoảng cách gần bằng tay mà không cần ôm bóng vào người ngay từ đầu không?"
+      },
+      {
+        "id": "sl_5t_van_dong_tinh_03",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể dùng bút để sao chép một số hình cơ bản hoặc tạo hình vẽ có các chi tiết nhận biết được không?"
+      },
+      {
+        "id": "sl_5t_van_dong_tinh_04",
+        "linh_vuc": "van_dong",
+        "nhom_van_dong": "tinh",
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể dùng kéo dành cho trẻ em để cắt theo một đường hoặc hình đơn giản với mức lệch không đáng kể không?"
+      },
+      {
+        "id": "sl_5t_xa_hoi_cam_xuc_01",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể chờ đến lượt của mình khi tham gia trò chơi hoặc hoạt động chung với trẻ khác không?"
+      },
+      {
+        "id": "sl_5t_xa_hoi_cam_xuc_02",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Khi xảy ra bất đồng đơn giản với bạn, trẻ có thể dùng lời nói để trao đổi hoặc tìm cách giải quyết thay vì chủ yếu phản ứng bằng hành vi không?"
+      },
+      {
+        "id": "sl_5t_xa_hoi_cam_xuc_03",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể nhận biết cảm xúc của người khác và điều chỉnh cách phản ứng của mình dựa trên cảm xúc đó không?"
+      },
+      {
+        "id": "sl_5t_xa_hoi_cam_xuc_04",
+        "linh_vuc": "xa_hoi_cam_xuc",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Khi không đạt được điều mình muốn, trẻ có thể dần kiểm soát cảm xúc và quay trở lại hoạt động mà không cần người lớn can thiệp nhiều không?"
+      },
+      {
+        "id": "sl_5t_tu_lap_01",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 1,
+        "noi_dung": "Trẻ có thể tự mặc và cởi phần lớn quần áo hằng ngày, bao gồm xử lý được một số nút hoặc khóa đơn giản không?"
+      },
+      {
+        "id": "sl_5t_tu_lap_02",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 2,
+        "noi_dung": "Trẻ có thể tự đi vệ sinh và thực hiện các bước vệ sinh cần thiết sau đó mà chỉ cần nhắc khi cần không?"
+      },
+      {
+        "id": "sl_5t_tu_lap_03",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 3,
+        "noi_dung": "Trẻ có thể tự chuẩn bị những đồ dùng đơn giản cần cho một hoạt động quen thuộc, chẳng hạn lấy giày, ba lô hoặc dụng cụ học tập không?"
+      },
+      {
+        "id": "sl_5t_tu_lap_04",
+        "linh_vuc": "tu_lap",
+        "nhom_van_dong": null,
+        "thu_tu_trong_linh_vuc": 4,
+        "noi_dung": "Trẻ có thể hoàn thành một nhiệm vụ nhỏ trong gia đình, chẳng hạn cất đồ chơi, xếp đồ hoặc dọn vật dụng sau khi sử dụng không?"
+      }
+    ]
+  }
+]

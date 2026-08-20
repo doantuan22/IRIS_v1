@@ -7,13 +7,12 @@ import 'screening_scoring_service.dart';
 /// lĩnh vực) từ asset JSON. Dữ liệu form câu hỏi tĩnh — KHÔNG cần
 /// embedding/vector search (khác `expert_knowledge_chunks`).
 class ScreeningLoaderService {
-  /// TẠM dùng file PLACEHOLDER (dữ liệu giả, chỉ để dựng/kiểm tra khung
-  /// chạy được — xem `[PLACEHOLDER]` trong nội dung file). Đợt chuyển đổi
-  /// dữ liệu thật từ tài liệu Word (Prompt 2) sẽ thay bằng file
-  /// `sang_loc_20_cau_4_muc_tuoi.json` (không có hậu tố `.placeholder`) và
-  /// cập nhật đúng 1 dòng [assetPath] này.
+  /// Dữ liệu thật — chuyển đổi từ
+  /// `Bo_cau_hoi_sang_loc_phat_trien_tre_em_2-5_tuoi_ban_chinh_sua.docx`
+  /// (nội dung câu hỏi + cấu trúc lĩnh vực) theo thang điểm 0-3 mô tả
+  /// trong `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx`.
   static const String assetPath =
-      'assets/reference/sang_loc_20_cau_4_muc_tuoi.placeholder.json';
+      'assets/reference/sang_loc_20_cau_4_muc_tuoi.json';
 
   static ScreeningQuestionnaireData? _cachedData;
 

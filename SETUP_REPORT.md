@@ -348,3 +348,59 @@ hiệu nguy hiểm/bình thường — màu chỉ phân biệt lĩnh vực, khô
 12. `35a7af1` — Phần 2: bỏ màn cờ cảnh báo.
 13. `531d798` — Phần 3: mô tả ý nghĩa giai đoạn.
 14. `3af7f8e` — Phần 4: thanh % màu cho 5 lĩnh vực.
+
+## Đợt 5 — Chuẩn hóa tên file dữ liệu + bổ sung comment code phục vụ review
+
+Giai đoạn A: audit toàn bộ tham chiếu tên file cũ
+(`sang_loc_20_cau_4_muc_tuoi.json`) + liệt kê danh sách file cần comment,
+ghi trong `KE_HOACH_CHUAN_HOA_SANG_LOC.md`, chờ duyệt trước khi sửa.
+
+### Phần 1 — Đổi tên file dữ liệu
+
+`git mv assets/reference/sang_loc_20_cau_4_muc_tuoi.json
+assets/reference/screening_questions.json` (giữ lịch sử git). Audit xác
+nhận đúng 3 chỗ code tham chiếu tên cũ — chỉ 1 hằng số
+`ScreeningLoaderService.assetPath` thực sự load file lúc runtime, còn lại là
+comment/test string — đã cập nhật đủ cả 3 (`screening_loader_service.dart`,
+`screening_scoring_service_test.dart`, `SETUP_REPORT.md`). Không đổi tên
+bảng/cột SQL trong đợt này (giữ nguyên `screening_sessions`,
+`screening_answers`, `screening_domain_results`...).
+
+### Phần 2 — Bổ sung comment code
+
+Thêm docstring kiểu `///` (giải thích WHY — quy tắc nghiệp vụ, không lặp lại
+WHAT code đã tự nói) cho các file "bắt buộc kỹ" theo audit:
+`screening_scoring_service.dart` (thứ tự ra quyết định chấm điểm, vì sao
+kiểm tra Giai đoạn 3 trước Giai đoạn 2 để chống "bù điểm", công thức quy
+đổi thang 12), 3 model (`ScreeningSession`, `ScreeningAnswer`,
+`ScreeningDomainResult` — đặc biệt field `coCanhBao` nay LUÔN `false`, giữ
+lại chỉ vì lý do schema), bảng `screening_sessions_table.dart`. Và các file
+"nên có cơ bản": `screening_repository.dart` (vai trò từng hàm truy vấn),
+`screening_tool_confirm_page.dart` (vị trí trong luồng 3 bước), điểm nối
+`_finishAndSave()` ở `screening_questionnaire_page.dart`, 2 chế độ tải dữ
+liệu của `screening_result_page.dart`, lý do đọc `active_child_id` tươi mỗi
+lần ở `screening_history_list_page.dart`. Không đổi bất kỳ logic nào trong
+lúc thêm comment.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues thật (3 info `avoid_dynamic_calls` trong
+  `scripts/ingest_*.dart` là pre-existing, không liên quan đợt này).
+- `flutter test`: **30/30 PASS** sau cả 2 phần, không có regression.
+- **Verify tích hợp thật trên emulator Pixel_7** (build lại APK debug, cài
+  qua `adb install -r`): mở "Lịch sử sàng lọc" của hồ sơ đã có sẵn kết quả
+  — tải lại đúng từ DB (`Giai đoạn 1 · 60.0/60`, breakdown 5 lĩnh vực đầy
+  đủ), xác nhận code vừa thêm comment không phá luồng đọc DB cũ. Sau đó
+  xóa tạm 1 bản ghi sàng lọc của hồ sơ test khác (`Be_Test_2_tuoi`, dữ liệu
+  test nội bộ) để ép hiện lại nút "Sàng lọc", đi hết luồng
+  `ScreeningIntroPage` → `ScreeningToolConfirmPage` → `ScreeningQuestionnairePage`:
+  màn làm bài hiện đúng "Câu 1/20", nội dung câu hỏi thật và 5 lựa chọn —
+  xác nhận `screening_questions.json` (tên file mới) load được từ asset
+  bundle, không có lỗi "Không tải được bộ câu hỏi".
+
+### Commit của Đợt 5
+
+15. `374ab05` — Giai đoạn A: kế hoạch chuẩn hóa (audit).
+16. `330a93d` — Phần 1: đổi tên file dữ liệu + sửa tham chiếu.
+17. `3b6ada3` — Phần 2a: comment service chấm điểm + 3 model + bảng SQL.
+18. `97098bc` — Phần 2b: comment repository + các màn hình UI.

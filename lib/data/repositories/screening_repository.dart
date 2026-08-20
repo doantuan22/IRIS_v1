@@ -98,6 +98,10 @@ class ScreeningRepository {
     return session;
   }
 
+  /// Alias của [getSessionsByChildId] — giữ lại để khớp tên quy ước
+  /// `getForChild` dùng chung ở các repository khác trong dự án (VD
+  /// `AssessmentRepository.getForChild`). Dùng hàm nào cũng cho kết quả
+  /// giống hệt nhau.
   Future<List<ScreeningSession>> getForChild(String childId) async {
     return getSessionsByChildId(childId);
   }
@@ -128,6 +132,8 @@ class ScreeningRepository {
     return _sessionFromRow(rows.first);
   }
 
+  /// Lần sàng lọc GẦN NHẤT của trẻ, dùng ở "Bước 4 — Tổng hợp hồ sơ" để
+  /// tóm tắt kết quả sàng lọc mới nhất mà không cần tải cả danh sách.
   Future<ScreeningSession?> getLatestForChild(String childId) async {
     final db = await _db.database;
     final rows = await db.query(
@@ -141,6 +147,9 @@ class ScreeningRepository {
     return _sessionFromRow(rows.first);
   }
 
+  /// 20 câu trả lời chi tiết của 1 lần làm bài — dùng khi cần xem lại từng
+  /// câu (hiện chưa có màn hình nào hiển thị chi tiết này, phục vụ debug/
+  /// mở rộng sau).
   Future<List<ScreeningAnswer>> getAnswers(String screeningId) async {
     final db = await _db.database;
     final rows = await db.query(
@@ -152,6 +161,8 @@ class ScreeningRepository {
     return rows.map(_answerFromRow).toList();
   }
 
+  /// 5 điểm lĩnh vực của 1 lần làm bài — dùng để vẽ breakdown ở màn kết
+  /// quả (`ScreeningResultPage`).
   Future<List<ScreeningDomainResult>> getDomainResults(
     String screeningId,
   ) async {

@@ -98,6 +98,13 @@ class _ScreeningQuestionnairePageState
     }
   }
 
+  /// Điểm nối luồng chính sau câu hỏi cuối: chấm điểm (thuần
+  /// [ScreeningScoringService], không I/O) → lưu toàn bộ vào DB trong 1
+  /// transaction ([ScreeningRepository.saveScreeningSession]) → ghi log lịch
+  /// sử (lỗi ghi log bị nuốt có chủ đích, không được làm hỏng kết quả sàng
+  /// lọc đã lưu) → điều hướng sang [ScreeningResultPage], truyền thẳng
+  /// [result] đã tính (màn kết quả không cần tính lại, chỉ đọc DB lại nếu
+  /// được mở từ nơi khác — xem `ScreeningResultPage._loadFromDb`).
   Future<void> _finishAndSave(ScreeningTierQuestionnaire tier) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);

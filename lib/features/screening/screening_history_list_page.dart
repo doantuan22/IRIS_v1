@@ -66,7 +66,9 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
   }
 
   Future<_ScreeningHistoryData> _loadData() async {
-    // Luôn đọc active_child_id tươi ngay lúc mở màn hình
+    // Đọc active_child_id tươi mỗi lần load (không cache ở field) — trẻ
+    // đang hoạt động có thể đổi giữa các lần mở màn này (didUpdateWidget
+    // cũng gọi lại _reload), nên cache sẽ hiển thị nhầm lịch sử của trẻ cũ.
     final activeChildId = await _activeChildService.getActiveChildId();
     if (activeChildId == null) {
       return const _ScreeningHistoryData(child: null, screenings: []);

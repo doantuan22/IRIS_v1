@@ -4,9 +4,18 @@ import '../../core/theme/iris_assets.dart';
 import '../../domain/models/child.dart';
 import 'screening_questionnaire_page.dart';
 
-/// Bước 3 — Màn xác nhận công cụ sàng lọc sẽ dùng trước khi vào bảng câu hỏi thật.
+/// Bước 3 — Màn xác nhận công cụ sàng lọc, đứng giữa
+/// `ScreeningIntroPage` (hỏi "Có muốn sàng lọc?") và
+/// `ScreeningQuestionnairePage` (bảng câu hỏi thật). Chỉ hiển thị thông
+/// tin tĩnh, KHÔNG tự chọn mức tuổi ở đây — việc chọn đúng bộ 20 câu theo
+/// tuổi trẻ diễn ra ở `ScreeningQuestionnairePage` (qua
+/// `resolveScreeningAgeTier`) ngay khi màn đó mở lên.
 class ScreeningToolConfirmPage extends StatelessWidget {
   final Child child;
+
+  /// `true` khi vào từ luồng tạo hồ sơ mới (onboarding) — chỉ truyền tiếp
+  /// cho `ScreeningQuestionnairePage` để quyết định điều hướng sau khi có
+  /// kết quả, không ảnh hưởng nội dung màn này.
   final bool isOnboarding;
 
   const ScreeningToolConfirmPage({

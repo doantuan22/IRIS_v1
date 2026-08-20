@@ -64,6 +64,10 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
     }
   }
 
+  /// Chế độ 2 (xem lại từ Lịch sử): tự truy vấn `screening_sessions` +
+  /// `screening_domain_results` theo [screeningId] — không dùng khi vừa làm
+  /// bài xong (khi đó dùng thẳng [ScreeningResultPage.scoreResult] trong bộ
+  /// nhớ, xem [build]).
   Future<_ScreeningResultDbData?> _loadFromDb(String screeningId) async {
     final session = await _screeningRepository.getById(screeningId);
     if (session == null) return null;
@@ -89,6 +93,11 @@ class _ScreeningResultPageState extends State<ScreeningResultPage> {
     );
   }
 
+  /// Màu cho thẻ tổng điểm/nhãn "Giai đoạn X" ở đầu trang — đây là chỗ DUY
+  /// NHẤT trong màn kết quả được phép dùng thang màu theo mức độ nghiêm
+  /// trọng (success/warning/danger), vì nó phản ánh đúng bản chất phân loại
+  /// 3 giai đoạn. Breakdown 5 lĩnh vực bên dưới KHÔNG được dùng thang này —
+  /// xem ghi chú trong [_buildDomainBreakdown].
   Color _giaiDoanColor(String giaiDoan) {
     switch (giaiDoan) {
       case giaiDoan1:

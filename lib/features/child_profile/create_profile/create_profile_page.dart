@@ -166,7 +166,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                       ),
                     ),
                   const RadioListTile<_AgeInputMode>(
-                    title: Text('Không rõ ngày sinh — chọn mức tuổi'),
+                    title: Text('Chọn theo độ tuổi'),
                     value: _AgeInputMode.ageTier,
                   ),
                   if (_ageInputMode == _AgeInputMode.ageTier)
@@ -190,14 +190,6 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                                 ),
                               );
                             }).toList(),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Dải tháng tuổi hiện dùng là giả định làm việc, '
-                            'sẽ dùng tháng đại diện giữa dải để ước tính ngày '
-                            'sinh gần đúng.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Theme.of(context).hintColor),
                           ),
                         ],
                       ),

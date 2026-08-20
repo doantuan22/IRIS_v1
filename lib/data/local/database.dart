@@ -12,9 +12,9 @@ import 'tables/history_logs_table.dart';
 import 'tables/notifications_table.dart';
 import 'tables/overview_summaries_table.dart';
 import 'tables/profile_chunks_table.dart';
-import 'tables/screening_domain_scores_table.dart';
-import 'tables/screening_responses_table.dart';
-import 'tables/screenings_table.dart';
+import 'tables/screening_answers_table.dart';
+import 'tables/screening_domain_results_table.dart';
+import 'tables/screening_sessions_table.dart';
 import 'tables/videos_table.dart';
 
 /// Khởi tạo và quản lý kết nối SQLite (sqflite) dùng chung cho toàn app.
@@ -47,7 +47,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 11,
+      version: 13,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -74,7 +74,6 @@ class AppDatabase {
       },
       onCreate: (db, version) async {
         await db.execute(childrenTableCreate);
-        await db.execute(screeningsTableCreate);
         await db.execute(assessmentsTableCreate);
         await db.execute(historyLogsTableCreate);
         await db.execute(profileChunksTableCreate);
@@ -83,9 +82,10 @@ class AppDatabase {
         await db.execute(aiConversationsTableCreate);
         await db.execute(domainOverviewLabelsTableCreate);
         await db.execute(overviewSummariesTableCreate);
-        await db.execute(screeningResponsesTableCreate);
-        await db.execute(screeningDomainScoresTableCreate);
         await db.execute(notificationsTableCreate);
+        await db.execute(screeningSessionsTableCreate);
+        await db.execute(screeningDomainResultsTableCreate);
+        await db.execute(screeningAnswersTableCreate);
       },
       // Version 2 — thêm 2 cột `nguoi_danh_gia`/`vai_tro` vào `children` cho
       // hồ sơ trẻ đã tồn tại từ trước (cài mới đã có sẵn 2 cột này qua
@@ -182,11 +182,14 @@ class AppDatabase {
             } catch (_) {}
           }
         }
-        // Version 8 — thêm 2 bảng `screening_responses` và `screening_domain_scores`
-        // cho bộ sàng lọc 50 câu 7 lĩnh vực chính thức. Bảng `screenings` cũ giữ nguyên.
+        // Version 8 — (LỊCH SỬ) từng thêm 2 bảng `screening_responses` và
+        // `screening_domain_scores` cho bộ sàng lọc 50 câu/7 lĩnh vực cũ.
+        // Cả 2 bảng đó (+ bảng `screenings`) đã bị DROP hoàn toàn ở version
+        // 12 (thay bằng bộ sàng lọc mới) — bước tạo bảng ở đây không còn ý
+        // nghĩa với mọi user (kể cả user đang ở version < 8), nên bỏ trống
+        // có chủ đích, giữ lại comment để không mất dấu lịch sử migration.
         if (oldVersion < 8) {
-          await db.execute(screeningResponsesTableCreate);
-          await db.execute(screeningDomainScoresTableCreate);
+          // no-op — xem giải thích ở trên.
         }
         // Version 9 — xoá dữ liệu `chia_se_phu_huynh` và `bac_si` khỏi `expert_knowledge_chunks`
         // rút gọn mỗi lĩnh vực chỉ còn 2 phần: Mô tả biểu hiện & So sánh với trẻ cùng độ tuổi.
@@ -224,6 +227,39 @@ class AppDatabase {
         // Version 11 — thêm bảng `notifications` lưu thông báo kết nối AI và hệ thống.
         if (oldVersion < 11) {
           await db.execute(notificationsTableCreate);
+        }
+        // Version 12 — thay THẾ HOÀN TOÀN bộ sàng lọc cũ (50 câu/7 lĩnh vực,
+        // bảng `screenings`/`screening_responses`/`screening_domain_scores`)
+        // bằng bộ sàng lọc mới (4 mức tuổi 2/3/4/5 tuổi × 20 câu × 5 lĩnh vực
+        // độc lập với 7 lĩnh vực đánh giá, thang điểm 0-3 + N/A). Theo quyết
+        // định của cố vấn chuyên môn — bộ cũ không còn giá trị tham chiếu,
+        // xóa sạch dữ liệu cũ (không migrate/convert), người dùng làm lại
+        // bài sàng lọc theo bộ mới. Xem KE_HOACH_CAU_TRUC_SANG_LOC_MOI.md.
+        if (oldVersion < 12) {
+          await db.execute('DROP TABLE IF EXISTS screening_responses');
+          await db.execute('DROP TABLE IF EXISTS screening_domain_scores');
+          await db.execute('DROP TABLE IF EXISTS screenings');
+          await db.execute(screeningSessionsTableCreate);
+          await db.execute(screeningDomainResultsTableCreate);
+          await db.execute(screeningAnswersTableCreate);
+        }
+        // Version 13 — xóa sạch `expert_knowledge_chunks` content_type='so_sanh'
+        // hiện có (cùng pattern version 10) để `onOpen` tự seed lại từ
+        // `expert_knowledge_seed.json` đã sửa dải tuổi đầu 15-23 -> 12-23
+        // tháng (2 dải 24-47/48-60 giữ nguyên). Không cần UPDATE thủ công
+        // từng dòng, không cần gọi lại NVIDIA API (embedding không đổi vì
+        // nội dung `content` không đổi, chỉ đổi field số do_tuoi_thang_min).
+        if (oldVersion < 13) {
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = 'expert_knowledge_chunks'",
+          );
+          if (tables.isNotEmpty) {
+            try {
+              await db.execute(
+                "DELETE FROM expert_knowledge_chunks WHERE content_type = 'so_sanh'",
+              );
+            } catch (_) {}
+          }
         }
       },
     );

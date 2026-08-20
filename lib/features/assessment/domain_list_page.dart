@@ -71,143 +71,115 @@ class _DomainListPageState extends State<DomainListPage> {
               break;
             }
           }
-          return Column(
+          return ListView(
+            padding: IrisSpacing.page,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  IrisSpacing.md,
-                  IrisSpacing.md,
-                  IrisSpacing.md,
-                  IrisSpacing.xs,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Text('Tiến độ: $doneCount/$total lĩnh vực'),
+              const SizedBox(height: IrisSpacing.xs),
+              LinearProgressIndicator(
+                value: total == 0 ? 0 : doneCount / total,
+              ),
+              const SizedBox(height: IrisSpacing.md),
+              if (nextDomain != null)
+                _NextDomainCard(
+                  child: widget.child,
+                  domain: nextDomain,
+                  onContinue: _reload,
+                )
+              else
+                const Row(
                   children: [
-                    Text('Tiến độ: $doneCount/$total lĩnh vực'),
-                    const SizedBox(height: IrisSpacing.xs),
-                    LinearProgressIndicator(
-                      value: total == 0 ? 0 : doneCount / total,
+                    Icon(Icons.celebration_rounded, color: IrisColors.success),
+                    SizedBox(width: IrisSpacing.xs),
+                    Expanded(
+                      child: Text('Bạn đã hoàn thành đánh giá cả 7 lĩnh vực!'),
                     ),
                   ],
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  IrisSpacing.md,
-                  0,
-                  IrisSpacing.md,
-                  IrisSpacing.xs,
+              const SizedBox(height: IrisSpacing.xs),
+              IrisParagraph(
+                'Bạn không cần hoàn thành tất cả 7 lĩnh vực trong cùng một phiên. '
+                'Hãy đánh giá theo nhịp độ phù hợp của bạn và bé.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).hintColor,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (nextDomain != null)
-                      _NextDomainCard(
-                        child: widget.child,
-                        domain: nextDomain,
-                        onContinue: _reload,
-                      )
-                    else ...[
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.celebration_rounded,
-                            color: IrisColors.success,
-                          ),
-                          const SizedBox(width: IrisSpacing.xs),
-                          const Expanded(
-                            child: Text(
-                              'Bạn đã hoàn thành đánh giá cả 7 lĩnh vực!',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.of(context).push(
+              ),
+              const SizedBox(height: IrisSpacing.md),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: IrisSpacing.sm,
+                  crossAxisSpacing: IrisSpacing.sm,
+                  childAspectRatio: 1.1,
+                ),
+                itemCount: domains.length,
+                itemBuilder: (context, index) {
+                  final domain = domains[index];
+                  final hasDescription = domainsWithDescription.contains(
+                    domain.code,
+                  );
+                  final accent = IrisDomainStyle.colorOf(domain.code);
+                  return Card(
+                    color: IrisDomainStyle.softColorOf(domain.code),
+                    child: InkWell(
+                      borderRadius: IrisRadii.cardBorder,
+                      onTap: () async {
+                        await Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                OverviewPortraitPage(child: widget.child),
+                            builder: (_) => DomainHubPage(
+                              child: widget.child,
+                              linhVuc: domain.code,
+                              linhVucLabel: domain.label,
+                            ),
                           ),
+                        );
+                        _reload();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(IrisSpacing.sm),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IrisDomainIcon(
+                              domainCode: domain.code,
+                              completed: hasDescription,
+                            ),
+                            const SizedBox(height: IrisSpacing.xs),
+                            Text(
+                              domain.label,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: IrisSpacing.xxs),
+                            IrisStatusBadge(
+                              label: hasDescription
+                                  ? 'Đã có mô tả'
+                                  : 'Chưa có mô tả',
+                              color: hasDescription
+                                  ? IrisColors.success
+                                  : accent,
+                            ),
+                          ],
                         ),
-                        icon: const Icon(Icons.auto_awesome_outlined),
-                        label: const Text('Xem Chân dung toàn cảnh'),
-                      ),
-                    ],
-                    const SizedBox(height: IrisSpacing.xs),
-                    Text(
-                      'Bạn không cần hoàn thành tất cả 7 lĩnh vực trong cùng một phiên. '
-                      'Hãy đánh giá theo nhịp độ phù hợp của bạn và bé.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).hintColor,
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-              Expanded(
-                child: GridView.builder(
-                  padding: IrisSpacing.page,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: IrisSpacing.sm,
-                    crossAxisSpacing: IrisSpacing.sm,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: domains.length,
-                  itemBuilder: (context, index) {
-                    final domain = domains[index];
-                    final hasDescription = domainsWithDescription.contains(
-                      domain.code,
-                    );
-                    final accent = IrisDomainStyle.colorOf(domain.code);
-                    return Card(
-                      color: IrisDomainStyle.softColorOf(domain.code),
-                      child: InkWell(
-                        borderRadius: IrisRadii.cardBorder,
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DomainHubPage(
-                                child: widget.child,
-                                linhVuc: domain.code,
-                                linhVucLabel: domain.label,
-                              ),
-                            ),
-                          );
-                          _reload();
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(IrisSpacing.sm),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IrisDomainIcon(
-                                domainCode: domain.code,
-                                completed: hasDescription,
-                              ),
-                              const SizedBox(height: IrisSpacing.xs),
-                              Text(
-                                domain.label,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: IrisSpacing.xxs),
-                              IrisStatusBadge(
-                                label: hasDescription
-                                    ? 'Đã có mô tả'
-                                    : 'Chưa có mô tả',
-                                color: hasDescription
-                                    ? IrisColors.success
-                                    : accent,
-                              ),
-                            ],
-                          ),
+              const SizedBox(height: IrisSpacing.md),
+              FilledButton.icon(
+                onPressed: doneCount == 0
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              OverviewPortraitPage(child: widget.child),
                         ),
                       ),
-                    );
-                  },
-                ),
+                icon: const Icon(Icons.auto_awesome_outlined),
+                label: const Text('Xem Chân dung toàn cảnh'),
               ),
             ],
           );

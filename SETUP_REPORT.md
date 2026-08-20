@@ -203,3 +203,69 @@ tuổi để tiết kiệm thời gian.
 Tất cả các mục "chưa làm" liệt kê ở Đợt 1 bên dưới **nay đã hoàn thành**,
 trừ việc rename 82 file video (quyết định: không làm, giữ nguyên như đã
 chốt).
+
+---
+
+## Đợt 3 — Sửa 2 vấn đề phát hiện sau triển khai (Vận động thô/tinh + map tuổi→mức)
+
+### Kết quả Audit (Bước 1) — làm TRƯỚC khi sửa bất kỳ gì
+
+**Vấn đề 1 (Vận động thô/tinh phải gộp 1 lĩnh vực) — AUDIT XÁC NHẬN: ĐÃ
+ĐÚNG TỪ ĐẦU, KHÔNG PHẢI BUG.**
+- `assets/reference/sang_loc_20_cau_4_muc_tuoi.json`: chỉ có đúng 5 giá
+  trị `linh_vuc` (không có `van_dong_tho`/`van_dong_tinh` riêng); `van_dong`
+  mỗi mức có sẵn 4 câu (2 `nhom_van_dong="tho"` + 2 `="tinh"`).
+- `ScreeningScoringService`: gom nhóm câu hỏi theo `q.linhVuc` — tự động
+  gộp cả 4 câu vận động vào 1 phép tính `domain12` duy nhất.
+- UI (`screening_domains.dart`, `screening_result_page.dart`): chỉ 1 dòng
+  "Vận động" trong danh sách hiển thị.
+
+→ **Theo đúng chỉ dẫn, KHÔNG sửa code ở Bước 2** — chỉ bổ sung 3 test xác
+nhận (commit `4905b7b`).
+
+**Vấn đề 2 (map tuổi → mức) — AUDIT XÁC NHẬN: LÀ BUG THẬT.**
+`lib/core/constants/screening_domains.dart` — hàm `screeningAgeTierForMonths()`
+trả về `null` (chặn hoàn toàn) khi tuổi <24 hoặc >71 tháng, đúng như mô tả
+trong nhiệm vụ. Chỉ có 1 nơi gọi hàm này trong toàn bộ codebase
+(`screening_questionnaire_page.dart`) — xác nhận không có logic map trùng
+lặp ở nơi khác.
+
+### Đã sửa (Bước 2-3)
+
+- **Vấn đề 1**: không sửa code (đã đúng).
+- **Vấn đề 2**: đổi tên + sửa hành vi `screeningAgeTierForMonths()` →
+  `resolveScreeningAgeTier()` — LUÔN trả về 1 trong 4 mức, kẹp về `'2_tuoi'`
+  khi <24 tháng (kể cả 0 tháng), kẹp về `'5_tuoi'` khi >71 tháng. Xóa nhánh
+  UI "ngoài phạm vi" trong `screening_questionnaire_page.dart` (không còn
+  cần vì hàm không bao giờ trả null).
+
+### Kết quả test (Bước 4)
+
+- Test Vấn đề 1 (3 case mới): van_dong chỉ 1 dòng kết quả; domain12 tính
+  gộp trên 4 câu (tho=3,3+tinh=2,2 → 10.0, không phải trung bình 2 phép
+  tính con); 1 câu N/A trong nhóm "tho" vẫn quy đổi trên 3 câu còn lại của
+  CẢ van_dong. **3/3 PASS.**
+- 3 ví dụ mẫu A/B/C + ví dụ mục 8 vẫn **PASS nguyên vẹn** sau khi thêm test
+  Vấn đề 1 (không sửa code nên không có gì để hỏng).
+- Test Vấn đề 2 (13 mốc: 0,1,23,24,35,36,47,48,59,60,71,72,200 tháng) —
+  xác nhận mọi mốc <24 kẹp về `'2_tuoi'`, mọi mốc >71 kẹp về `'5_tuoi'`,
+  không trường hợp nào trả null/lỗi. **13/13 PASS.**
+- **Toàn bộ `flutter test`: 31/31 PASS.** `flutter analyze`: 0 issues thật.
+- **Verify tích hợp thật trên emulator Pixel_7**: tạo hồ sơ "Be_14_thang"
+  với ngày sinh 2025-06-20 (14 tháng tính tới 2026-08-20, dùng chế độ
+  "Theo ngày sinh" + date picker "Switch to input") → xác nhận **KHÔNG bị
+  chặn**, vào thẳng màn xác nhận công cụ sàng lọc (hiển thị đúng "1 tuổi 2
+  tháng"), bấm "Bắt đầu" → hiển thị đúng câu hỏi thật của bộ `'2_tuoi'`
+  ("Trẻ có thể chủ động ghép ít nhất hai từ có nghĩa...") — xác nhận kẹp
+  đúng về mức thấp nhất, làm bài bình thường.
+
+### Commit của Đợt 3
+
+9. `4905b7b` — **test Vấn đề 1** (audit xác nhận không phải bug, chỉ thêm
+   test): `test/screening_scoring_service_test.dart`.
+10. `21fcecd` — **fix Vấn đề 2**: `screening_domains.dart`,
+    `screening_questionnaire_page.dart`, cập nhật test map tuổi→mức.
+
+Không tạo migration version DB mới (đúng yêu cầu — cả 2 vấn đề đều không
+đổi cấu trúc bảng). Không đụng `domains.dart`, dữ liệu dải tuổi 12-23, hay
+bất kỳ phần nào ngoài phạm vi bộ sàng lọc mới.

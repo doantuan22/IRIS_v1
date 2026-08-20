@@ -344,7 +344,7 @@ class _ScreeningQuestionnairePageState
                           const SizedBox(height: 20),
 
                           _AnswerOptionTile(
-                            title: '0 — Chưa làm được',
+                            title: screeningAnswerOptionLabels[0],
                             isSelected:
                                 selectedAnswer != null &&
                                 !selectedAnswer.laNa &&
@@ -358,7 +358,7 @@ class _ScreeningQuestionnairePageState
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
-                            title: '1 — Có hỗ trợ',
+                            title: screeningAnswerOptionLabels[1],
                             isSelected:
                                 selectedAnswer != null &&
                                 !selectedAnswer.laNa &&
@@ -372,7 +372,7 @@ class _ScreeningQuestionnairePageState
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
-                            title: '2 — Chưa ổn định',
+                            title: screeningAnswerOptionLabels[2],
                             isSelected:
                                 selectedAnswer != null &&
                                 !selectedAnswer.laNa &&
@@ -386,7 +386,7 @@ class _ScreeningQuestionnairePageState
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
-                            title: '3 — Độc lập & thường xuyên',
+                            title: screeningAnswerOptionLabels[3],
                             isSelected:
                                 selectedAnswer != null &&
                                 !selectedAnswer.laNa &&
@@ -400,7 +400,7 @@ class _ScreeningQuestionnairePageState
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
-                            title: 'N/A — Không tính điểm',
+                            title: screeningAnswerOptionLabelNa,
                             isSelected:
                                 selectedAnswer != null && selectedAnswer.laNa,
                             selectedColor: IrisColors.neutral,

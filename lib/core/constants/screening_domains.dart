@@ -10,6 +10,20 @@ class ScreeningDomain {
   const ScreeningDomain({required this.code, required this.label});
 }
 
+/// Nhãn hiển thị cho 4 mức điểm (0-3) trong bài sàng lọc — index trùng
+/// đúng giá trị điểm lưu ở cột `screening_answers.diem` (index 0 -> điểm
+/// 0, ... index 3 -> điểm 3). CHỈ dùng cho hiển thị UI — KHÔNG liên quan
+/// tới cách map lựa chọn sang giá trị điểm lưu trữ (giữ nguyên 0/1/2/3).
+const List<String> screeningAnswerOptionLabels = [
+  'Chưa làm được',
+  'Làm được khi có hỗ trợ',
+  'Làm được nhưng chưa ổn định',
+  'Làm được độc lập và thường xuyên',
+];
+
+/// Nhãn hiển thị cho lựa chọn N/A (không tính điểm, `la_na = 1`).
+const String screeningAnswerOptionLabelNa = 'Chưa quan sát được';
+
 /// Đúng thứ tự 5 lĩnh vực sàng lọc: Ngôn ngữ-giao tiếp, Nhận thức-giải
 /// quyết vấn đề, Vận động (gồm 2 nhóm con: thô + tinh), Xã hội-cảm xúc,
 /// Tự lập.

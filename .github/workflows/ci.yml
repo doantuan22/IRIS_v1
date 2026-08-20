@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter analyze
+
+      # Chưa bật `flutter test` vì test/ đã được xóa (xem
+      # docs/adr/ và SETUP_REPORT.md), sẽ thêm lại khi có bộ test mới.

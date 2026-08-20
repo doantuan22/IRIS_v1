@@ -1,0 +1,246 @@
+/// 1 câu hỏi trong bộ sàng lọc mới (4 mức tuổi × 20 câu × 5 lĩnh vực).
+class ScreeningQuestion {
+  final String id;
+  final String linhVuc;
+  final String? nhomVanDong; // 'tho' | 'tinh', CHỈ khi linhVuc == 'van_dong'
+  final int thuTuTrongLinhVuc;
+  final String noiDung;
+
+  const ScreeningQuestion({
+    required this.id,
+    required this.linhVuc,
+    this.nhomVanDong,
+    required this.thuTuTrongLinhVuc,
+    required this.noiDung,
+  });
+
+  factory ScreeningQuestion.fromJson(Map<String, dynamic> json) =>
+      ScreeningQuestion(
+        id: json['id'] as String,
+        linhVuc: json['linh_vuc'] as String,
+        nhomVanDong: json['nhom_van_dong'] as String?,
+        thuTuTrongLinhVuc: json['thu_tu_trong_linh_vuc'] as int,
+        noiDung: json['noi_dung'] as String,
+      );
+}
+
+/// Bộ 20 câu của ĐÚNG 1 mức tuổi (2/3/4/5 tuổi).
+class ScreeningTierQuestionnaire {
+  final String mucTuoi; // '2_tuoi' | '3_tuoi' | '4_tuoi' | '5_tuoi'
+  final int thangTuoiMin;
+  final int thangTuoiMax;
+  final List<ScreeningQuestion> cauHoi;
+
+  const ScreeningTierQuestionnaire({
+    required this.mucTuoi,
+    required this.thangTuoiMin,
+    required this.thangTuoiMax,
+    required this.cauHoi,
+  });
+
+  factory ScreeningTierQuestionnaire.fromJson(Map<String, dynamic> json) =>
+      ScreeningTierQuestionnaire(
+        mucTuoi: json['muc_tuoi'] as String,
+        thangTuoiMin: json['thang_tuoi_min'] as int,
+        thangTuoiMax: json['thang_tuoi_max'] as int,
+        cauHoi: (json['cau_hoi'] as List<dynamic>)
+            .map((e) => ScreeningQuestion.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+/// Toàn bộ bộ câu hỏi sàng lọc mới — 4 mức tuổi.
+class ScreeningQuestionnaireData {
+  final List<ScreeningTierQuestionnaire> tiers;
+
+  const ScreeningQuestionnaireData({required this.tiers});
+
+  factory ScreeningQuestionnaireData.fromJsonList(List<dynamic> jsonList) =>
+      ScreeningQuestionnaireData(
+        tiers: jsonList
+            .map(
+              (e) => ScreeningTierQuestionnaire.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
+            .toList(),
+      );
+
+  /// Trả về bộ 20 câu của ĐÚNG mức tuổi, `null` nếu không có (dữ liệu thiếu).
+  ScreeningTierQuestionnaire? forTier(String mucTuoi) {
+    for (final t in tiers) {
+      if (t.mucTuoi == mucTuoi) return t;
+    }
+    return null;
+  }
+}
+
+/// Điểm 1 lĩnh vực sau khi chấm.
+class DomainScoreCalculation {
+  final String linhVuc;
+  final int diemTho;
+  final int soCauTraLoi;
+  final int soCauNa;
+  final double? diemQuyDoi12; // null nếu chưa đủ dữ liệu
+  final String mucLinhVuc; // 'du_lieu_du' | 'chua_du_du_lieu'
+
+  const DomainScoreCalculation({
+    required this.linhVuc,
+    required this.diemTho,
+    required this.soCauTraLoi,
+    required this.soCauNa,
+    this.diemQuyDoi12,
+    required this.mucLinhVuc,
+  });
+
+  bool get duDuLieu => mucLinhVuc == mucLinhVucDuDuLieu;
+}
+
+const String mucLinhVucDuDuLieu = 'du_lieu_du';
+const String mucLinhVucChuaDuDuLieu = 'chua_du_du_lieu';
+
+const String giaiDoan1 = '1';
+const String giaiDoan2 = '2';
+const String giaiDoan3 = '3';
+const String giaiDoanChuaDuDuLieu = 'chua_du_du_lieu';
+
+/// Kết quả chấm điểm toàn bài.
+class ScreeningScoreResult {
+  final double? tongDiem60; // null nếu bất kỳ lĩnh vực nào chưa đủ dữ liệu
+  final String giaiDoan; // '1' | '2' | '3' | 'chua_du_du_lieu'
+  final bool coCanhBao;
+  final List<DomainScoreCalculation> domainResults;
+
+  const ScreeningScoreResult({
+    required this.tongDiem60,
+    required this.giaiDoan,
+    required this.coCanhBao,
+    required this.domainResults,
+  });
+
+  /// `true` khi cần hiển thị khuyến nghị đánh giá chuyên môn NGAY — độc lập
+  /// hoàn toàn với [giaiDoan]/[tongDiem60] (cờ `co_canh_bao` do người dùng
+  /// tự báo "mất kỹ năng đã từng có / lo ngại phát triển rõ rệt" ở màn hỏi
+  /// riêng trước khi xem kết quả). KHÔNG ghi đè [giaiDoan] — [giaiDoan] vẫn
+  /// luôn được tính đúng theo điểm số thực tế, UI hiển thị cả 2 tín hiệu
+  /// song song.
+  bool get needsImmediateProfessionalEvaluation => coCanhBao;
+}
+
+/// Ngưỡng thang điểm 60 — GIẢ ĐỊNH NỘI BỘ của dự án, CHƯA chuẩn hóa lâm
+/// sàng, KHÔNG dùng để chẩn đoán. Xem
+/// `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx` (tài liệu
+/// gốc của cố vấn chuyên môn).
+const double nguongTong60GiaiDoan3 = 35.0;
+const double nguongTong60GiaiDoan2 = 50.0;
+const double nguongDomain12GiaiDoan3 = 6.0;
+const double nguongDomain12GiaiDoan2 = 9.0;
+
+/// Số câu tối thiểu CÓ điểm (không N/A) trong 1 lĩnh vực (4 câu/lĩnh vực)
+/// để coi là đủ dữ liệu chấm điểm lĩnh vực đó.
+const int soCauToiThieuDuDuLieu = 3;
+
+/// Câu trả lời 1 câu hỏi — dùng làm input cho [ScreeningScoringService].
+typedef ScreeningRawAnswer = ({int? diem, bool laNa});
+
+/// Service chấm điểm chính thức cho bộ sàng lọc mới (hàm Dart thuần,
+/// không I/O). Thay thế hoàn toàn thuật toán 50 câu/7 lĩnh vực cũ.
+class ScreeningScoringService {
+  /// Chấm điểm toàn bài dựa trên [answers] (cau_hoi_id -> điểm/N/A) và
+  /// [questions] (đúng 20 câu của mức tuổi đang làm). [coCanhBao] là cờ
+  /// "mất kỹ năng đã từng có / lo ngại phát triển rõ rệt" người dùng tự
+  /// báo — KHÔNG ảnh hưởng tới cách tính [ScreeningScoreResult.giaiDoan],
+  /// chỉ quyết định [ScreeningScoreResult.needsImmediateProfessionalEvaluation].
+  static ScreeningScoreResult calculateScore({
+    required Map<String, ScreeningRawAnswer> answers,
+    required List<ScreeningQuestion> questions,
+    required bool coCanhBao,
+  }) {
+    final questionsByDomain = <String, List<ScreeningQuestion>>{};
+    for (final q in questions) {
+      questionsByDomain.putIfAbsent(q.linhVuc, () => []).add(q);
+    }
+
+    final domainResults = <DomainScoreCalculation>[];
+    for (final entry in questionsByDomain.entries) {
+      domainResults.add(_calculateDomainScore(entry.key, entry.value, answers));
+    }
+
+    final anyInsufficient = domainResults.any((d) => !d.duDuLieu);
+
+    if (anyInsufficient) {
+      return ScreeningScoreResult(
+        tongDiem60: null,
+        giaiDoan: giaiDoanChuaDuDuLieu,
+        coCanhBao: coCanhBao,
+        domainResults: domainResults,
+      );
+    }
+
+    final domain12Values = domainResults
+        .map((d) => d.diemQuyDoi12!)
+        .toList();
+    final tong60 = domain12Values.fold<double>(0, (sum, v) => sum + v);
+    final minDomain12 = domain12Values.reduce((a, b) => a < b ? a : b);
+
+    final String giaiDoan;
+    if (tong60 < nguongTong60GiaiDoan3 || minDomain12 < nguongDomain12GiaiDoan3) {
+      giaiDoan = giaiDoan3;
+    } else if (tong60 < nguongTong60GiaiDoan2 ||
+        minDomain12 < nguongDomain12GiaiDoan2) {
+      giaiDoan = giaiDoan2;
+    } else {
+      giaiDoan = giaiDoan1;
+    }
+
+    return ScreeningScoreResult(
+      tongDiem60: tong60,
+      giaiDoan: giaiDoan,
+      coCanhBao: coCanhBao,
+      domainResults: domainResults,
+    );
+  }
+
+  static DomainScoreCalculation _calculateDomainScore(
+    String linhVuc,
+    List<ScreeningQuestion> domainQuestions,
+    Map<String, ScreeningRawAnswer> answers,
+  ) {
+    int diemTho = 0;
+    int soCauTraLoi = 0;
+    int soCauNa = 0;
+
+    for (final q in domainQuestions) {
+      final answer = answers[q.id];
+      if (answer == null || answer.laNa) {
+        soCauNa++;
+        continue;
+      }
+      soCauTraLoi++;
+      diemTho += answer.diem ?? 0;
+    }
+
+    if (soCauTraLoi < soCauToiThieuDuDuLieu) {
+      return DomainScoreCalculation(
+        linhVuc: linhVuc,
+        diemTho: diemTho,
+        soCauTraLoi: soCauTraLoi,
+        soCauNa: soCauNa,
+        diemQuyDoi12: null,
+        mucLinhVuc: mucLinhVucChuaDuDuLieu,
+      );
+    }
+
+    final raw = diemTho / (3 * soCauTraLoi) * 12;
+    final rounded = (raw * 10).round() / 10;
+
+    return DomainScoreCalculation(
+      linhVuc: linhVuc,
+      diemTho: diemTho,
+      soCauTraLoi: soCauTraLoi,
+      soCauNa: soCauNa,
+      diemQuyDoi12: rounded,
+      mucLinhVuc: mucLinhVucDuDuLieu,
+    );
+  }
+}

@@ -1,189 +1,167 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../domain/models/screening.dart';
-import '../../domain/models/screening_domain_score.dart';
-import '../../domain/models/screening_response.dart';
+import '../../domain/models/screening_answer.dart';
+import '../../domain/models/screening_domain_result.dart';
+import '../../domain/models/screening_session.dart';
 import '../local/database.dart';
 
-/// Lưu và truy vấn kết quả sàng lọc trên bảng `screenings`, `screening_responses`,
-/// và `screening_domain_scores`.
+/// Lưu và truy vấn kết quả sàng lọc trên bảng `screening_sessions`,
+/// `screening_domain_results`, và `screening_answers` (bộ sàng lọc mới —
+/// 4 mức tuổi × 20 câu × 5 lĩnh vực).
 class ScreeningRepository {
   final AppDatabase _db;
   static const _uuid = Uuid();
 
   ScreeningRepository(this._db);
 
-  /// Lưu 1 bản ghi sàng lọc cơ bản (backward compatibility).
-  Future<Screening> save({
-    required String childId,
-    String? toolName,
-    String? score,
-    String? resultSummary,
-    DateTime? performedAt,
-  }) async {
-    final screening = Screening(
-      id: _uuid.v4(),
-      childId: childId,
-      toolName: toolName,
-      score: score,
-      resultSummary: resultSummary,
-      performedAt: performedAt,
-      createdAt: DateTime.now(),
-    );
-    final db = await _db.database;
-    await db.insert('screenings', _toRow(screening));
-    return screening;
-  }
-
   /// Lưu 1 lần làm bài sàng lọc hoàn chỉnh trong 1 transaction:
-  /// - 1 bản ghi vào `screenings`
-  /// - các bản ghi chi tiết câu trả lời vào `screening_responses` (50 câu)
-  /// - các bản ghi điểm từng lĩnh vực vào `screening_domain_scores` (7 lĩnh vực)
-  Future<Screening> saveScreeningSession({
+  /// - 1 bản ghi vào `screening_sessions`
+  /// - các bản ghi chi tiết câu trả lời vào `screening_answers` (20 câu)
+  /// - các bản ghi điểm từng lĩnh vực vào `screening_domain_results` (5 lĩnh vực)
+  Future<ScreeningSession> saveScreeningSession({
     required String childId,
-    required String toolName,
-    required String score,
-    required String resultSummary,
-    required DateTime performedAt,
-    required List<({String cauHoiId, String linhVuc, String giaTri})> responses,
-    required List<({
-      String linhVuc,
-      int soCauThietKe,
-      int soCauHopLe,
-      int diemTho,
-      double? diemPhanTram,
-    })> domainScores,
+    required String mucTuoiLamBai,
+    required double? tongDiem60,
+    required String giaiDoan,
+    required bool coCanhBao,
+    required DateTime ngayThucHien,
+    required List<
+      ({
+        String cauHoiId,
+        String linhVuc,
+        String? nhomVanDong,
+        int? diem,
+        bool laNa,
+      })
+    >
+    answers,
+    required List<
+      ({
+        String linhVuc,
+        int diemTho,
+        int soCauTraLoi,
+        int soCauNa,
+        double? diemQuyDoi12,
+        String mucLinhVuc,
+      })
+    >
+    domainResults,
   }) async {
     final now = DateTime.now();
-    final screening = Screening(
+    final session = ScreeningSession(
       id: _uuid.v4(),
       childId: childId,
-      toolName: toolName,
-      score: score,
-      resultSummary: resultSummary,
-      performedAt: performedAt,
+      mucTuoiLamBai: mucTuoiLamBai,
+      tongDiem60: tongDiem60,
+      giaiDoan: giaiDoan,
+      coCanhBao: coCanhBao,
+      ngayThucHien: ngayThucHien,
       createdAt: now,
     );
 
     final db = await _db.database;
     await db.transaction((txn) async {
-      await txn.insert('screenings', _toRow(screening));
+      await txn.insert('screening_sessions', _sessionToRow(session));
 
-      for (final r in responses) {
-        await txn.insert('screening_responses', {
+      for (final a in answers) {
+        await txn.insert('screening_answers', {
           'id': _uuid.v4(),
-          'screening_id': screening.id,
-          'cau_hoi_id': r.cauHoiId,
-          'linh_vuc': r.linhVuc,
-          'gia_tri': r.giaTri,
+          'screening_id': session.id,
+          'child_id': childId,
+          'muc_tuoi_lam_bai': mucTuoiLamBai,
+          'cau_hoi_id': a.cauHoiId,
+          'linh_vuc': a.linhVuc,
+          'nhom_van_dong': a.nhomVanDong,
+          'diem': a.diem,
+          'la_na': a.laNa ? 1 : 0,
           'created_at': now.toIso8601String(),
         });
       }
 
-      for (final d in domainScores) {
-        await txn.insert('screening_domain_scores', {
+      for (final d in domainResults) {
+        await txn.insert('screening_domain_results', {
           'id': _uuid.v4(),
-          'screening_id': screening.id,
+          'screening_id': session.id,
+          'child_id': childId,
           'linh_vuc': d.linhVuc,
-          'so_cau_thiet_ke': d.soCauThietKe,
-          'so_cau_hop_le': d.soCauHopLe,
           'diem_tho': d.diemTho,
-          'diem_phan_tram': d.diemPhanTram,
+          'so_cau_tra_loi': d.soCauTraLoi,
+          'so_cau_na': d.soCauNa,
+          'diem_quy_doi_12': d.diemQuyDoi12,
+          'muc_linh_vuc': d.mucLinhVuc,
           'created_at': now.toIso8601String(),
         });
       }
     });
 
-    return screening;
+    return session;
   }
 
-  Future<List<Screening>> getForChild(String childId) async {
-    return getScreeningsByChildId(childId);
+  Future<List<ScreeningSession>> getForChild(String childId) async {
+    return getSessionsByChildId(childId);
   }
 
   /// Trả về danh sách các lần sàng lọc của ĐÚNG child_id truyền vào,
   /// sắp xếp mới nhất trước, lọc trực tiếp bằng SQL `WHERE child_id = ?`.
-  Future<List<Screening>> getScreeningsByChildId(String childId) async {
+  Future<List<ScreeningSession>> getSessionsByChildId(String childId) async {
     final db = await _db.database;
     final rows = await db.query(
-      'screenings',
+      'screening_sessions',
       where: 'child_id = ?',
       whereArgs: [childId],
-      orderBy: 'performed_at DESC',
+      orderBy: 'ngay_thuc_hien DESC',
     );
-    return rows.map(_fromRow).toList();
+    return rows.map(_sessionFromRow).toList();
   }
 
   /// Lấy 1 bản ghi sàng lọc theo ID cụ thể.
-  Future<Screening?> getById(String id) async {
+  Future<ScreeningSession?> getById(String id) async {
     final db = await _db.database;
     final rows = await db.query(
-      'screenings',
+      'screening_sessions',
       where: 'id = ?',
       whereArgs: [id],
       limit: 1,
     );
     if (rows.isEmpty) return null;
-    return _fromRow(rows.first);
+    return _sessionFromRow(rows.first);
   }
 
-  Future<Screening?> getLatestForChild(String childId) async {
+  Future<ScreeningSession?> getLatestForChild(String childId) async {
     final db = await _db.database;
     final rows = await db.query(
-      'screenings',
+      'screening_sessions',
       where: 'child_id = ?',
       whereArgs: [childId],
-      orderBy: 'performed_at DESC',
+      orderBy: 'ngay_thuc_hien DESC',
       limit: 1,
     );
     if (rows.isEmpty) return null;
-    return _fromRow(rows.first);
+    return _sessionFromRow(rows.first);
   }
 
-  Future<List<ScreeningResponse>> getResponses(String screeningId) async {
+  Future<List<ScreeningAnswer>> getAnswers(String screeningId) async {
     final db = await _db.database;
     final rows = await db.query(
-      'screening_responses',
+      'screening_answers',
       where: 'screening_id = ?',
       whereArgs: [screeningId],
       orderBy: 'cau_hoi_id ASC',
     );
-    return rows
-        .map(
-          (row) => ScreeningResponse(
-            id: row['id'] as String,
-            screeningId: row['screening_id'] as String,
-            cauHoiId: row['cau_hoi_id'] as String,
-            linhVuc: row['linh_vuc'] as String,
-            giaTri: row['gia_tri'] as String,
-            createdAt: DateTime.parse(row['created_at'] as String),
-          ),
-        )
-        .toList();
+    return rows.map(_answerFromRow).toList();
   }
 
-  Future<List<ScreeningDomainScore>> getDomainScores(String screeningId) async {
+  Future<List<ScreeningDomainResult>> getDomainResults(
+    String screeningId,
+  ) async {
     final db = await _db.database;
     final rows = await db.query(
-      'screening_domain_scores',
+      'screening_domain_results',
       where: 'screening_id = ?',
       whereArgs: [screeningId],
     );
-    return rows
-        .map(
-          (row) => ScreeningDomainScore(
-            id: row['id'] as String,
-            screeningId: row['screening_id'] as String,
-            linhVuc: row['linh_vuc'] as String,
-            soCauThietKe: row['so_cau_thiet_ke'] as int,
-            soCauHopLe: row['so_cau_hop_le'] as int,
-            diemTho: row['diem_tho'] as int,
-            diemPhanTram: (row['diem_phan_tram'] as num?)?.toDouble(),
-            createdAt: DateTime.parse(row['created_at'] as String),
-          ),
-        )
-        .toList();
+    return rows.map(_domainResultFromRow).toList();
   }
 
   /// Đúng nguyên tắc đã chốt trong roadmap: không có dòng nào cho child_id
@@ -192,32 +170,61 @@ class ScreeningRepository {
   Future<bool> hasScreening(String childId) async {
     final db = await _db.database;
     final result = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM screenings WHERE child_id = ?', [
-        childId,
-      ]),
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM screening_sessions WHERE child_id = ?',
+        [childId],
+      ),
     );
     return (result ?? 0) > 0;
   }
 
-  Map<String, Object?> _toRow(Screening screening) => {
-    'id': screening.id,
-    'child_id': screening.childId,
-    'tool_name': screening.toolName,
-    'score': screening.score,
-    'result_summary': screening.resultSummary,
-    'performed_at': screening.performedAt?.toIso8601String(),
-    'created_at': screening.createdAt.toIso8601String(),
+  Map<String, Object?> _sessionToRow(ScreeningSession s) => {
+    'id': s.id,
+    'child_id': s.childId,
+    'muc_tuoi_lam_bai': s.mucTuoiLamBai,
+    'tong_diem_60': s.tongDiem60,
+    'giai_doan': s.giaiDoan,
+    'co_canh_bao': s.coCanhBao ? 1 : 0,
+    'ngay_thuc_hien': s.ngayThucHien.toIso8601String(),
+    'created_at': s.createdAt.toIso8601String(),
   };
 
-  Screening _fromRow(Map<String, Object?> row) => Screening(
+  ScreeningSession _sessionFromRow(Map<String, Object?> row) =>
+      ScreeningSession(
+        id: row['id'] as String,
+        childId: row['child_id'] as String,
+        mucTuoiLamBai: row['muc_tuoi_lam_bai'] as String,
+        tongDiem60: (row['tong_diem_60'] as num?)?.toDouble(),
+        giaiDoan: row['giai_doan'] as String,
+        coCanhBao: (row['co_canh_bao'] as int) == 1,
+        ngayThucHien: DateTime.parse(row['ngay_thuc_hien'] as String),
+        createdAt: DateTime.parse(row['created_at'] as String),
+      );
+
+  ScreeningAnswer _answerFromRow(Map<String, Object?> row) => ScreeningAnswer(
     id: row['id'] as String,
+    screeningId: row['screening_id'] as String,
     childId: row['child_id'] as String,
-    toolName: row['tool_name'] as String?,
-    score: row['score'] as String?,
-    resultSummary: row['result_summary'] as String?,
-    performedAt: row['performed_at'] == null
-        ? null
-        : DateTime.parse(row['performed_at'] as String),
+    mucTuoiLamBai: row['muc_tuoi_lam_bai'] as String,
+    cauHoiId: row['cau_hoi_id'] as String,
+    linhVuc: row['linh_vuc'] as String,
+    nhomVanDong: row['nhom_van_dong'] as String?,
+    diem: row['diem'] as int?,
+    laNa: (row['la_na'] as int) == 1,
     createdAt: DateTime.parse(row['created_at'] as String),
   );
+
+  ScreeningDomainResult _domainResultFromRow(Map<String, Object?> row) =>
+      ScreeningDomainResult(
+        id: row['id'] as String,
+        screeningId: row['screening_id'] as String,
+        childId: row['child_id'] as String,
+        linhVuc: row['linh_vuc'] as String,
+        diemTho: row['diem_tho'] as int,
+        soCauTraLoi: row['so_cau_tra_loi'] as int,
+        soCauNa: row['so_cau_na'] as int,
+        diemQuyDoi12: (row['diem_quy_doi_12'] as num?)?.toDouble(),
+        mucLinhVuc: row['muc_linh_vuc'] as String,
+        createdAt: DateTime.parse(row['created_at'] as String),
+      );
 }

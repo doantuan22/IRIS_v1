@@ -11,8 +11,7 @@ class ScreeningLoaderService {
   /// `Bo_cau_hoi_sang_loc_phat_trien_tre_em_2-5_tuoi_ban_chinh_sua.docx`
   /// (nội dung câu hỏi + cấu trúc lĩnh vực) theo thang điểm 0-3 mô tả
   /// trong `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx`.
-  static const String assetPath =
-      'assets/reference/sang_loc_20_cau_4_muc_tuoi.json';
+  static const String assetPath = 'assets/reference/screening_questions.json';
 
   static ScreeningQuestionnaireData? _cachedData;
 

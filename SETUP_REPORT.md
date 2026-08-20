@@ -122,7 +122,7 @@ ingest, viết bộ test chính thức, verify tích hợp thật trên emulator
 - Trích xuất nội dung 2 file `.docx` bằng script Python (đọc trực tiếp
   `word/document.xml` trong file zip, không cần thư viện ngoài).
 - Chuyển 80 câu hỏi (4 mức × 20 câu) thành
-  `assets/reference/sang_loc_20_cau_4_muc_tuoi.json`, thay thế hoàn toàn
+  `assets/reference/screening_questions.json`, thay thế hoàn toàn
   file placeholder (đã xóa).
 - **Kiểm chứng bằng code trước khi ingest** (không chỉ đọc mắt):
   - Đúng 80 câu tổng (4×20). ✅
@@ -193,7 +193,7 @@ tuổi để tiết kiệm thời gian.
 ### Commit của Đợt 2
 
 7. `07b0a44` — **dữ liệu thật + ingest + xóa placeholder**:
-   `sang_loc_20_cau_4_muc_tuoi.json`, `screening_loader_service.dart`
+   `screening_questions.json`, `screening_loader_service.dart`
    (đổi `assetPath`), xóa `.placeholder.json`.
 8. `179716e` — **bộ test chính thức**: `test/screening_scoring_service_test.dart`
    (25/25 PASS).
@@ -212,7 +212,7 @@ chốt).
 
 **Vấn đề 1 (Vận động thô/tinh phải gộp 1 lĩnh vực) — AUDIT XÁC NHẬN: ĐÃ
 ĐÚNG TỪ ĐẦU, KHÔNG PHẢI BUG.**
-- `assets/reference/sang_loc_20_cau_4_muc_tuoi.json`: chỉ có đúng 5 giá
+- `assets/reference/screening_questions.json`: chỉ có đúng 5 giá
   trị `linh_vuc` (không có `van_dong_tho`/`van_dong_tinh` riêng); `van_dong`
   mỗi mức có sẵn 4 câu (2 `nhom_van_dong="tho"` + 2 `="tinh"`).
 - `ScreeningScoringService`: gom nhóm câu hỏi theo `q.linhVuc` — tự động

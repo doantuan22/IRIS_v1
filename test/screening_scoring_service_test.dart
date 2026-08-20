@@ -16,7 +16,7 @@ void main() {
 
   setUpAll(() {
     final jsonString = File(
-      'assets/reference/sang_loc_20_cau_4_muc_tuoi.json',
+      'assets/reference/screening_questions.json',
     ).readAsStringSync();
     questionnaireData = ScreeningLoaderService.parseJson(jsonString);
   });

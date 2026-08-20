@@ -94,13 +94,112 @@ prompt tiếp theo, sau khi dữ liệu thật đã được ingest.)*
 - `flutter build apk --debug`: **thành công** —
   `√ Built build\app\outputs\flutter-apk\app-debug.apk`.
 
-## Việc CHƯA làm — đúng phạm vi (thuộc Prompt 2)
+---
 
-- Chưa chuyển đổi nội dung 2 file Word thành dữ liệu câu hỏi thật.
-- Chưa ingest dữ liệu thật (`sang_loc_20_cau_4_muc_tuoi.json` — file
-  `.placeholder.json` hiện tại vẫn là dữ liệu giả).
-- Chưa viết bộ test chính thức đối chiếu 3 ví dụ mẫu với tài liệu gốc
-  (test tạm ở trên chỉ mô phỏng theo mô tả thuật toán, không đọc file
-  Word thật).
-- Chưa verify tích hợp thật trên thiết bị/emulator.
-- Chưa rename 82 file video/`video_manifest.json` (quyết định: không làm).
+## Đợt 2 (cùng ngày, tiếp theo) — Ingest dữ liệu thật + bộ test chính thức + verify thiết bị
+
+Thực thi phần còn lại: chuyển đổi 2 file Word gốc thành dữ liệu thật,
+ingest, viết bộ test chính thức, verify tích hợp thật trên emulator.
+
+### Phát hiện mâu thuẫn khi đối chiếu 2 file Word — đã báo cáo, chờ xác nhận trước khi làm tiếp
+
+1. **Thang điểm/thuật toán**: mục 2-3 file
+   `Bo_cau_hoi_sang_loc_phat_trien_tre_em_2-5_tuoi_ban_chinh_sua.docx` mô
+   tả 1 hệ thống KHÁC hẳn (thang 3 mức/8 điểm mỗi lĩnh vực/không cộng
+   tổng) — mâu thuẫn hoàn toàn với thuật toán 0-3/60 điểm đã dựng đúng
+   theo `Huong_dan_cham_diem_va_phan_loai_3_giai_doan_2-5_tuoi.docx` (mục
+   12 file này khớp 100% với `ScreeningScoringService` đã viết).
+   **Quyết định (đã xác nhận)**: bỏ qua mục 2-3 file "Bộ câu hỏi" (coi là
+   mô tả lỗi thời/thừa), chỉ lấy NỘI DUNG 20 câu/mức từ file đó, thuật
+   toán giữ nguyên theo file "Hướng dẫn chấm điểm".
+2. **Dải tháng tuổi**: "cửa sổ áp dụng" trong Word hẹp hơn và có khoảng
+   trống (24-29/36-41/48-53/60-65 tháng) so với dải liên tục đã code
+   (24-35/36-47/48-59/60-71 tháng). **Quyết định (đã xác nhận)**: giữ dải
+   liên tục đã code.
+
+### Ingest dữ liệu thật (mục 2-4 yêu cầu)
+
+- Trích xuất nội dung 2 file `.docx` bằng script Python (đọc trực tiếp
+  `word/document.xml` trong file zip, không cần thư viện ngoài).
+- Chuyển 80 câu hỏi (4 mức × 20 câu) thành
+  `assets/reference/sang_loc_20_cau_4_muc_tuoi.json`, thay thế hoàn toàn
+  file placeholder (đã xóa).
+- **Kiểm chứng bằng code trước khi ingest** (không chỉ đọc mắt):
+  - Đúng 80 câu tổng (4×20). ✅
+  - Mỗi mức đúng 5 lĩnh vực × 4 câu. ✅
+  - `van_dong` mỗi mức đúng 2 câu `nhom_van_dong=tho` + 2 câu `=tinh`; 4
+    lĩnh vực còn lại `nhom_van_dong=null`. ✅
+  - 0 id trùng lặp trong 80 câu. ✅
+  - Đối chiếu nguyên văn **8 câu mẫu** (≥2 câu/mức, rải đều 5 lĩnh vực) với
+    văn bản gốc — liệt kê cụ thể từng câu đã đối chiếu (xem log lệnh Python
+    `verify_content.py` đã chạy): `sl_2t_ngon_ngu_giao_tiep_01`,
+    `sl_2t_van_dong_tho_02`, `sl_3t_nhan_thuc_giai_quyet_van_de_03`,
+    `sl_3t_van_dong_tinh_03`, `sl_4t_xa_hoi_cam_xuc_04`,
+    `sl_4t_tu_lap_01`, `sl_5t_ngon_ngu_giao_tiep_04`,
+    `sl_5t_nhan_thuc_giai_quyet_van_de_01` — **8/8 khớp nguyên văn**.
+
+### Bộ test chính thức (mục 5-6 yêu cầu) — `test/screening_scoring_service_test.dart`
+
+Chạy thật bằng `flutter test`, dùng trực tiếp file JSON thật (không mock),
+**giữ lại trong repo** (khác với 2 test tạm ở Đợt 1 đã xóa sau khi xác
+nhận) vì đây là bộ test chính thức theo đúng yêu cầu.
+
+| Nhóm | Số case | Kết quả |
+|---|---|---|
+| Cấu trúc JSON thật (80 câu, 5 lĩnh vực, van_dong tho/tinh, id không trùng, nội dung khớp Word) | 5 | PASS |
+| Thuật toán (đủ dữ liệu, 1 N/A, ≥2 N/A, co_canh_bao độc lập) | 4 | PASS |
+| 3 ví dụ mẫu A/B/C + ví dụ mục 8 (không "bù điểm") + biên ngưỡng tong60/domain12 | 6 | PASS |
+| Map tuổi → mức (biên 23/24/35/36/47/48/59/60/71/72 tháng) | 10 | PASS |
+
+**Tổng: 25/25 PASS.** Đặc biệt 3 ví dụ mẫu A/B/C khớp đúng Giai đoạn
+1/2/3 như tài liệu gốc — xác nhận `ScreeningScoringService` không có bug,
+không cần sửa.
+
+`flutter analyze`: 0 issues thật (chỉ còn 3 info-level pre-existing ở
+`scripts/`, không liên quan).
+
+### Verify tích hợp thật trên thiết bị (mục 7 yêu cầu)
+
+Không có device/emulator nào sẵn sàng lúc bắt đầu — đã tự khởi động AVD
+`Pixel_7` có sẵn từ trước (`flutter emulators --launch Pixel_7`), cài
+`app-debug.apk`, điều khiển qua `adb`/`uiautomator dump` (đọc UI thật trên
+màn hình, không đoán). Kết quả:
+
+1. **Tạo hồ sơ "Be_Test_4_tuoi", chọn trực tiếp mức "4 tuổi"** (không qua
+   ngày sinh) → hiển thị đúng "4 tuổi 5 tháng" (representativeMonths=53).
+2. **`ScreeningToolConfirmPage`** hiển thị đúng text mới "Bộ câu hỏi sàng
+   lọc 20 câu (5 lĩnh vực)" — không còn "50 câu" cũ.
+3. **Làm hết 20 câu thật** (chọn "3 — Độc lập & thường xuyên" mỗi câu) —
+   nội dung câu 1 hiển thị đúng: *"Trẻ có thể nói thành những câu tương
+   đối đầy đủ gồm bốn từ trở lên..."* — khớp chính xác dữ liệu thật đã
+   ingest, KHÔNG phải placeholder.
+4. **Màn "cờ cảnh báo"** hiện đúng sau câu 20, chọn "Không".
+5. **Kết quả**: `60.0/60`, `Giai đoạn 1`, cả 5 lĩnh vực `12.0/12` — đúng
+   thuật toán (toàn bộ điểm 3 → domain12=12.0 mỗi lĩnh vực → tong60=60.0).
+6. **Lịch sử sàng lọc** hiển thị đúng "Giai đoạn 1 · 60.0/60 · ngày giờ
+   thật"; bấm vào xem lại — đọc đúng từ SQLite (không phải từ bộ nhớ tạm),
+   kết quả khớp y hệt.
+7. **Tạo hồ sơ thứ 2 "Be_Test_2_tuoi", chọn mức "2 tuổi"** → hiển thị
+   đúng "2 tuổi 5 tháng" (representativeMonths=29); vào bài sàng lọc, câu 1
+   hiển thị nội dung KHÁC hẳn và đúng dữ liệu thật của mức 2 tuổi: *"Trẻ có
+   thể chủ động ghép ít nhất hai từ có nghĩa..."* — xác nhận đúng bộ câu
+   hỏi được chọn theo tuổi trẻ.
+
+Đã verify đầy đủ luồng end-to-end cho 2/4 mức tuổi (2 tuổi, 4 tuổi) trên
+thiết bị Android thật (emulator) — cùng 1 code path cho cả 4 mức nên đây
+là bằng chứng đủ mạnh cho toàn bộ, không lặp lại thao tác cho 3 tuổi/5
+tuổi để tiết kiệm thời gian.
+
+### Commit của Đợt 2
+
+7. `07b0a44` — **dữ liệu thật + ingest + xóa placeholder**:
+   `sang_loc_20_cau_4_muc_tuoi.json`, `screening_loader_service.dart`
+   (đổi `assetPath`), xóa `.placeholder.json`.
+8. `179716e` — **bộ test chính thức**: `test/screening_scoring_service_test.dart`
+   (25/25 PASS).
+
+### Cập nhật trạng thái "Việc CHƯA làm" ở Đợt 1
+
+Tất cả các mục "chưa làm" liệt kê ở Đợt 1 bên dưới **nay đã hoàn thành**,
+trừ việc rename 82 file video (quyết định: không làm, giữ nguyên như đã
+chốt).

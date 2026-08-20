@@ -469,10 +469,13 @@ void main() {
     });
   });
 
-  group('Xác định bộ câu hỏi theo tuổi trẻ (dải tháng liên tục)', () {
-    // Biên các mốc chuyển mức: 23/24, 35/36, 47/48, 59/60, 71/72.
-    final cases = <int, String?>{
-      23: null, // dưới 24 tháng, ngoài mọi dải
+  group('resolveScreeningAgeTier — kẹp về 2 đầu, không bao giờ trả null', () {
+    // Biên các mốc chuyển mức: 23/24, 35/36, 47/48, 59/60, 71/72, cộng các
+    // mốc rất xa 2 đầu (0, 1, 200) để xác nhận kẹp đúng, không riêng biên.
+    final cases = <int, String>{
+      0: '2_tuoi',
+      1: '2_tuoi',
+      23: '2_tuoi', // dưới 24 tháng -> kẹp về mức thấp nhất
       24: '2_tuoi',
       35: '2_tuoi',
       36: '3_tuoi',
@@ -481,22 +484,18 @@ void main() {
       59: '4_tuoi',
       60: '5_tuoi',
       71: '5_tuoi',
-      72: null, // trên 71 tháng, ngoài mọi dải
+      72: '5_tuoi', // trên 71 tháng -> kẹp về mức cao nhất
+      200: '5_tuoi',
     };
 
     cases.forEach((months, expectedTier) {
-      test('$months tháng -> ${expectedTier ?? "ngoài mọi dải (null)"}', () {
-        final range = screeningAgeTierForMonths(months);
-        if (expectedTier == null) {
-          expect(
-            range,
-            isNull,
-            reason: '$months tháng phải xử lý rõ ràng (null), không crash, không mặc định chọn liều 1 mức',
-          );
-        } else {
-          expect(range, isNotNull);
-          expect(range!.tier, expectedTier);
-        }
+      test('$months tháng -> $expectedTier', () {
+        final range = resolveScreeningAgeTier(months);
+        expect(
+          range.tier,
+          expectedTier,
+          reason: 'resolveScreeningAgeTier phải luôn trả về 1 trong 4 mức, không bao giờ null/lỗi',
+        );
       });
     });
   });

@@ -80,16 +80,31 @@ const List<ScreeningAgeTierRange> screeningAgeTierRanges = [
   ),
 ];
 
-/// Tìm mức tuổi phù hợp với [ageMonths] — trả `null` nếu ngoài mọi dải
-/// (dưới 24 tháng hoặc trên 71 tháng), gọi nơi dùng phải tự xử lý rõ ràng
-/// trường hợp `null` (KHÔNG mặc định chọn liều 1 mức nào).
-ScreeningAgeTierRange? screeningAgeTierForMonths(int ageMonths) {
+/// Tìm mức tuổi phù hợp với [ageMonths] — LUÔN trả về đúng 1 trong 4 mức,
+/// KHÔNG BAO GIỜ trả `null`/lỗi. Trẻ ngoài dải 24-71 tháng được KẸP về mức
+/// gần nhất thay vì bị chặn không làm được bài nào:
+/// - `ageMonths < 24` (kể cả 0 tháng) -> kẹp về `'2_tuoi'` (mức thấp nhất).
+/// - `ageMonths > 71` -> kẹp về `'5_tuoi'` (mức cao nhất).
+/// - Trong dải 24-71 -> map đúng theo `monthsMin`/`monthsMax` từng mức.
+///
+/// Đây là hàm DUY NHẤT xác định mức tuổi làm bài từ số tháng tuổi — mọi
+/// nơi cần map tuổi -> mức (UI làm bài, service...) phải gọi hàm này,
+/// không tự viết lại logic map ở nơi khác.
+ScreeningAgeTierRange resolveScreeningAgeTier(int ageMonths) {
+  if (ageMonths < screeningAgeTierRanges.first.monthsMin) {
+    return screeningAgeTierRanges.first;
+  }
+  if (ageMonths > screeningAgeTierRanges.last.monthsMax) {
+    return screeningAgeTierRanges.last;
+  }
   for (final range in screeningAgeTierRanges) {
     if (ageMonths >= range.monthsMin && ageMonths <= range.monthsMax) {
       return range;
     }
   }
-  return null;
+  // Không thể tới đây nếu screeningAgeTierRanges là dải liên tục đầy đủ
+  // 24-71 tháng như hiện tại — fallback an toàn về mức thấp nhất.
+  return screeningAgeTierRanges.first;
 }
 
 /// Nhãn hiển thị cho 1 mức tuổi, VD '2_tuoi' -> '2 tuổi'.

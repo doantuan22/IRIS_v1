@@ -207,22 +207,9 @@ class _ScreeningQuestionnairePageState
         }
 
         final ageMonths = childAgeInMonths(widget.child);
-        final ageTier = screeningAgeTierForMonths(ageMonths);
-        if (ageTier == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Sàng lọc')),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Trẻ ${ageMonths < 24 ? "chưa đủ 24 tháng" : "đã trên 71 tháng"} '
-                  '($ageMonths tháng) — bộ sàng lọc hiện tại chỉ áp dụng cho '
-                  'trẻ 24-71 tháng (2-5 tuổi).',
-                ),
-              ),
-            ),
-          );
-        }
+        // resolveScreeningAgeTier LUÔN trả về 1 mức hợp lệ (kẹp về mức gần
+        // nhất nếu ngoài dải 24-71 tháng) — không còn nhánh "ngoài phạm vi".
+        final ageTier = resolveScreeningAgeTier(ageMonths);
 
         final tier = snapshot.data!.forTier(ageTier.tier);
         if (tier == null || tier.cauHoi.isEmpty) {

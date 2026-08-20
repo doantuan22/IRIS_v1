@@ -46,14 +46,15 @@ class ScreeningToolConfirmPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bộ câu hỏi sàng lọc 50 câu (7 lĩnh vực)',
+                      'Bộ câu hỏi sàng lọc 20 câu (5 lĩnh vực)',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Gồm 50 câu hỏi quan sát biểu hiện hành vi qua 7 lĩnh vực cốt lõi. '
-                      'Mỗi câu có 4 mức lựa chọn (Không/Hiếm khi, Thỉnh thoảng, Thường xuyên, N/A) '
-                      'áp dụng cho trẻ ở mọi lứa tuổi.',
+                      'Gồm 20 câu hỏi quan sát biểu hiện qua 5 lĩnh vực phát triển '
+                      '(Ngôn ngữ-giao tiếp, Nhận thức-giải quyết vấn đề, Vận động, '
+                      'Xã hội-cảm xúc, Tự lập), chọn đúng bộ theo độ tuổi trẻ (2-5 tuổi). '
+                      'Mỗi câu có 4 mức lựa chọn (0-3) và N/A.',
                     ),
                   ],
                 ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/domains.dart';
+import '../../core/constants/screening_domains.dart';
 import '../../core/theme/iris_theme.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/history_log_repository.dart';
@@ -11,9 +11,10 @@ import '../../domain/services/screening_loader_service.dart';
 import '../../domain/services/screening_scoring_service.dart';
 import 'screening_result_page.dart';
 
-/// Màn hình làm bài sàng lọc — Mô hình 1 câu hỏi / 1 màn hình.
-/// Mỗi thời điểm CHỈ hiển thị đúng 1 câu hỏi, có thanh tiến độ "Câu X/50",
-/// 4 lựa chọn (0, 1, 2, N/A), tự động chuyển câu sau khi chọn và cho phép quay lại.
+/// Màn hình làm bài sàng lọc mới — Mô hình 1 câu hỏi / 1 màn hình, đúng bộ
+/// 20 câu của mức tuổi trẻ (xác định tự động qua `childAgeInMonths()`).
+/// Sau câu cuối, hỏi thêm 1 màn "cờ cảnh báo" trước khi tính điểm và hiển
+/// thị kết quả.
 class ScreeningQuestionnairePage extends StatefulWidget {
   final Child child;
   final bool isOnboarding;
@@ -45,9 +46,10 @@ class _ScreeningQuestionnairePageState
 
   late Future<ScreeningQuestionnaireData> _questionnaireFuture;
   int _currentIndex = 0;
-  final Map<String, String> _answers = {}; // cau_hoi_id -> '0'|'1'|'2'|'N/A'
+  final Map<String, ScreeningRawAnswer> _answers = {}; // cau_hoi_id -> answer
   bool _isSubmitting = false;
   bool _isAdvancing = false;
+  bool _showingWarningStep = false;
 
   @override
   void initState() {
@@ -60,9 +62,9 @@ class _ScreeningQuestionnairePageState
   }
 
   void _selectAnswer(
-    ScreeningQuestionnaireData data,
+    List<ScreeningQuestion> questions,
     ScreeningQuestion question,
-    String value,
+    ScreeningRawAnswer value,
   ) {
     if (_isSubmitting || _isAdvancing) return;
 
@@ -71,7 +73,7 @@ class _ScreeningQuestionnairePageState
       _isAdvancing = true;
     });
 
-    if (_currentIndex < data.cauHoi.length - 1) {
+    if (_currentIndex < questions.length - 1) {
       Future.delayed(const Duration(milliseconds: 650), () {
         if (!mounted) return;
         setState(() {
@@ -80,10 +82,13 @@ class _ScreeningQuestionnairePageState
         });
       });
     } else {
-      // Đã là câu cuối cùng (câu 50)
+      // Đã là câu cuối cùng — chuyển sang màn hỏi cờ cảnh báo.
       Future.delayed(const Duration(milliseconds: 650), () {
         if (!mounted) return;
-        _finishAndSave(data);
+        setState(() {
+          _isAdvancing = false;
+          _showingWarningStep = true;
+        });
       });
     }
   }
@@ -96,54 +101,51 @@ class _ScreeningQuestionnairePageState
     }
   }
 
-  void _nextQuestion(int totalQuestions) {
-    if (_currentIndex < totalQuestions - 1 && !_isSubmitting && !_isAdvancing) {
-      setState(() {
-        _currentIndex++;
-      });
-    }
-  }
-
-  Future<void> _finishAndSave(ScreeningQuestionnaireData data) async {
+  Future<void> _finishAndSave(
+    ScreeningTierQuestionnaire tier,
+    bool coCanhBao,
+  ) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
     try {
       final result = ScreeningScoringService.calculateScore(
         answers: _answers,
-        questionnaire: data,
+        questions: tier.cauHoi,
+        coCanhBao: coCanhBao,
       );
 
-      final scoreStr = result.diemToanBaiPhanTram != null
-          ? '${result.diemToanBaiPhanTram!.round()}%'
-          : 'Chưa đủ dữ liệu';
-
-      final responsesList = data.cauHoi.map((q) {
+      final answersList = tier.cauHoi.map((q) {
+        final a = _answers[q.id];
         return (
           cauHoiId: q.id,
           linhVuc: q.linhVuc,
-          giaTri: _answers[q.id] ?? 'N/A',
+          nhomVanDong: q.nhomVanDong,
+          diem: a?.laNa == true ? null : a?.diem,
+          laNa: a?.laNa ?? true,
         );
       }).toList();
 
-      final domainScoresList = result.domainScores.map((d) {
+      final domainResultsList = result.domainResults.map((d) {
         return (
           linhVuc: d.linhVuc,
-          soCauThietKe: d.soCauThietKe,
-          soCauHopLe: d.soCauHopLe,
           diemTho: d.diemTho,
-          diemPhanTram: d.diemPhanTram,
+          soCauTraLoi: d.soCauTraLoi,
+          soCauNa: d.soCauNa,
+          diemQuyDoi12: d.diemQuyDoi12,
+          mucLinhVuc: d.mucLinhVuc,
         );
       }).toList();
 
-      final screening = await _screeningRepository.saveScreeningSession(
+      final session = await _screeningRepository.saveScreeningSession(
         childId: widget.child.id,
-        toolName: data.meta.boCauHoiId,
-        score: scoreStr,
-        resultSummary: result.mucMoTaTen,
-        performedAt: DateTime.now(),
-        responses: responsesList,
-        domainScores: domainScoresList,
+        mucTuoiLamBai: tier.mucTuoi,
+        tongDiem60: result.tongDiem60,
+        giaiDoan: result.giaiDoan,
+        coCanhBao: coCanhBao,
+        ngayThucHien: DateTime.now(),
+        answers: answersList,
+        domainResults: domainResultsList,
       );
       ScreeningChangeService.instance.notifyScreeningSaved();
 
@@ -152,7 +154,8 @@ class _ScreeningQuestionnairePageState
           childId: widget.child.id,
           eventType: 'sang_loc',
           description:
-              'Thực hiện sàng lọc 50 câu — kết quả: $scoreStr (${result.mucMoTaTen})',
+              'Thực hiện sàng lọc ${screeningAgeTierLabel(tier.mucTuoi)} — '
+              'kết quả: ${result.giaiDoan == giaiDoanChuaDuDuLieu ? "Chưa đủ dữ liệu" : "Giai đoạn ${result.giaiDoan}"}',
         );
       } catch (_) {
         // Không để lỗi ghi lịch sử làm ảnh hưởng kết quả sàng lọc
@@ -165,9 +168,7 @@ class _ScreeningQuestionnairePageState
         MaterialPageRoute(
           builder: (_) => ScreeningResultPage(
             child: widget.child,
-            screeningId: screening.id,
-            score: scoreStr,
-            resultSummary: result.mucMoTaTen,
+            screeningId: session.id,
             scoreResult: result,
             isOnboarding: widget.isOnboarding,
           ),
@@ -205,24 +206,52 @@ class _ScreeningQuestionnairePageState
           );
         }
 
-        final data = snapshot.data!;
-        final questions = data.cauHoi;
-        final totalQuestions = questions.length;
-
-        if (totalQuestions == 0) {
+        final ageMonths = childAgeInMonths(widget.child);
+        final ageTier = screeningAgeTierForMonths(ageMonths);
+        if (ageTier == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Sàng lọc')),
-            body: const Center(child: Text('Bộ câu hỏi rỗng.')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Trẻ ${ageMonths < 24 ? "chưa đủ 24 tháng" : "đã trên 71 tháng"} '
+                  '($ageMonths tháng) — bộ sàng lọc hiện tại chỉ áp dụng cho '
+                  'trẻ 24-71 tháng (2-5 tuổi).',
+                ),
+              ),
+            ),
           );
         }
 
+        final tier = snapshot.data!.forTier(ageTier.tier);
+        if (tier == null || tier.cauHoi.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Sàng lọc')),
+            body: Center(
+              child: Text(
+                'Chưa có bộ câu hỏi cho mức ${screeningAgeTierLabel(ageTier.tier)}.',
+              ),
+            ),
+          );
+        }
+
+        if (_showingWarningStep) {
+          return _WarningFlagStep(
+            isSubmitting: _isSubmitting,
+            onAnswer: (coCanhBao) => _finishAndSave(tier, coCanhBao),
+          );
+        }
+
+        final questions = tier.cauHoi;
+        final totalQuestions = questions.length;
         final currentQuestion = questions[_currentIndex];
         final selectedAnswer = _answers[currentQuestion.id];
         final domainColor = IrisDomainStyle.colorOf(currentQuestion.linhVuc);
-        final domainName = domains
+        final domainName = screeningDomains
             .firstWhere(
               (d) => d.code == currentQuestion.linhVuc,
-              orElse: () => Domain(
+              orElse: () => ScreeningDomain(
                 code: currentQuestion.linhVuc,
                 label: currentQuestion.linhVuc,
               ),
@@ -273,7 +302,6 @@ class _ScreeningQuestionnairePageState
                         key: ValueKey(currentQuestion.id),
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Hàng thông tin tiến độ & lĩnh vực
                           Row(
                             children: [
                               Container(
@@ -285,41 +313,15 @@ class _ScreeningQuestionnairePageState
                                   color: domainColor.withValues(alpha: 0.15),
                                   borderRadius: IrisRadii.pillBorder,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      IrisDomainStyle.iconOf(
-                                        currentQuestion.linhVuc,
-                                      ),
-                                      size: 16,
-                                      color: domainColor,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      domainName,
-                                      style: TextStyle(
-                                        color: domainColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (currentQuestion.tieuLinhVuc.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    currentQuestion.tieuLinhVuc,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context).hintColor,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
+                                child: Text(
+                                  domainName,
+                                  style: TextStyle(
+                                    color: domainColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
                                   ),
                                 ),
-                              ],
+                              ),
                               const Spacer(),
                               Text(
                                 'Câu ${_currentIndex + 1}/$totalQuestions',
@@ -332,8 +334,6 @@ class _ScreeningQuestionnairePageState
                             ],
                           ),
                           const SizedBox(height: 16),
-
-                          // Card câu hỏi chính
                           Card(
                             shape: RoundedRectangleBorder(
                               borderRadius: IrisRadii.cardBorder,
@@ -344,123 +344,93 @@ class _ScreeningQuestionnairePageState
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    currentQuestion.noiDung,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          height: 1.45,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                  if (currentQuestion
-                                      .goiYQuanSat
-                                      .isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: IrisColors.neutralSoft,
-                                        borderRadius: IrisRadii.inputBorder,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Icon(
-                                            Icons.lightbulb_outline,
-                                            size: 18,
-                                            color: IrisColors.warning,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'Gợi ý: ${currentQuestion.goiYQuanSat}',
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                              child: Text(
+                                currentQuestion.noiDung,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      height: 1.45,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
-                                ],
                               ),
                             ),
                           ),
                           const SizedBox(height: 20),
 
-                          // 4 Lựa chọn trả lời
                           _AnswerOptionTile(
-                            value: '0',
-                            title: '0 — Không / Hiếm khi',
-                            subtitle: 'Biểu hiện không xuất hiện hoặc rất ít',
-                            isSelected: selectedAnswer == '0',
-                            selectedColor: IrisColors.success,
-                            onTap: () =>
-                                _selectAnswer(data, currentQuestion, '0'),
-                          ),
-                          const SizedBox(height: 10),
-                          _AnswerOptionTile(
-                            value: '1',
-                            title: '1 — Thỉnh thoảng / Không ổn định',
-                            subtitle:
-                                'Biểu hiện có xuất hiện nhưng không ổn định',
-                            isSelected: selectedAnswer == '1',
-                            selectedColor: IrisColors.warning,
-                            onTap: () =>
-                                _selectAnswer(data, currentQuestion, '1'),
-                          ),
-                          const SizedBox(height: 10),
-                          _AnswerOptionTile(
-                            value: '2',
-                            title: '2 — Thường xuyên / Rõ rệt',
-                            subtitle:
-                                'Lặp lại nhiều tình huống hoặc ảnh hưởng rõ rệt',
-                            isSelected: selectedAnswer == '2',
+                            title: '0 — Chưa làm được',
+                            isSelected:
+                                selectedAnswer != null &&
+                                !selectedAnswer.laNa &&
+                                selectedAnswer.diem == 0,
                             selectedColor: IrisColors.danger,
-                            onTap: () =>
-                                _selectAnswer(data, currentQuestion, '2'),
+                            onTap: () => _selectAnswer(
+                              questions,
+                              currentQuestion,
+                              (diem: 0, laNa: false),
+                            ),
                           ),
                           const SizedBox(height: 10),
                           _AnswerOptionTile(
-                            value: 'N/A',
+                            title: '1 — Có hỗ trợ',
+                            isSelected:
+                                selectedAnswer != null &&
+                                !selectedAnswer.laNa &&
+                                selectedAnswer.diem == 1,
+                            selectedColor: IrisColors.warning,
+                            onTap: () => _selectAnswer(
+                              questions,
+                              currentQuestion,
+                              (diem: 1, laNa: false),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
+                            title: '2 — Chưa ổn định',
+                            isSelected:
+                                selectedAnswer != null &&
+                                !selectedAnswer.laNa &&
+                                selectedAnswer.diem == 2,
+                            selectedColor: IrisColors.primary,
+                            onTap: () => _selectAnswer(
+                              questions,
+                              currentQuestion,
+                              (diem: 2, laNa: false),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
+                            title: '3 — Độc lập & thường xuyên',
+                            isSelected:
+                                selectedAnswer != null &&
+                                !selectedAnswer.laNa &&
+                                selectedAnswer.diem == 3,
+                            selectedColor: IrisColors.success,
+                            onTap: () => _selectAnswer(
+                              questions,
+                              currentQuestion,
+                              (diem: 3, laNa: false),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _AnswerOptionTile(
                             title: 'N/A — Không tính điểm',
-                            subtitle:
-                                'Chưa phù hợp độ tuổi hoặc chưa có cơ hội quan sát',
-                            isSelected: selectedAnswer == 'N/A',
+                            isSelected:
+                                selectedAnswer != null && selectedAnswer.laNa,
                             selectedColor: IrisColors.neutral,
-                            onTap: () =>
-                                _selectAnswer(data, currentQuestion, 'N/A'),
+                            onTap: () => _selectAnswer(
+                              questions,
+                              currentQuestion,
+                              (diem: null, laNa: true),
+                            ),
                           ),
                           const SizedBox(height: 24),
 
-                          // Nút điều hướng quay lại / tiếp
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              TextButton.icon(
-                                onPressed: _currentIndex > 0
-                                    ? _previousQuestion
-                                    : null,
-                                icon: const Icon(Icons.arrow_back),
-                                label: const Text('Quay lại câu trước'),
-                              ),
-                              if (selectedAnswer != null &&
-                                  _currentIndex < totalQuestions - 1)
-                                FilledButton.tonalIcon(
-                                  onPressed: () =>
-                                      _nextQuestion(totalQuestions),
-                                  icon: const Icon(Icons.arrow_forward),
-                                  label: const Text('Tiếp theo'),
-                                ),
-                            ],
-                          ),
+                          if (_currentIndex > 0)
+                            TextButton.icon(
+                              onPressed: _previousQuestion,
+                              icon: const Icon(Icons.arrow_back),
+                              label: const Text('Quay lại câu trước'),
+                            ),
                         ],
                       ),
                     ),
@@ -472,18 +442,78 @@ class _ScreeningQuestionnairePageState
   }
 }
 
+class _WarningFlagStep extends StatelessWidget {
+  final bool isSubmitting;
+  final ValueChanged<bool> onAnswer;
+
+  const _WarningFlagStep({required this.isSubmitting, required this.onAnswer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sàng lọc — Câu hỏi bổ sung')),
+      body: isSubmitting
+          ? const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Đang tính điểm và lưu kết quả...'),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Trẻ có biểu hiện MẤT đi kỹ năng đã từng làm được trước đó, '
+                    'hoặc bạn có lo ngại RÕ RỆT về sự phát triển của trẻ '
+                    'không, dù các câu trả lời ở trên như thế nào?',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Câu trả lời này độc lập với điểm số — nếu "Có", IRIS sẽ '
+                    'luôn khuyến nghị tìm đánh giá chuyên môn ngay bất kể kết '
+                    'quả các câu hỏi trước.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () => onAnswer(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: IrisColors.danger,
+                    ),
+                    child: const Text('Có'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => onAnswer(false),
+                    child: const Text('Không'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
 class _AnswerOptionTile extends StatelessWidget {
-  final String value;
   final String title;
-  final String subtitle;
   final bool isSelected;
   final Color selectedColor;
   final VoidCallback onTap;
 
   const _AnswerOptionTile({
-    required this.value,
     required this.title,
-    required this.subtitle,
     required this.isSelected,
     required this.selectedColor,
     required this.onTap,
@@ -532,26 +562,14 @@ class _AnswerOptionTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? IrisColors.primaryDark
-                              : IrisColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).hintColor,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isSelected
+                          ? IrisColors.primaryDark
+                          : IrisColors.textPrimary,
+                    ),
                   ),
                 ),
               ],

@@ -6,13 +6,14 @@ import '../../data/local/database.dart';
 import '../../data/repositories/child_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
-import '../../domain/models/screening.dart';
+import '../../domain/models/screening_session.dart';
 import '../../domain/services/active_child_service.dart';
+import '../../domain/services/screening_scoring_service.dart';
 import 'screening_result_page.dart';
 
 class _ScreeningHistoryData {
   final Child? child;
-  final List<Screening> screenings;
+  final List<ScreeningSession> screenings;
 
   const _ScreeningHistoryData({required this.child, required this.screenings});
 }
@@ -77,7 +78,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
     }
 
     // Lọc trực tiếp bằng WHERE child_id = ? trong SQL
-    final screenings = await _screeningRepository.getScreeningsByChildId(
+    final screenings = await _screeningRepository.getSessionsByChildId(
       activeChildId,
     );
 
@@ -95,12 +96,30 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
     return '$day/$month/$year lúc $hour:$minute';
   }
 
-  Color _levelColor(String? summary) {
-    if (summary == null) return IrisColors.primary;
-    if (summary.contains('Mức 1')) return IrisColors.success;
-    if (summary.contains('Mức 2')) return IrisColors.warning;
-    if (summary.contains('Mức 3')) return IrisColors.danger;
-    return IrisColors.primary;
+  Color _levelColor(String giaiDoan) {
+    switch (giaiDoan) {
+      case giaiDoan1:
+        return IrisColors.success;
+      case giaiDoan2:
+        return IrisColors.warning;
+      case giaiDoan3:
+        return IrisColors.danger;
+      default:
+        return IrisColors.primary;
+    }
+  }
+
+  String _giaiDoanLabel(String giaiDoan) {
+    switch (giaiDoan) {
+      case giaiDoan1:
+        return 'Giai đoạn 1';
+      case giaiDoan2:
+        return 'Giai đoạn 2';
+      case giaiDoan3:
+        return 'Giai đoạn 3';
+      default:
+        return 'Chưa đủ dữ liệu';
+    }
   }
 
   @override
@@ -176,7 +195,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
             const SizedBox(height: 8),
             Text(
               'Trẻ chưa thực hiện bài sàng lọc nào. '
-              'Bạn có thể bắt đầu bài sàng lọc 50 câu từ Trang chủ.',
+              'Bạn có thể bắt đầu sàng lọc từ Trang chủ.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).hintColor,
@@ -188,14 +207,14 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
     );
   }
 
-  Widget _buildHistoryList(Child child, List<Screening> screenings) {
+  Widget _buildHistoryList(Child child, List<ScreeningSession> screenings) {
     return ListView.separated(
       padding: IrisSpacing.page,
       itemCount: screenings.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final screening = screenings[index];
-        final levelColor = _levelColor(screening.resultSummary);
+        final levelColor = _levelColor(screening.giaiDoan);
 
         return Card(
           shape: RoundedRectangleBorder(
@@ -242,12 +261,12 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                screening.resultSummary ?? 'Kết quả sàng lọc',
+                                _giaiDoanLabel(screening.giaiDoan),
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            if (screening.score != null) ...[
+                            if (screening.tongDiem60 != null) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -259,7 +278,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                                   borderRadius: IrisRadii.pillBorder,
                                 ),
                                 child: Text(
-                                  screening.score!,
+                                  '${screening.tongDiem60!.toStringAsFixed(1)}/60',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -272,7 +291,7 @@ class _ScreeningHistoryListPageState extends State<ScreeningHistoryListPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Ngày thực hiện: ${_formatDateTime(screening.performedAt)}',
+                          'Ngày thực hiện: ${_formatDateTime(screening.ngayThucHien)}',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: Theme.of(context).hintColor),
                         ),

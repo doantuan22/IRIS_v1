@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/domains.dart';
+import '../../core/constants/screening_domains.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../data/repositories/screening_repository.dart';
 import '../../domain/models/child.dart';
-import '../../domain/models/screening.dart';
+import '../../domain/models/screening_session.dart';
+import '../../domain/services/screening_scoring_service.dart';
 import '../assessment/domain_list_page.dart';
 
 class _SummaryData {
   final bool hasScreening;
-  final Screening? latestScreening;
+  final ScreeningSession? latestScreening;
   final int doneDomainCount;
 
   const _SummaryData({
@@ -62,7 +64,7 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
   /// Logic Dart thuần — không gọi AI. Kết hợp trạng thái sàng lọc và số lĩnh vực đã có mô tả.
   String _buildSuggestion(_SummaryData data) {
     final total = domains.length;
-    const toolLabel = 'bài sàng lọc 50 câu (7 lĩnh vực)';
+    const toolLabel = 'bài sàng lọc (5 lĩnh vực theo độ tuổi)';
 
     if (!data.hasScreening && data.doneDomainCount == 0) {
       return 'Trẻ chưa thực hiện sàng lọc và chưa có mô tả biểu hiện ở lĩnh vực nào. '
@@ -84,6 +86,19 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
     }
     return 'Đã sàng lọc và có mô tả biểu hiện cho đủ $total lĩnh vực. '
         'Có thể xem lại chân dung tổng thể hoặc bổ sung mô tả mới nếu có quan sát thêm.';
+  }
+
+  String _giaiDoanLabel(String giaiDoan) {
+    switch (giaiDoan) {
+      case giaiDoan1:
+        return 'Giai đoạn 1';
+      case giaiDoan2:
+        return 'Giai đoạn 2';
+      case giaiDoan3:
+        return 'Giai đoạn 3';
+      default:
+        return 'Chưa đủ dữ liệu';
+    }
   }
 
   void _startAssessment() {
@@ -132,16 +147,14 @@ class _AssessmentSummaryPageState extends State<AssessmentSummaryPage> {
                       if (data.hasScreening && screening != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          'Kết quả sàng lọc gần nhất: ${screening.score ?? "(không có điểm)"}',
+                          'Kết quả sàng lọc gần nhất: '
+                          '${screening.tongDiem60 != null ? "${screening.tongDiem60!.toStringAsFixed(1)}/60" : "(chưa đủ dữ liệu)"} — '
+                          '${_giaiDoanLabel(screening.giaiDoan)}',
                         ),
-                        if (screening.toolName != null) ...[
-                          const SizedBox(height: 4),
-                          Text('Công cụ: ${screening.toolName}'),
-                        ],
-                        if (screening.performedAt != null) ...[
-                          const SizedBox(height: 4),
-                          Text('Ngày thực hiện: ${screening.performedAt}'),
-                        ],
+                        const SizedBox(height: 4),
+                        Text('Mức tuổi làm bài: ${screeningAgeTierLabel(screening.mucTuoiLamBai)}'),
+                        const SizedBox(height: 4),
+                        Text('Ngày thực hiện: ${screening.ngayThucHien}'),
                       ],
                       const SizedBox(height: 4),
                       Text(

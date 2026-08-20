@@ -37,11 +37,11 @@ class _ChildDebugPageState extends State<ChildDebugPage> {
         content: SingleChildScrollView(
           child: Text(
             screenings.isEmpty
-                ? '(chưa có bản ghi screenings nào cho trẻ này)'
+                ? '(chưa có bản ghi screening_sessions nào cho trẻ này)'
                 : screenings
                       .map(
                         (s) =>
-                            'id: ${s.id}\ntool_name: ${s.toolName}\nscore: ${s.score}\nresult_summary: ${s.resultSummary}\nperformed_at: ${s.performedAt}\n',
+                            'id: ${s.id}\nmuc_tuoi_lam_bai: ${s.mucTuoiLamBai}\ntong_diem_60: ${s.tongDiem60}\ngiai_doan: ${s.giaiDoan}\nco_canh_bao: ${s.coCanhBao}\nngay_thuc_hien: ${s.ngayThucHien}\n',
                       )
                       .join('\n---\n'),
           ),

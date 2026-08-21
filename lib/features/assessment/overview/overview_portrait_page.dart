@@ -178,7 +178,15 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       // gọi trùng AI 2 lần cho đúng 1 lần bấm nút.
       final newState = await _fetchReadyState(domains.length);
       if (!mounted) return;
-      setState(() => _stateFuture = Future.value(newState));
+      // LƯU Ý: PHẢI dùng block `{ }`, KHÔNG dùng arrow `() => x = y` — với
+      // arrow, thân hàm là biểu thức gán `_stateFuture = Future.value(...)`,
+      // mà giá trị của 1 biểu thức gán chính là vế phải, tức closure này sẽ
+      // TRẢ VỀ `Future<_LoadedState>` thay vì `void`. `setState()` của
+      // Flutter kiểm tra runtime nếu callback trả về `Future` sẽ ném lỗi
+      // "setState() callback argument returned a Future" — đúng lỗi đã gặp.
+      setState(() {
+        _stateFuture = Future.value(newState);
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _computeError = 'Lỗi khi tổng hợp: $e');

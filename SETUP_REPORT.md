@@ -605,3 +605,144 @@ bộ với các đoạn mô tả dài khác trong app.
 
 24. `98cdd13` — Phần 1: tách nền icon AI + canh 2 lề bong bóng trả lời AI.
 25. `9e591e5` — Phần 2: siết guardrail chống thêu dệt cho chân dung N<7.
+
+## Đợt 8 — Bỏ màn xác nhận trung gian trước Chân dung toàn cảnh + sửa nguyên nhân AI chậm/không ra kết quả
+
+### Phần 1 — Audit hiện trạng 2 nhánh trước khi sửa
+
+Đọc lại `OverviewPortraitPage` (code thật, không dựa theo báo cáo cũ):
+- **Nhánh N<7** (`_load()`): đã tự động gọi
+  `generatePartialSummaryDescription` ngay khi vào màn từ đợt B4 (Đợt 6) —
+  KHÔNG cần bấm nút để bắt đầu. Đúng như mong đợi, không có gì cần sửa cho
+  phần "tự động hoá" ở nhánh này.
+- **Nhánh N=7** (`_load()` cũ): CHỈ đọc `summary` có sẵn trong bảng
+  `overview_summaries` — KHÔNG tự gọi `labelAllDomains`/
+  `computeAndSaveOverview`. Nếu `summary == null` (lần đầu vào màn, chưa
+  từng tổng hợp), `_buildReady()` hiện thẻ "Đã có đủ mô tả cho cả 7 lĩnh
+  vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh." với
+  `FilledButton` gọi `_compute()` — xác nhận ĐÚNG là màn xác nhận trung
+  gian thấy trong ảnh chụp, cần bỏ.
+
+### Phần 2 — Bỏ màn xác nhận trung gian
+
+Sửa `_load()`: khi đủ 7/7 và CHƯA có `summary`, tự động gọi
+`labelAllDomains` + `computeAndSaveOverview` ngay trong lúc tải màn. Cả 2
+nhánh N<7 và N=7 giờ đều tự động phân tích ngay khi vào màn, không cần
+thao tác thêm.
+
+Thêm dòng "Đang phân tích dữ liệu bằng AI, quá trình này có thể mất vài
+giây..." dưới spinner loading — tránh hiểu nhầm màn trống/lỗi khi AI đang
+xử lý (đặc biệt quan trọng cho nhánh N=7 vì giờ có thể mất 15-20s, xem
+Phần 3).
+
+Tách hàm `_fetchReadyState()` (CHỈ đọc DB, không gọi AI) dùng chung cho cả
+`_load()` và `_compute()`, tránh 1 bug logic phát sinh từ việc tự động
+hoá: nếu `_compute()` (nút "Tính toán lại"/"Thử lại") vẫn gọi qua
+`_reload()` → `_load()` như code cũ, `_load()` sẽ thấy `summary` có thể
+vẫn null (VD do `insufficientData`) và tự động tính lại LẦN NỮA — gọi
+trùng toàn bộ pipeline AI cho đúng 1 lần bấm nút của người dùng. Nút
+"Tính toán lại" (N=7) và "Tổng hợp lại" (N<7) GIỮ NGUYÊN, không xoá —
+đúng như yêu cầu, đây là hành động chủ động làm mới, khác với lần tải đầu
+tiên (tự động). Đổi text/nhãn nút khi `summary == null` sau khi đã tự
+động thử — từ "Bấm nút bên dưới để tổng hợp" (ngụ ý chưa từng thử) sang
+"Chưa thể tính mức tổng quan lúc này — hệ thống đã thử tự động nhưng...
+Bấm nút bên dưới để thử lại" + nhãn nút "Thử lại", đúng thực tế là ĐÃ thử.
+
+### Phần 3 — Điều tra + xử lý nguyên nhân AI chậm/không ra kết quả
+
+**Điều tra bằng lệnh gọi API THẬT** (dùng đúng key trong `dart_define.json`,
+gọi trực tiếp qua `curl`, không đoán):
+
+1. Timeout hiện tại (30s Groq, 15s NVIDIA, xem `groq_api_client.dart`/
+   `nvidia_api_client.dart`) — đo 15+ lần gọi đơn lẻ thực tế: thời gian
+   phản hồi chỉ ~0.6-2s/lần. **Không phải nguyên nhân** — timeout đủ dư.
+2. Mô phỏng ĐÚNG pipeline N=7 auto-compute (7 lần tuần tự [NVIDIA embed +
+   Groq gắn nhãn] + 1 lần Groq tổng hợp cuối = 8 lệnh gọi Groq liên tiếp
+   trong dưới 20 giây), chạy 3 lần: **2/3 lần dính hàng loạt lỗi HTTP
+   429** ngay từ giữa pipeline (5-6/8 lệnh Groq bị từ chối).
+3. Đọc thẳng body lỗi 429 thật: `"Rate limit reached for model
+   openai/gpt-oss-20b ... on tokens per minute (TPM): Limit 8000, Used
+   5430, Requested 2731. Please try again in 1.2075s."` — xác nhận đây là
+   **giới hạn TPM (token/phút) = 8000** của tổ chức/key hiện dùng, KHÔNG
+   phải lỗi mạng hay bug code.
+4. Đào sâu nguyên nhân token cao: model `openai/gpt-oss-20b` tự sinh
+   nhiều "reasoning token" ẩn (chain-of-thought) trước khi trả lời — đo
+   trên CÙNG 1 prompt: mặc định 226 reasoning token/lần gọi, tổng 345
+   token. Các token này KHÔNG hề được app dùng
+   (`GroqApiClient.generate()` chỉ đọc `message.content`, bỏ qua
+   `message.reasoning` hoàn toàn) — thuần túy lãng phí ngân sách TPM.
+   Test tham số `reasoning_effort=low` (Groq hỗ trợ chính thức cho model
+   này, giá trị hợp lệ: `low`/`medium`/`high`) trên CÙNG prompt: giảm còn
+   67 reasoning token, tổng 193 token (**giảm ~44% tổng token/lần gọi**),
+   nội dung câu trả lời thực tế không đổi chất lượng.
+5. Đọc lại `labelDomain`: bắt MỌI exception (kể cả 429 sau khi hết lượt
+   retry) và fallback im lặng về nhãn `chua_du_du_lieu` (không rethrow,
+   không báo hiệu riêng "do rate limit"). Đối chiếu `overview_tier_calculator.dart`:
+   nếu `≥4/7` lĩnh vực rơi vào `chua_du_du_lieu`, `computeAndSaveOverview`
+   trả `insufficientData` và KHÔNG lưu `overview_summaries`. **Đây chính
+   là cơ chế gây hiện tượng "phân tích xong mà không ra kết quả"** — do
+   rate limit dồn dập tạm thời (transient), không phải do trẻ thật sự
+   thiếu dữ liệu mô tả.
+
+**Kết luận nguyên nhân gốc**: kiến trúc gọi 8 lệnh Groq TUẦN TỰ, DỒN DẬP
+trong một khoảng thời gian ngắn (<20s) cho pipeline N=7, kết hợp với việc
+mỗi lệnh tốn nhiều token hơn cần thiết (do reasoning token mặc định),
+khiến pipeline RẤT DỄ chạm trần TPM=8000 giữa chừng — gây chậm (do phải
+chờ retry theo "try again in Xs") và trong trường hợp xấu gây mất kết quả
+hoàn toàn (do fallback `chua_du_du_lieu` hàng loạt → `insufficientData`).
+
+**Cách đã sửa** (chỉ sửa thông số/luồng gọi kỹ thuật, KHÔNG đổi thuật
+toán tier hay nội dung AI sinh):
+- `GroqApiClient.generate()`: thêm tham số tuỳ chọn `reasoningEffort`
+  (mặc định `null` — giữ nguyên hành vi cũ 100% cho mọi caller khác, VD
+  `AiRepository` dùng cho Hỏi đáp AI chính không bị ảnh hưởng). Khi có
+  giá trị, truyền `'reasoning_effort': ?reasoningEffort` vào body request.
+  Tăng `maxAttempts` từ 3 lên 4 — có căn cứ: mọi lần 429 thật đều kèm
+  `retry-after`/"try again in Xs" ngắn (1-9 giây), thêm 1 lần thử không
+  tốn nhiều thời gian nhưng tăng đáng kể tỷ lệ thành công qua chuỗi gọi
+  liên tiếp.
+- `OverviewRepository`: truyền `reasoningEffort: 'low'` cho cả 3 lệnh gọi
+  Groq của tính năng chân dung (`labelDomain`, `_generateSummaryDescription`
+  cho N=7, `generatePartialSummaryDescription` cho N<7). Thêm khoảng nghỉ
+  400ms (`_labelCallSpacing`) giữa các lần gọi gắn nhãn tuần tự trong
+  `labelAllDomains` để giảm áp lực dồn cục lên token bucket TPM.
+
+**Verify độ tin cậy bằng lệnh gọi THẬT sau khi sửa** (không phải đoán —
+mô phỏng lại chính xác pipeline N=7 với đúng tham số mới, 5 lần liên
+tiếp):
+
+| Lần chạy | Tổng thời gian | Số lệnh Groq bị 429 | Kết quả |
+|---|---|---|---|
+| 1 | 15.84s | 0/8 | Thành công |
+| 2 | 16.36s | 0/8 | Thành công |
+| 3 | 15.52s | 0/8 | Thành công |
+| 4 | 16.62s | 0/8 | Thành công |
+| 5 | 16.05s | 0/8 | Thành công |
+
+**5/5 lần thành công hoàn toàn** (tất cả 40 lệnh Groq across 5 lần chạy
+đều `attempts=1`, không lần nào cần retry) — so với TRƯỚC khi sửa: 2/3
+lần chạy dính hàng loạt 429. Thời gian trung bình ~16s/lần cho toàn bộ
+pipeline N=7 (7 lần gắn nhãn + 1 lần tổng hợp) — chấp nhận được, có loading
+text rõ ràng ở Phần 2 nên người dùng không hiểu nhầm treo máy.
+
+Nhánh N<7 (chỉ 1 lệnh Groq, vốn không có vấn đề vì không đủ để chạm trần
+TPM) verify riêng: 5/5 thành công, ~0.55-0.8s/lần.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: **0 issues** trong `lib/` (sạch tuyệt đối, kể cả 3
+  info pre-existing ở `scripts/` không tính vì nằm ngoài `lib/`).
+- `flutter test`: 30/30 PASS, không regression.
+- Đã verify độ tin cậy bằng lệnh gọi API thật (xem bảng trên) — không
+  phải chỉ chạy `flutter analyze`/test đơn thuần.
+- **Chưa verify được luồng UI đầy đủ trên thiết bị/emulator thật** (bấm
+  "Xem chân dung" từ hub → xác nhận vào thẳng màn tự động phân tích,
+  không còn màn trung gian) — môi trường thực thi không có thiết bị/emulator.
+  Verify API thật ở trên xác nhận ĐÚNG tầng gọi AI hoạt động tin cậy, còn
+  luồng UI (auto-trigger, loading text, nút "Thử lại") cần người thực
+  hiện tự xác nhận bằng mắt trên máy.
+
+### Commit của Đợt 8
+
+26. `635cf37` — Phần 2: bỏ màn xác nhận trung gian, tự động phân tích khi vào màn.
+27. `83ef012` — Phần 3: điều tra + xử lý nguyên nhân AI chậm/không ra kết quả.

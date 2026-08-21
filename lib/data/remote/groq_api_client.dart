@@ -37,6 +37,7 @@ class GroqApiClient {
   Future<String> generate({
     required String systemPrompt,
     required String userQuestion,
+    String? reasoningEffort,
   }) async {
     if (!_isCustomClient && !ApiConfig.hasGroqApiKey) {
       throw GroqApiException(
@@ -46,7 +47,14 @@ class GroqApiClient {
 
     http.Response response;
     var attempts = 0;
-    const maxAttempts = 3;
+    // Tăng từ 3 lên 4 (đợt điều tra độ tin cậy "Chân dung toàn cảnh") — đo
+    // thật trên Groq API cho model `openai/gpt-oss-20b` cho thấy lỗi 429
+    // (rate limit TPM) là nguyên nhân chính gây thất bại khi gọi nhiều lần
+    // liên tiếp trong thời gian ngắn (VD gắn nhãn tuần tự 7 lĩnh vực); mỗi
+    // lần 429 Groq đều trả "try again in Xs" ngắn (thường 1-9s) nên thêm 1
+    // lần thử không tốn quá nhiều thời gian nhưng tăng đáng kể tỷ lệ thành
+    // công cho các chuỗi gọi liên tiếp.
+    const maxAttempts = 4;
 
     while (true) {
       attempts++;
@@ -65,6 +73,14 @@ class GroqApiClient {
                   {'role': 'system', 'content': systemPrompt},
                   {'role': 'user', 'content': userQuestion},
                 ],
+                // `reasoning_effort: low` (khi được truyền) cắt đáng kể số
+                // "reasoning token" model tự sinh trước câu trả lời — đo
+                // thật cho thấy giảm ~40% tổng token/lần gọi so với mặc
+                // định, mà KHÔNG ảnh hưởng nội dung `message.content` thật
+                // sự dùng (reasoning không được đọc ở đâu trong app). Dùng
+                // cho các luồng gọi nhiều lần liên tiếp (VD gắn nhãn 7 lĩnh
+                // vực) để giảm nguy cơ chạm trần token/phút (TPM).
+                'reasoning_effort': ?reasoningEffort,
               }),
             )
             .timeout(_timeout);

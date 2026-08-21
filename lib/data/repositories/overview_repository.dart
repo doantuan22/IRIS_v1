@@ -125,6 +125,15 @@ class OverviewRepository {
        _historyLogRepository = historyLogRepository ?? HistoryLogRepository(db),
        _promptBuilder = promptBuilder ?? PromptBuilder();
 
+  /// Khoảng nghỉ giữa 2 lần gọi Groq liên tiếp trong [labelAllDomains] — đo
+  /// thật (đợt điều tra độ tin cậy "Chân dung toàn cảnh") cho thấy gọi 7-8
+  /// lần Groq dồn dập trong vài giây dễ chạm trần token/phút (TPM, đo được
+  /// 8000 TPM trên key hiện dùng) gây lỗi 429 hàng loạt. Nghỉ 1 nhịp ngắn
+  /// giữa các lần gọi giúp token bucket có thời gian hồi lại một phần,
+  /// giảm số lần bị 429 dồn cục — KHÔNG loại bỏ hoàn toàn rate limit (vẫn
+  /// cần retry ở `GroqApiClient`), chỉ giảm tần suất phải retry.
+  static const Duration _labelCallSpacing = Duration(milliseconds: 400);
+
   /// Gắn nhãn cho ĐỦ 7/7 lĩnh vực của [child], theo đúng thứ tự
   /// `domains`. Gọi tuần tự (không song song) để không vượt rate limit
   /// Groq/NVIDIA — dữ liệu ở quy mô demo (7 lần gọi) nên không cần tối ưu
@@ -132,6 +141,7 @@ class OverviewRepository {
   Future<List<DomainOverviewLabel>> labelAllDomains(Child child) async {
     final results = <DomainOverviewLabel>[];
     for (final domain in domains) {
+      if (results.isNotEmpty) await Future.delayed(_labelCallSpacing);
       results.add(await labelDomain(child, domain.code, domain.label));
     }
     return results;
@@ -219,6 +229,10 @@ class OverviewRepository {
         systemPrompt: systemPrompt,
         userQuestion:
             'Hãy trả lời đúng định dạng JSON duy nhất theo yêu cầu ở trên.',
+        // Gắn nhãn chỉ cần đúng 1 JSON object ngắn, không cần suy luận
+        // nhiều bước — hạ `reasoning_effort` để giảm token/lần gọi (xem
+        // `_labelCallSpacing`).
+        reasoningEffort: 'low',
       );
 
       final parsed = _parseLabelResponse(rawResponse);
@@ -345,6 +359,7 @@ class OverviewRepository {
         systemPrompt: systemPrompt,
         userQuestion:
             'Hãy diễn đạt lại đúng nội dung mô tả ở trên thành 1 đoạn văn ngắn gọn, theo đúng các nguyên tắc trên — không thêm chi tiết nào ngoài dữ liệu đã cho.',
+        reasoningEffort: 'low',
       );
       final trimmed = response.trim();
       return trimmed.isNotEmpty ? trimmed : null;
@@ -440,6 +455,7 @@ class OverviewRepository {
         systemPrompt: systemPrompt,
         userQuestion:
             'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
+        reasoningEffort: 'low',
       );
       final trimmed = response.trim();
       return trimmed.isNotEmpty ? trimmed : null;

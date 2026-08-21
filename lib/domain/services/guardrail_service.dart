@@ -70,7 +70,11 @@ class GuardrailService {
     final lower = query.toLowerCase();
     // Tách các từ độc lập theo ranh giới ký tự tiếng Việt
     final words = lower
-        .split(RegExp(r'[^a-z0-9àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]'))
+        .split(
+          RegExp(
+            r'[^a-z0-9àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]',
+          ),
+        )
         .where((w) => w.isNotEmpty)
         .toSet();
 

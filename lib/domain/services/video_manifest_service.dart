@@ -16,7 +16,9 @@ class VideoManifestService {
   /// lần, các lần gọi sau trả thẳng từ cache. An toàn nếu file chưa tồn tại
   /// (VD dải tuổi chưa gắn video nào) — coi như không có video nào, KHÔNG
   /// ném lỗi.
-  static Future<Map<String, String>> loadVideoPaths({AssetBundle? bundle}) async {
+  static Future<Map<String, String>> loadVideoPaths({
+    AssetBundle? bundle,
+  }) async {
     if (_cachedPaths != null) {
       return _cachedPaths!;
     }
@@ -38,7 +40,8 @@ class VideoManifestService {
     final Map<String, dynamic> decoded = jsonDecode(jsonString);
     final videos = decoded['videos'] as Map<String, dynamic>? ?? {};
     return videos.map(
-      (id, info) => MapEntry(id, (info as Map<String, dynamic>)['file_path'] as String),
+      (id, info) =>
+          MapEntry(id, (info as Map<String, dynamic>)['file_path'] as String),
     );
   }
 

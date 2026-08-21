@@ -84,7 +84,8 @@ class AiConnectivityService {
            nvidiaClient ??
            NvidiaApiClient(client: httpClient, timeout: checkTimeout),
        _groqClient =
-           groqClient ?? GroqApiClient(client: httpClient, timeout: checkTimeout),
+           groqClient ??
+           GroqApiClient(client: httpClient, timeout: checkTimeout),
        _notificationRepository =
            notificationRepository ?? NotificationRepository(),
        stateNotifier = ValueNotifier(const AiConnectivityState());
@@ -129,7 +130,9 @@ class AiConnectivityService {
     final nvidiaFuture = shouldCheckNvidia
         ? _testNvidia()
         : Future.value(currentNvidia);
-    final groqFuture = shouldCheckGroq ? _testGroq() : Future.value(currentGroq);
+    final groqFuture = shouldCheckGroq
+        ? _testGroq()
+        : Future.value(currentGroq);
 
     final results = await Future.wait([nvidiaFuture, groqFuture]);
     final newNvidiaStatus = results[0];
@@ -157,10 +160,7 @@ class AiConnectivityService {
 
   Future<AiApiStatus> _testGroq() async {
     try {
-      await _groqClient.generate(
-        systemPrompt: 'ping',
-        userQuestion: 'ping',
-      );
+      await _groqClient.generate(systemPrompt: 'ping', userQuestion: 'ping');
       return AiApiStatus.ok;
     } catch (_) {
       return AiApiStatus.error;
@@ -171,8 +171,8 @@ class AiConnectivityService {
     final currentCombined = currentState.isConnected
         ? _CombinedStatus.connected
         : (currentState.hasIssue
-            ? _CombinedStatus.issue
-            : _CombinedStatus.initial);
+              ? _CombinedStatus.issue
+              : _CombinedStatus.initial);
 
     // Kịch bản 1: Cả 2 API đều OK ngay từ đầu
     if (_lastCombinedStatus == _CombinedStatus.initial &&

@@ -33,7 +33,8 @@ import 'package:sqflite/sqflite.dart';
 /// nguyên nhân phổ biến nhất khiến "sửa JSON nhưng app vẫn hiện bản cũ".
 /// ============================================================================
 class ExpertKnowledgeSeedService {
-  static const String seedAssetPath = 'assets/reference/expert_knowledge_seed.json';
+  static const String seedAssetPath =
+      'assets/reference/expert_knowledge_seed.json';
 
   /// Seed nếu bảng đang RỖNG với content_type='so_sanh' — gọi từ `onOpen` của
   /// `AppDatabase` (chạy ở MỌI lần mở DB, không chỉ `onCreate`, để tự "chữa
@@ -64,14 +65,21 @@ class ExpertKnowledgeSeedService {
   /// lần liên tiếp luôn cho đúng 532 dòng, KHÔNG nhân bản (khác hẳn nút debug
   /// cũ — mỗi lần bấm gọi API + insert thêm, nhân đôi/ba dữ liệu).
   static Future<int> resetAndReseed(Database db, {AssetBundle? bundle}) async {
-    await db.delete('expert_knowledge_chunks', where: "content_type = 'so_sanh'");
+    await db.delete(
+      'expert_knowledge_chunks',
+      where: "content_type = 'so_sanh'",
+    );
     return _insertAllFromSeedFile(db, bundle: bundle);
   }
 
-  static Future<int> _insertAllFromSeedFile(Database db, {AssetBundle? bundle}) async {
+  static Future<int> _insertAllFromSeedFile(
+    Database db, {
+    AssetBundle? bundle,
+  }) async {
     final effectiveBundle = bundle ?? rootBundle;
     final jsonString = await effectiveBundle.loadString(seedAssetPath);
-    final entries = (jsonDecode(jsonString) as List<dynamic>).cast<Map<String, dynamic>>();
+    final entries = (jsonDecode(jsonString) as List<dynamic>)
+        .cast<Map<String, dynamic>>();
 
     final batch = db.batch();
     for (final entry in entries) {

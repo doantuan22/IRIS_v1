@@ -250,9 +250,7 @@ class ScreeningScoringService {
       );
     }
 
-    final domain12Values = domainResults
-        .map((d) => d.diemQuyDoi12!)
-        .toList();
+    final domain12Values = domainResults.map((d) => d.diemQuyDoi12!).toList();
     final tong60 = domain12Values.fold<double>(0, (sum, v) => sum + v);
     final minDomain12 = domain12Values.reduce((a, b) => a < b ? a : b);
 
@@ -261,7 +259,8 @@ class ScreeningScoringService {
     // thứ tự (kiểm tra GĐ1 trước) sẽ làm sai hoàn toàn ý nghĩa "chống bù
     // điểm" của thuật toán.
     final String giaiDoan;
-    if (tong60 < nguongTong60GiaiDoan3 || minDomain12 < nguongDomain12GiaiDoan3) {
+    if (tong60 < nguongTong60GiaiDoan3 ||
+        minDomain12 < nguongDomain12GiaiDoan3) {
       giaiDoan = giaiDoan3;
     } else if (tong60 < nguongTong60GiaiDoan2 ||
         minDomain12 < nguongDomain12GiaiDoan2) {

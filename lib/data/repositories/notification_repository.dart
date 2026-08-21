@@ -32,10 +32,7 @@ class NotificationRepository {
 
   Future<List<AppNotification>> getAll() async {
     final db = await _db.database;
-    final rows = await db.query(
-      'notifications',
-      orderBy: 'created_at DESC',
-    );
+    final rows = await db.query('notifications', orderBy: 'created_at DESC');
     return rows.map(_fromRow).toList();
   }
 

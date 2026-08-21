@@ -21,10 +21,12 @@ class VideoIllustrationPlayerPage extends StatefulWidget {
   });
 
   @override
-  State<VideoIllustrationPlayerPage> createState() => _VideoIllustrationPlayerPageState();
+  State<VideoIllustrationPlayerPage> createState() =>
+      _VideoIllustrationPlayerPageState();
 }
 
-class _VideoIllustrationPlayerPageState extends State<VideoIllustrationPlayerPage> {
+class _VideoIllustrationPlayerPageState
+    extends State<VideoIllustrationPlayerPage> {
   VideoPlayerController? _playerController;
   String? _playerError;
 

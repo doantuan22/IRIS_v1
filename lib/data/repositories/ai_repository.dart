@@ -133,9 +133,18 @@ class AiRepository {
     text = text.replaceAll(RegExp(r'^\s*#{1,6}\s+', multiLine: true), '');
 
     // 3. Gỡ bỏ markdown bold/italic: **text**, *text*, __text__, _text_
-    text = text.replaceAllMapped(RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '');
-    text = text.replaceAllMapped(RegExp(r'__([^_]+)__'), (m) => m.group(1) ?? '');
-    text = text.replaceAllMapped(RegExp(r'\*([^*]+)\*'), (m) => m.group(1) ?? '');
+    text = text.replaceAllMapped(
+      RegExp(r'\*\*([^*]+)\*\*'),
+      (m) => m.group(1) ?? '',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'__([^_]+)__'),
+      (m) => m.group(1) ?? '',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'\*([^*]+)\*'),
+      (m) => m.group(1) ?? '',
+    );
     text = text.replaceAllMapped(RegExp(r'_([^_]+)_'), (m) => m.group(1) ?? '');
 
     // 4. Gỡ bỏ blockquote markdown: > ở đầu dòng

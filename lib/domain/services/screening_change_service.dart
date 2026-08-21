@@ -11,7 +11,8 @@ class ScreeningChangeService {
 
   void addListener(VoidCallback listener) => _revision.addListener(listener);
 
-  void removeListener(VoidCallback listener) => _revision.removeListener(listener);
+  void removeListener(VoidCallback listener) =>
+      _revision.removeListener(listener);
 
   void notifyScreeningSaved() => _revision.value++;
 }

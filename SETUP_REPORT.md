@@ -746,3 +746,90 @@ TPM) verify riêng: 5/5 thành công, ~0.55-0.8s/lần.
 
 26. `635cf37` — Phần 2: bỏ màn xác nhận trung gian, tự động phân tích khi vào màn.
 27. `83ef012` — Phần 3: điều tra + xử lý nguyên nhân AI chậm/không ra kết quả.
+
+## Đợt 9 — Sửa lỗi "setState() callback argument returned a Future" (nhánh N=7)
+
+Sau Đợt 8 (tự động tổng hợp khi vào màn), nhánh N=7 báo lỗi runtime
+`setState() callback argument returned a Future` khi tự động tổng hợp.
+
+### Nguyên nhân gốc — xác định bằng đọc code thật
+
+Dòng gây lỗi, tại `overview_portrait_page.dart`, trong `_compute()` (đã
+sửa ở Đợt 8 để tránh gọi trùng AI 2 lần):
+
+```dart
+setState(() => _stateFuture = Future.value(newState));
+```
+
+Đây KHÔNG phải `setState(() async {...})` như nghi vấn ban đầu trong yêu
+cầu (đã rà soát toàn bộ file, không có `setState` nào đánh dấu `async`),
+mà là 1 biến thể tinh vi hơn: closure dạng arrow `() => x = y`. Trong
+Dart, giá trị của 1 BIỂU THỨC GÁN (`x = y`) chính là giá trị vế phải
+(`y`) — nên closure `() => _stateFuture = Future.value(newState)` có
+kiểu trả về suy ra là `Future<_LoadedState>`, KHÔNG PHẢI `void`.
+`State.setState()` của Flutter kiểm tra runtime (qua `assert`, gọi
+`fn()` rồi xét `result is Future`) và ném đúng lỗi này khi phát hiện.
+
+Đối chiếu `_reload()` (dòng 95-98, nhánh N<7 dùng lại hàm này, hoạt động
+đúng) cho thấy khác biệt mấu chốt: `_reload()` dùng BLOCK `{ }`:
+```dart
+setState(() {
+  _stateFuture = _load();
+});
+```
+Thân hàm dạng block, câu lệnh gán kết thúc bằng `;`, không có `return` —
+closure trả về `null`/`void` implicit, KHÔNG lỗi. Đây chính là mẫu đúng
+đã dùng làm tham khảo để sửa.
+
+**Đã chứng minh nguyên nhân bằng test tái hiện** (viết tạm, chạy xác
+nhận, rồi xoá — không giữ lại trong repo): dựng 1 `StatefulWidget` tối
+giản với 2 hàm `brokenPattern` (y hệt dòng lỗi gốc) và `fixedPattern` (y
+hệt cách đã sửa), dùng `flutter_test`. Kết quả: `brokenPattern` ném đúng
+`FlutterError` chứa chuỗi "setState() callback argument returned a
+Future"; `fixedPattern` chạy bình thường, không lỗi — xác nhận 100% đúng
+cơ chế gây lỗi trước khi kết luận đã sửa đúng.
+
+### Cách đã sửa
+
+Đổi thành block, đúng pattern `_reload()` đã dùng:
+```dart
+setState(() {
+  _stateFuture = Future.value(newState);
+});
+```
+Thêm comment giải thích rõ lý do PHẢI dùng block (không phải arrow) tại
+đúng vị trí, để tránh lặp lại lỗi này khi sửa code sau này.
+
+### Rà soát toàn bộ file — không còn lỗi cùng loại
+
+Kiểm tra lại TẤT CẢ lệnh gọi `setState()` trong `overview_portrait_page.dart`
+(9 lệnh gọi, tại `_reload()`, `_compute()`, `_retryDescription()`):
+- Không còn `setState(() async ...)` nào.
+- Không còn closure arrow nào gán giá trị `Future` (chỉ dòng đã sửa ở
+  trên có vấn đề này).
+- Mọi lệnh `setState()` xảy ra SAU 1 `await` đều có `if (!mounted) return;`
+  hoặc `if (mounted) setState(...)` bảo vệ ngay trước đó (dòng 174, 180,
+  183, 186 trong `_compute()`; dòng 205, 209 trong `_retryDescription()`).
+- `_reload()` chỉ được gọi từ `initState()` (luôn mounted) và từ trong
+  khối đã kiểm tra `mounted` ngay trước đó ở `_retryDescription()`.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues trong `lib/`.
+- `flutter test`: 30/30 PASS (bộ test chính thức), không regression.
+- Test tái hiện lỗi (tạm, đã xoá sau khi xác nhận): PASS cả 2 case (pattern
+  cũ ném đúng lỗi, pattern mới không ném lỗi) — xác nhận đúng nguyên nhân
+  và đúng cách sửa bằng cơ chế thật của Flutter (không phải suy đoán).
+- **Chưa verify được trên thiết bị/emulator thật** (làm đủ 7/7 lĩnh vực,
+  vào màn Chân dung toàn cảnh nhiều lần liên tiếp, bấm "Thử lại") — môi
+  trường thực thi không có thiết bị/emulator. Tuy nhiên đây là lỗi CÚ PHÁP
+  xác định (không phải lỗi ngẫu nhiên/phụ thuộc mạng như Đợt 8) — 1 khi
+  đã đổi đúng sang dạng block, closure không còn khả năng trả về `Future`
+  trong BẤT KỲ lần gọi nào nữa, nên test tái hiện ở trên đã đủ chứng minh
+  triệt để, không cần lặp lại nhiều lần như kiểm thử độ tin cậy mạng.
+  Người dùng vẫn nên tự xác nhận 1 lần trên máy để chắc chắn không có yếu
+  tố nào khác ngoài phạm vi đã rà soát.
+
+### Commit của Đợt 9
+
+28. `0072e0e` — fix: sửa lỗi setState() nhận callback async trong Chân dung toàn cảnh (nhánh N=7).

@@ -107,8 +107,9 @@ class _AiChatPageState extends State<AiChatPage> {
                         child: Text(
                           'AI đang chưa kết nối được, xin vui lòng thử lại sau.',
                           style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                           ),
                         ),
                       ),
@@ -263,7 +264,7 @@ class _ConversationBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(conversation.answer),
+                    IrisParagraph(conversation.answer),
                     const SizedBox(height: IrisSpacing.xxs),
                     Text(
                       'Trạng thái ${conversation.state}',

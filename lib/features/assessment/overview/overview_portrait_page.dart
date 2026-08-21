@@ -125,10 +125,29 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       );
     }
 
+    final hasSummaryAlready =
+        await _summaryRepository.getLatestForChild(widget.child.id) != null;
+    if (!hasSummaryAlready) {
+      // Lần đầu vào màn khi đã đủ 7/7 nhưng CHƯA từng tổng hợp — tự động
+      // gắn nhãn + tính tier ngay, không đợi bấm nút. Nút "Tính toán lại"
+      // (`_compute`) chỉ còn dùng để CHỦ ĐỘNG làm mới sau khi đã có sẵn kết
+      // quả (VD sau khi sửa mô tả) — 2 việc khác nhau, không gộp chung.
+      await _overviewRepository.labelAllDomains(widget.child);
+      await _overviewRepository.computeAndSaveOverview(widget.child);
+    }
+    return _fetchReadyState(doneDomains.length);
+  }
+
+  /// Đọc lại nhãn + kết quả tổng hợp MỚI NHẤT từ DB — dùng CHUNG cho cả
+  /// `_load()` (sau khi tự động tính lần đầu) và `_compute()` (sau khi
+  /// người dùng chủ động bấm "Tính toán lại"/"Thử lại"), KHÔNG tự ý gọi
+  /// AI ở đây — tách biệt bước "đọc" khỏi bước "tính" để `_compute()`
+  /// không vô tình kích hoạt tính lại LẦN 2 qua `_load()`.
+  Future<_LoadedState> _fetchReadyState(int doneDomainCount) async {
     final labels = await _labelRepository.getLatestForChild(widget.child.id);
     final summary = await _summaryRepository.getLatestForChild(widget.child.id);
     return _LoadedState(
-      doneDomainCount: doneDomains.length,
+      doneDomainCount: doneDomainCount,
       labels: labels,
       summary: summary,
     );
@@ -153,7 +172,13 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       await _overviewRepository.labelAllDomains(widget.child);
       await _overviewRepository.computeAndSaveOverview(widget.child);
       if (!mounted) return;
-      _reload();
+      // Đọc lại trực tiếp qua `_fetchReadyState` (KHÔNG gọi `_reload()` ->
+      // `_load()`) — nếu đi qua `_load()`, hàm đó sẽ thấy vẫn có thể chưa
+      // có summary (VD do insufficientData) và tự động tính lại LẦN NỮA,
+      // gọi trùng AI 2 lần cho đúng 1 lần bấm nút.
+      final newState = await _fetchReadyState(domains.length);
+      if (!mounted) return;
+      setState(() => _stateFuture = Future.value(newState));
     } catch (e) {
       if (!mounted) return;
       setState(() => _computeError = 'Lỗi khi tổng hợp: $e');
@@ -220,7 +245,23 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
             );
           }
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Đang phân tích dữ liệu bằng AI, quá trình này có thể '
+                      'mất vài giây...',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final state = snapshot.data!;
           return ListView(
@@ -385,11 +426,19 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
 
   Widget _buildReady(_LoadedState state) {
     if (state.summary == null) {
+      // Tới được đây nghĩa là hệ thống ĐÃ TỰ ĐỘNG thử tổng hợp khi vào màn
+      // (xem `_load()`) nhưng chưa ra kết quả — thường do một số lĩnh vực
+      // chưa gắn nhãn được vì lỗi tạm thời khi gọi AI (VD giới hạn tốc độ
+      // Groq), KHÔNG PHẢI vì chưa từng thử. Nút bên dưới là THỬ LẠI, không
+      // phải lần đầu tổng hợp.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Đã có đủ mô tả cho cả 7 lĩnh vực. Bấm nút bên dưới để tổng hợp Chân dung toàn cảnh.',
+          const IrisParagraph(
+            'Chưa thể tính mức tổng quan lúc này — hệ thống đã thử tự động '
+            'nhưng một số lĩnh vực chưa gắn nhãn được, thường do lỗi tạm '
+            'thời khi gọi AI (VD mạng chậm hoặc giới hạn tốc độ). Bấm nút '
+            'bên dưới để thử lại.',
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -400,7 +449,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                     width: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Tổng hợp Chân dung toàn cảnh'),
+                : const Text('Thử lại'),
           ),
         ],
       );

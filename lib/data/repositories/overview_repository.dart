@@ -344,7 +344,7 @@ class OverviewRepository {
       final response = await _groqApiClient.generate(
         systemPrompt: systemPrompt,
         userQuestion:
-            'Hãy viết đoạn văn xuôi tổng hợp bức tranh chân dung biểu hiện của trẻ theo đúng các nguyên tắc trên.',
+            'Hãy diễn đạt lại đúng nội dung mô tả ở trên thành 1 đoạn văn ngắn gọn, theo đúng các nguyên tắc trên — không thêm chi tiết nào ngoài dữ liệu đã cho.',
       );
       final trimmed = response.trim();
       return trimmed.isNotEmpty ? trimmed : null;

@@ -138,16 +138,20 @@ CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS):
       '''
 $_baseIdentity
 
-NHIỆM VỤ: Viết một đoạn văn xuôi tổng hợp (độ dài khoảng 100-180 từ) phác hoạ bức tranh biểu hiện ("Chân dung biểu hiện") về sự phát triển của trẻ $childName, dựa CHỈ trên $doneDomainCount lĩnh vực đã có mô tả dưới đây. Trẻ CHƯA hoàn thành đủ 7 lĩnh vực đánh giá, nên đây chỉ là bức tranh từng phần, chưa phải tổng quan đầy đủ.
+NHIỆM VỤ: DIỄN ĐẠT LẠI (paraphrase) — KHÔNG PHẢI sáng tác — đúng nội dung mô tả của $doneDomainCount lĩnh vực dưới đây về trẻ $childName, gộp thành 1 đoạn văn xuôi ngắn gọn. Đây KHÔNG phải bài viết mô tả chân dung hoàn chỉnh — trẻ CHƯA hoàn thành đủ 7 lĩnh vực, nên chỉ tổng hợp đúng những gì đã có, không cố viết cho "đầy đủ" hay "tròn trịa".
 
-THÔNG TIN ĐÁNH GIÁ $doneDomainCount LĨNH VỰC ĐÃ CÓ MÔ TẢ:
+THÔNG TIN ĐÁNH GIÁ $doneDomainCount LĨNH VỰC ĐÃ CÓ MÔ TẢ (đây là TOÀN BỘ dữ liệu bạn được phép dùng):
 $domainsSummaryText
 
-CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS):
-1. Chỉ được mô tả và tổng hợp dựa trên đúng $doneDomainCount lĩnh vực có dữ liệu ở trên, TUYỆT ĐỐI không thêm thông tin ngoài dữ liệu, không tự suy diễn nguyên nhân.
-2. TUYỆT ĐỐI KHÔNG suy diễn, không generalize, không đưa ra bất kỳ nhận định nào về các lĩnh vực CHƯA có dữ liệu trong danh sách trên — chỉ mô tả đúng các lĩnh vực đã liệt kê, không đoán trước biểu hiện ở lĩnh vực còn thiếu.
-3. TUYỆT ĐỐI KHÔNG đưa ra bất kỳ nhận định về "mức độ tổng quan"/"mức độ phát triển chung" của trẻ — việc này CHƯA thể xác định khi chưa đủ 7/7 lĩnh vực, không được ngụ ý hay ám chỉ dưới bất kỳ hình thức nào (kể cả gợi ý qua ngôn từ tích cực/tiêu cực).
-4. KHÔNG được đưa ra kết luận chẩn đoán y khoa, KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định về tình trạng của trẻ — chỉ mô tả những biểu hiện quan sát được một cách khách quan.
-5. Sử dụng văn phong trung lập, nhẹ nhàng, đồng cảm và dễ hiểu đối với phụ huynh (không dùng thuật ngữ y khoa phức tạp).
-6. BẮT BUỘC kết thúc đoạn văn bằng một câu nhắc nhở: Đây mới là bức tranh dựa trên $doneDomainCount/7 lĩnh vực đã đánh giá, phụ huynh nên tiếp tục hoàn thành các lĩnh vực còn lại để có bức tranh tổng quan đầy đủ hơn.''';
+CÁC NGUYÊN TẮC BẮT BUỘC (GUARDRAILS — VI PHẠM BẤT KỲ ĐIỀU NÀO ĐỀU KHÔNG CHẤP NHẬN ĐƯỢC):
+1. CHỈ được diễn đạt lại đúng những câu chữ, sự việc đã có trong "Mô tả người dùng" ở trên. TUYỆT ĐỐI KHÔNG thêm bất kỳ chi tiết, hành vi, kỹ năng, hay thông tin nào không có trong đó — kể cả những chi tiết nghe "hợp lý"/"thường gặp ở độ tuổi này".
+2. TUYỆT ĐỐI KHÔNG tự bịa ví dụ minh hoạ hay tình huống cụ thể không có trong dữ liệu (VD KHÔNG được viết kiểu "khi được hỏi... trẻ sẽ...", "trong lúc chơi xếp hình/mô hình...", "mỗi khi..." — nếu dữ liệu gốc không có chính tình huống đó).
+3. TUYỆT ĐỐI KHÔNG suy đoán, không generalize, không mô tả bất kỳ điều gì về các lĩnh vực CHƯA có dữ liệu ở trên.
+4. TUYỆT ĐỐI KHÔNG đưa ra bất kỳ nhận định về "mức độ tổng quan"/"mức độ phát triển chung" của trẻ — việc này CHƯA thể xác định khi chưa đủ 7/7 lĩnh vực, không được ngụ ý hay ám chỉ dưới bất kỳ hình thức nào (kể cả gợi ý qua ngôn từ tích cực/tiêu cực).
+5. KHÔNG được đưa ra kết luận chẩn đoán y khoa, KHÔNG dùng từ "tự kỷ" hoặc "rối loạn" như một khẳng định về tình trạng của trẻ.
+6. ĐỘ DÀI PHẢI TỈ LỆ THUẬN với lượng dữ liệu gốc — KHÔNG có yêu cầu số từ tối thiểu. Nếu mô tả gốc chỉ là 1 câu ngắn, câu trả lời của bạn CŨNG PHẢI ngắn tương ứng (có thể chỉ 1-2 câu) — TUYỆT ĐỐI không kéo dài bằng nội dung tự thêm để "cho đủ ý".
+7. Văn phong trung lập, nhẹ nhàng, dễ hiểu đối với phụ huynh (không dùng thuật ngữ y khoa phức tạp).
+8. BẮT BUỘC kết thúc đoạn văn bằng đúng câu này: "Đây mới là bức tranh dựa trên $doneDomainCount/7 lĩnh vực đã đánh giá, phụ huynh nên tiếp tục hoàn thành các lĩnh vực còn lại để có bức tranh tổng quan đầy đủ hơn."
+
+Trước khi trả lời, tự kiểm tra: mỗi câu bạn viết có thể chỉ ra được đúng câu chữ/ý tương ứng trong "Mô tả người dùng" ở trên không? Nếu không, hãy xoá câu đó.''';
 }

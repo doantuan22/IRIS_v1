@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/domains.dart';
 import '../../../core/theme/iris_assets.dart';
 import '../../../core/theme/iris_theme.dart';
+import '../../../core/utils/retry_with_backoff.dart';
 import '../../../core/widgets/iris_ui.dart';
 import '../../../data/local/database.dart';
 import '../../../data/repositories/assessment_repository.dart';
@@ -115,9 +116,33 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       // Đường dẫn ĐỘC LẬP với luồng 7/7 bên dưới — xem
       // `OverviewRepository.generatePartialSummaryDescription`: KHÔNG gắn
       // nhãn, KHÔNG tính tier, KHÔNG lưu DB, chỉ sinh văn bản theo đúng N
-      // lĩnh vực đã có mô tả.
-      final partialSummary = await _overviewRepository
-          .generatePartialSummaryDescription(widget.child);
+      // lĩnh vực đã có mô tả. Hàm này KHÔNG BAO GIỜ ném lỗi (tự bắt lỗi nội
+      // bộ, trả `null` khi thất bại) nên với nhánh N<7, `null` LUÔN LUÔN có
+      // nghĩa "gọi AI thất bại" (không có trường hợp "null hợp lệ" nào
+      // khác) — an toàn để coi `null` là tín hiệu retry.
+      String? partialSummary;
+      try {
+        partialSummary = await retryWithBackoff<String>(
+          () async {
+            final result = await _overviewRepository
+                .generatePartialSummaryDescription(widget.child);
+            if (result == null) {
+              throw Exception(
+                'AI chưa trả về được mô tả tổng hợp (Chân dung từng phần)',
+              );
+            }
+            return result;
+          },
+          onAttemptFailed: (attempt, error) => debugPrint(
+            '[ChanDungToanCanh][N<7] Lần thử $attempt thất bại: $error',
+          ),
+        );
+      } catch (_) {
+        // Hết tối đa số lần thử tự động — giữ `null`, UI (`_buildPartial`)
+        // hiện thông báo + nút "Tổng hợp lại" làm phương án cuối, không
+        // khác gì hành vi trước khi có cơ chế tự động thử lại.
+        partialSummary = null;
+      }
       return _LoadedState(
         doneDomainCount: doneDomains.length,
         labels: const {},
@@ -132,10 +157,64 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       // gắn nhãn + tính tier ngay, không đợi bấm nút. Nút "Tính toán lại"
       // (`_compute`) chỉ còn dùng để CHỦ ĐỘNG làm mới sau khi đã có sẵn kết
       // quả (VD sau khi sửa mô tả) — 2 việc khác nhau, không gộp chung.
-      await _overviewRepository.labelAllDomains(widget.child);
-      await _overviewRepository.computeAndSaveOverview(widget.child);
+      //
+      // Bắt lỗi ở đây (giống nhánh N<7) thay vì để ném ra ngoài `_load()`
+      // — nếu để lộ ra `snapshot.hasError`, UI sẽ hiện nguyên văn
+      // `e.toString()` (rò rỉ chi tiết kỹ thuật ra người dùng cuối). Hết
+      // 10 lần vẫn thất bại thì bỏ qua, để `_fetchReadyState` đọc lại thấy
+      // `summary == null` — UI (`_buildReady`) đã có sẵn thông báo rõ ràng
+      // + nút "Thử lại" (gọi `_compute()`, cũng tự động thử lại 10 lần).
+      try {
+        await _computeOverviewWithRetry();
+      } catch (e) {
+        debugPrint(
+          '[ChanDungToanCanh][N=7] Hết số lần thử tự động, vẫn lỗi: $e',
+        );
+      }
     }
     return _fetchReadyState(doneDomains.length);
+  }
+
+  /// Gắn nhãn 7/7 lĩnh vực + tính tier ĐÚNG 1 LẦN — dùng làm [action] cho
+  /// [retryWithBackoff]. Ném lỗi khi kết quả CHƯA đáng tin (để kích hoạt
+  /// thử lại), phân biệt 2 trường hợp `insufficientData`:
+  /// - Có ít nhất 1 lĩnh vực gắn nhãn `chua_du_du_lieu` với đúng lý do
+  ///   [domainOverviewLabelSystemErrorReason] (LỖI HỆ THỐNG khi gọi AI —
+  ///   mạng, timeout, rate limit...) → TẠM THỜI, NÊN thử lại.
+  /// - Ngược lại (AI thật sự đánh giá thiếu dữ liệu tham khảo phù hợp cho
+  ///   đủ số lĩnh vực) → kết quả ỔN ĐỊNH, thử lại cũng ra như vậy, KHÔNG
+  ///   ném lỗi (tránh chờ vô ích tới hết 10 lần cho 1 kết quả sẽ không đổi).
+  Future<void> _computeOverviewOnce() async {
+    final labels = await _overviewRepository.labelAllDomains(widget.child);
+    final result = await _overviewRepository.computeAndSaveOverview(
+      widget.child,
+    );
+    if (result.status == OverviewComputationStatus.computed) return;
+
+    final hasSystemErrorFallback = labels.any(
+      (l) => l.lyDoNganGon == domainOverviewLabelSystemErrorReason,
+    );
+    if (hasSystemErrorFallback) {
+      throw Exception(
+        'Một số lĩnh vực gắn nhãn thất bại do lỗi hệ thống tạm thời '
+        '(status=${result.status})',
+      );
+    }
+    // insufficientData nhưng KHÔNG do lỗi hệ thống — kết quả hợp lệ, không
+    // retry, để `_fetchReadyState` đọc lại và UI hiện đúng trạng thái này.
+  }
+
+  /// [retryWithBackoff] bọc quanh [_computeOverviewOnce] — dùng chung cho
+  /// cả lần tự động đầu tiên (`_load()`) và lần bấm "Tính toán lại"/
+  /// "Thử lại" thủ công (`_compute()`), đảm bảo CẢ 2 đường vào đều có cùng
+  /// cơ chế thử lại tối đa 10 lần, không phải chỉ thử 1 lần khi bấm nút.
+  Future<void> _computeOverviewWithRetry() {
+    return retryWithBackoff<void>(
+      _computeOverviewOnce,
+      onAttemptFailed: (attempt, error) => debugPrint(
+        '[ChanDungToanCanh][N=7] Lần thử $attempt thất bại: $error',
+      ),
+    );
   }
 
   /// Đọc lại nhãn + kết quả tổng hợp MỚI NHẤT từ DB — dùng CHUNG cho cả
@@ -169,8 +248,7 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       _computeError = null;
     });
     try {
-      await _overviewRepository.labelAllDomains(widget.child);
-      await _overviewRepository.computeAndSaveOverview(widget.child);
+      await _computeOverviewWithRetry();
       if (!mounted) return;
       // Đọc lại trực tiếp qua `_fetchReadyState` (KHÔNG gọi `_reload()` ->
       // `_load()`) — nếu đi qua `_load()`, hàm đó sẽ thấy vẫn có thể chưa
@@ -189,7 +267,14 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _computeError = 'Lỗi khi tổng hợp: $e');
+      debugPrint('[ChanDungToanCanh][N=7] _compute() thất bại hẳn: $e');
+      // Không hiện nguyên văn `$e` ra UI — sau khi đã tự động thử lại tối
+      // đa (xem `retryWithBackoff`), chi tiết kỹ thuật/loại lỗi CHỈ log nội
+      // bộ, người dùng chỉ cần biết đã thử và chưa thành công.
+      setState(
+        () => _computeError =
+            'Chưa thể tổng hợp Chân dung toàn cảnh lúc này. Vui lòng thử lại sau.',
+      );
     } finally {
       if (mounted) setState(() => _computing = false);
     }
@@ -262,8 +347,9 @@ class _OverviewPortraitPageState extends State<OverviewPortraitPage> {
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
                     Text(
-                      'Đang phân tích dữ liệu bằng AI, quá trình này có thể '
-                      'mất vài giây...',
+                      'Đang phân tích dữ liệu bằng AI. Quá trình này thường '
+                      'mất vài giây, nhưng có thể lâu hơn một chút nếu mạng '
+                      'chậm — xin vui lòng đợi.',
                       textAlign: TextAlign.center,
                     ),
                   ],

@@ -247,7 +247,7 @@ class OverviewRepository {
         'Lỗi khi gắn nhãn lĩnh vực "$linhVuc" cho trẻ ${child.id}, fallback "$labelChuaDuDuLieu": $e',
       );
       nhan = labelChuaDuDuLieu;
-      lyDoNganGon = 'Không gắn nhãn được do lỗi hệ thống, cần thử lại.';
+      lyDoNganGon = domainOverviewLabelSystemErrorReason;
     }
 
     return _labelRepository.save(

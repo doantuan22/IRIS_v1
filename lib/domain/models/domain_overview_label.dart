@@ -11,6 +11,16 @@ const Set<String> validDomainOverviewLabels = {
   labelChuaDuDuLieu,
 };
 
+/// Giá trị CỐ ĐỊNH của [DomainOverviewLabel.lyDoNganGon] khi
+/// `OverviewRepository.labelDomain` fallback về [labelChuaDuDuLieu] do LỖI
+/// HỆ THỐNG (mạng, timeout, rate limit, parse response lỗi...) — PHÂN BIỆT
+/// với trường hợp AI thật sự đánh giá "chưa đủ dữ liệu tham khảo" (khi đó
+/// `lyDoNganGon` là văn bản AI tự sinh, khác chuỗi này) hoặc trẻ chưa có mô
+/// tả cho lĩnh vực (`lyDoNganGon` = `null`). Dùng để nhận diện lỗi TẠM THỜI
+/// đáng thử lại tự động — xem `OverviewPortraitPage`.
+const String domainOverviewLabelSystemErrorReason =
+    'Không gắn nhãn được do lỗi hệ thống, cần thử lại.';
+
 /// Model nhãn tổng quan của 1 lĩnh vực, ánh xạ tới bảng
 /// `domain_overview_labels`. Mỗi lần gắn nhãn tạo 1 dòng MỚI — bản ghi này
 /// là 1 dòng lịch sử tại thời điểm [computedAt], không phải trạng thái duy

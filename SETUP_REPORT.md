@@ -502,3 +502,106 @@ nguyên 100%, không đụng tới.
 21. `c6142de` — B2: xóa tuổi thừa + viết lại mô tả sàng lọc + canh 2 lề.
 22. `89bc03f` — B3: nút "Xem chân dung" luôn hiện, mờ/sáng theo doneCount.
 23. `d43124a` — B4: tách tổng hợp chân dung N lĩnh vực khỏi tính tier.
+
+## Đợt 7 — Sửa icon AI chưa tách nền + siết guardrail chân dung N<7 khỏi thêu dệt
+
+Sau khi xem UI thật, phát hiện 2 vấn đề: icon AI ở màn Hỏi đáp AI có
+viền/nền lạ, và văn bản "Chân dung dựa trên N/7 lĩnh vực" (tính năng vừa
+thêm ở Đợt 6/B4) đang trả lời lan man, thêu dệt chi tiết/tình huống không
+có trong mô tả thật của người dùng — vi phạm guardrail "không suy diễn"
+đã đặt ra ở B4.
+
+### Phần 1 — Icon AI chưa tách nền + canh lề bong bóng chat
+
+**Audit nguyên nhân**: `IrisAssetIcon` (widget hiển thị icon,
+`core/widgets/iris_ui.dart`) chỉ là `Image.asset(...)` thuần, KHÔNG có
+`Container`/`BoxDecoration` bọc ngoài — loại trừ nguyên nhân code render.
+Kiểm tra trực tiếp file `assets/images/icons/ai_chat_v2.png`
+(`file <path>`) xác nhận: **PNG RGB 8-bit, KHÔNG có kênh alpha** — 4 góc
+ảnh (ngoài hình icon bo góc) được xuất bằng màu đen đặc (~`rgb(0,0,0)`)
+thay vì trong suốt. Đây là lỗi ở khâu xuất file ảnh gốc, không phải lỗi
+code.
+
+**Cách sửa**: viết script Python (Pillow) flood-fill từ 4 biên ảnh, gộp
+mọi pixel "gần đen" (tổng kênh màu < 130) liên thông với biên thành
+`alpha=0`, giữ nguyên phần icon (bao gồm 2 mắt tối màu ở giữa — KHÔNG bị
+xoá vì không liên thông với vùng nền qua đường biên). Kết quả:
+`assets/images/icons/ai_chat_v2.png` giờ là PNG RGBA, ~187k/1.57M pixel
+(nền 4 góc) chuyển trong suốt, icon giữ nguyên hình dạng/màu sắc gốc. Icon
+này dùng chung ở cả `ai_chat_page.dart` (bong bóng trả lời) và
+`profile_detail_page.dart` — cả 2 nơi cùng được sửa nhờ sửa đúng 1 file
+asset.
+
+Áp dụng `IrisParagraph` (đã có sẵn từ Đợt 6/B2) cho
+`Text(conversation.answer)` trong `_ConversationBubble` — canh 2 lề đồng
+bộ với các đoạn mô tả dài khác trong app.
+
+### Phần 2 — Guardrail chân dung N<7 (thêu dệt chi tiết bịa)
+
+**Audit Bước 1 — xác định nguyên nhân trước khi sửa**:
+- Đọc lại `OverviewRepository.generatePartialSummaryDescription()`: xác
+  nhận hàm này ĐỌC THẲNG từ `assessments` (content_type='mo_ta'), KHÔNG
+  gọi `labelDomain`/`_expertKnowledgeRepository`/`_vectorSearchService` ở
+  bất kỳ đâu — **loại trừ hoàn toàn** nghi vấn "lẫn dữ liệu tham khảo
+  chuyên môn (`expert_knowledge_chunks`) vào ngữ cảnh cá nhân của trẻ".
+- Đọc lại `OverviewPortraitPage._load()`: xác nhận nhánh `1<=N<7` chỉ gọi
+  `generatePartialSummaryDescription`, KHÔNG có đường dẫn nào gọi nhầm
+  `computeAndSaveOverview`/`labelAllDomains` (2 hàm đó chỉ được gọi từ
+  `_compute()`, vốn chỉ gắn với nút ở nhánh N=7) — loại trừ nghi vấn code
+  gọi nhầm pipeline.
+- Kết luận: nguyên nhân gốc nằm ở **thiết kế prompt**
+  (`buildPartialOverviewPortraitSummaryPrompt`), không phải rò rỉ dữ liệu
+  hay lỗi gọi hàm:
+  1. Yêu cầu cứng "độ dài khoảng 100-180 từ" buộc model phải "bù đắp" bằng
+     chi tiết tự thêm khi dữ liệu gốc chỉ là 1 câu ngắn.
+  2. Khung nhiệm vụ "viết một đoạn văn xuôi... phác hoạ bức tranh" mời gọi
+     văn phong sáng tác/diễn giải mở rộng, thay vì diễn đạt lại đúng dữ
+     liệu.
+  3. Guardrail cũ chỉ nói chung chung "không thêm thông tin ngoài dữ
+     liệu", không cấm rõ ràng việc bịa ví dụ minh hoạ/tình huống cụ thể —
+     đúng loại lỗi quan sát được trong thực tế ("khi được hỏi... trẻ sẽ
+     nhanh chóng chỉ ra tên...", "trong trò chơi mô hình hoặc đồ chơi xếp
+     hình...").
+
+**Bước 2 — Sửa**: viết lại toàn bộ
+`buildPartialOverviewPortraitSummaryPrompt`:
+- Đổi khung nhiệm vụ thành "DIỄN ĐẠT LẠI (paraphrase) — KHÔNG PHẢI sáng
+  tác".
+- Guardrail #1-2 mới: cấm rõ ràng, cụ thể việc thêm chi tiết/hành vi/kỹ
+  năng không có trong dữ liệu, kèm ví dụ phản diện đúng loại lỗi đã quan
+  sát ("khi được hỏi...", "trong lúc chơi xếp hình/mô hình...").
+- Guardrail #6 mới: bỏ yêu cầu số từ tối thiểu cứng — độ dài PHẢI tỉ lệ
+  thuận với dữ liệu gốc, cho phép chỉ 1-2 câu nếu mô tả gốc ngắn, cấm rõ
+  "kéo dài bằng nội dung tự thêm để cho đủ ý".
+- Thêm bước tự kiểm tra cuối prompt: mỗi câu viết ra phải truy được về
+  đúng câu chữ/ý trong "Mô tả người dùng" đã cho.
+- Đồng bộ `userQuestion` ở lệnh gọi Groq trong `overview_repository.dart`
+  theo đúng khung "diễn đạt lại" mới (trước đó vẫn dùng chữ "viết đoạn văn
+  xuôi tổng hợp bức tranh...", cùng loại ngôn từ mời gọi sáng tác).
+- Có cân nhắc thêm `max_tokens` ở tầng gọi Groq API để giới hạn cứng độ
+  dài, nhưng **quyết định KHÔNG làm** — `GroqApiClient.generate()` là hạ
+  tầng dùng chung cho nhiều luồng khác (chat, gắn nhãn lĩnh vực, tổng hợp
+  N=7), sửa signature ở đó sẽ vượt phạm vi "chỉ prompt partial N<7" đã
+  yêu cầu và tăng rủi ro ảnh hưởng luồng khác không liên quan.
+- Không đụng `overview_tier_calculator.dart`, `computeAndSaveOverview`,
+  `labelAllDomains`, hay bộ sàng lọc/7 lĩnh vực.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues trong `lib/` (3 info pre-existing ở
+  `scripts/` không liên quan).
+- `flutter test`: 30/30 PASS, không regression.
+- **Chưa verify được bằng ảnh chụp màn hình thật/gọi Groq API thật** trong
+  phiên làm việc này — môi trường thực thi không có thiết bị/emulator và
+  không có kết nối gọi API AI thật để kiểm tra trực tiếp câu trả lời sau
+  khi sửa prompt. Cần người thực hiện tự verify trên máy: (1) icon AI
+  không còn viền đen, text trả lời canh đều 2 bên; (2) nhập 1 mô tả ngắn
+  cụ thể cho 1 lĩnh vực, bấm "Xem chân dung", đối chiếu văn bản trả về chỉ
+  chứa đúng nội dung đã mô tả, không có ví dụ/tình huống bịa thêm; (3) lặp
+  lại với 1 mô tả rất ngắn (1 câu) để xác nhận AI không "bù đắp" cho đủ
+  dài.
+
+### Commit của Đợt 7
+
+24. `98cdd13` — Phần 1: tách nền icon AI + canh 2 lề bong bóng trả lời AI.
+25. `9e591e5` — Phần 2: siết guardrail chống thêu dệt cho chân dung N<7.

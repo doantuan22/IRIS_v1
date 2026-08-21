@@ -833,3 +833,122 @@ Kiểm tra lại TẤT CẢ lệnh gọi `setState()` trong `overview_portrait_p
 ### Commit của Đợt 9
 
 28. `0072e0e` — fix: sửa lỗi setState() nhận callback async trong Chân dung toàn cảnh (nhánh N=7).
+
+## Đợt 10 — Tự động thử lại tối đa 10 lần khi tổng hợp Chân dung toàn cảnh
+
+### Bước 1 — Audit hiện trạng trước khi sửa
+
+Đọc lại `OverviewPortraitPage` (code thật, sau Đợt 8/9):
+- **Cả 2 nhánh N=7 và N<7 đều chỉ thử ĐÚNG 1 LẦN** rồi dừng: N=7 gọi
+  `labelAllDomains` + `computeAndSaveOverview` 1 lần trong `_load()`;
+  N<7 gọi `generatePartialSummaryDescription` 1 lần. Thất bại thì set
+  state lỗi/`null` ngay, bắt người dùng tự bấm nút thủ công.
+- **Phân biệt lỗi "nên retry" vs "không nên retry"**: code TRƯỚC đợt này
+  KHÔNG hề phân biệt — cả 2 hàm gốc đều tự bắt MỌI exception nội bộ (mạng,
+  timeout, rate limit, parse lỗi) và fallback về kết quả "thất bại" một
+  cách im lặng (N<7 trả `null`; N=7 gắn nhãn `chua_du_du_lieu` rồi
+  `computeAndSaveOverview` trả status `insufficientData`) — **KHÔNG NÉM
+  EXCEPTION RA NGOÀI**. Đây là phát hiện quan trọng: 1 lớp retry kiểu
+  "bọc try/catch quanh lệnh gọi, retry khi bắt được exception" đơn thuần
+  SẼ KHÔNG HOẠT ĐỘNG cho trường hợp lỗi phổ biến nhất (rate limit) đã điều
+  tra ở Đợt 8, vì không có exception nào được ném ra để bắt — phải thiết
+  kế thêm logic phát hiện "thất bại kiểu business" (xem Bước 2).
+
+### Bước 2 — Thiết kế & triển khai
+
+**`lib/core/utils/retry_with_backoff.dart`** (hàm dùng chung MỚI):
+`retryWithBackoff<T>(action, {maxAttempts=10, initialDelay=1s, maxDelay=20s,
+onAttemptFailed})` — gọi `action()` tối đa 10 lần, exponential backoff
+giữa các lần thất bại: 1s, 2s, 4s, 8s, 16s, rồi giữ nguyên trần 20s cho 4
+lần chờ còn lại. **Tổng thời gian CHỜ tối đa giữa 10 lần thử (chưa tính
+thời gian gọi `action` mỗi lần) = 1+2+4+8+16+20+20+20+20 = 111 giây.**
+Hết 10 lần vẫn lỗi thì ném lại lỗi của lần cuối cho caller xử lý.
+`onAttemptFailed` chỉ dùng để log debug (`debugPrint`, chỉ chạy ở
+`kDebugMode`), KHÔNG cập nhật UI.
+
+**Phân biệt lỗi "nên retry" cho N=7** (phần thiết kế quan trọng nhất, giải
+quyết đúng phát hiện ở Bước 1): thêm hằng số
+`domainOverviewLabelSystemErrorReason` (`domain_overview_label.dart`) —
+giá trị CỐ ĐỊNH mà `labelDomain` gán cho `lyDoNganGon` CHỈ khi fallback do
+lỗi hệ thống (đối chiếu, KHÔNG dùng chuỗi này khi AI thật sự đánh giá
+"thiếu dữ liệu tham khảo" — trường hợp đó `lyDoNganGon` là văn bản AI tự
+sinh, khác hẳn). Hàm mới `_computeOverviewOnce()`
+(`overview_portrait_page.dart`): sau khi gắn nhãn + tính tier 1 lần, nếu
+status không phải `computed`, kiểm tra CÓ lĩnh vực nào mang đúng lý do lỗi
+hệ thống không — CÓ thì ném exception (kích hoạt retry qua
+`retryWithBackoff`); KHÔNG có (AI thật sự đánh giá thiếu dữ liệu tham
+khảo, ổn định, retry sẽ ra y hệt) thì KHÔNG ném, chấp nhận kết quả này
+ngay, tránh chờ vô ích tới hết 10 lần.
+
+Với N<7: `generatePartialSummaryDescription` không có khái niệm dữ liệu
+tham khảo chuyên môn nào cả (không gọi vector search/expert_knowledge),
+nên `null` LUÔN LUÔN đồng nghĩa "gọi AI thất bại" — không có vùng xám như
+N=7, chỉ cần coi `null` là tín hiệu retry (ném exception trong closure bọc
+quanh).
+
+**Áp dụng**: `_load()` (lần tự động đầu tiên, cả N=7 và N<7) và
+`_compute()` (nút "Tính toán lại"/"Thử lại" thủ công, N=7 — dùng CHUNG
+`_computeOverviewWithRetry()` với `_load()`, đúng yêu cầu "bấm thử lại thủ
+công cũng kích hoạt lại cơ chế 10 lần, không phải chỉ 1 lần nữa"); nút
+"Tổng hợp lại" (N<7) gọi `_reload()` → `_load()`, cũng tự động kích hoạt
+lại đúng cơ chế 10 lần.
+
+**UI trong lúc retry**: toàn bộ 10 lần thử xảy ra BÊN TRONG `_load()`/
+`_compute()`, TRƯỚC bất kỳ `setState()` nào cập nhật kết quả — nên
+`FutureBuilder`/nút loading chỉ hiện ĐÚNG 1 trạng thái xuyên suốt (spinner
++ text), không nhấp nháy đổi qua lỗi/loading theo từng lần thử nội bộ —
+tự nhiên đúng theo kiến trúc sẵn có, không cần thêm cờ trạng thái riêng.
+Cập nhật text loading: "Đang phân tích dữ liệu bằng AI. Quá trình này
+thường mất vài giây, nhưng có thể lâu hơn một chút nếu mạng chậm — xin
+vui lòng đợi." (không nêu số lần thử/con số giây cụ thể).
+
+**Không lộ chi tiết kỹ thuật ra UI**: sau khi hết 10 lần vẫn thất bại,
+nhánh N=7 trong `_load()` (lần tự động đầu) BẮT lỗi nội bộ (khác với thiết
+kế ban đầu định để lỗi ném ra `FutureBuilder.hasError` — đổi lại vì nhánh
+đó hiện nguyên văn `${snapshot.error}`, rò rỉ chi tiết kỹ thuật), để
+`_buildReady` hiện thông báo đã có sẵn từ Đợt 8 + nút "Thử lại". Sửa thêm
+`_compute()`'s catch: đổi từ `'Lỗi khi tổng hợp: $e'` (hiện nguyên exception)
+thành thông báo chung "Chưa thể tổng hợp Chân dung toàn cảnh lúc này. Vui
+lòng thử lại sau." — chi tiết `$e` giờ CHỈ còn trong `debugPrint`.
+
+### Bước 3 — Xử lý khi thất bại hẳn sau 10 lần
+
+Giữ nguyên tinh thần thông báo lỗi đã có từ Đợt 8 cho cả 2 nhánh (N=7:
+"Chưa thể tính mức tổng quan lúc này..." + nút "Thử lại"; N<7: "Chưa thể
+tạo mô tả tổng hợp bằng AI." + nút "Tổng hợp lại") — không đổi nội dung,
+chỉ đảm bảo các nút này gọi lại đúng hàm có tích hợp `retryWithBackoff`
+(xem Bước 2), nên bấm thủ công cũng tự động thử lại 10 lần, không phải
+chỉ 1 lần.
+
+### Kết quả kiểm tra
+
+- `flutter analyze`: 0 issues trong `lib/`.
+- `flutter test`: **35/35 PASS** (30 test cũ + 5 test MỚI cho
+  `retryWithBackoff`, thêm vào `test/retry_with_backoff_test.dart` — GIỮ
+  LẠI trong repo vì đây là test chính thức cho 1 utility dùng chung mới,
+  khác các test tái hiện tạm ở đợt trước). 5 test mới xác nhận bằng phép
+  đo thời gian thực tế (`Stopwatch`, không giả lập): thành công ngay lần
+  đầu không delay; thất bại vài lần rồi thành công trả đúng kết quả +
+  đúng số lần gọi; thất bại hết `maxAttempts` ném lại đúng lỗi của lần
+  cuối; `maxAttempts=1` không retry; backoff tăng dần đúng và bị chặn
+  đúng ở `maxDelay` (đo được ≥75ms cho kịch bản 4 lần thử, initialDelay
+  20ms/maxDelay 30ms, khớp tính toán 20+30+30=80ms).
+- **Chưa verify lại bằng lệnh gọi API thật lần này** — logic gọi Groq/
+  NVIDIA thực tế (prompt, tham số `reasoning_effort`, endpoint) KHÔNG đổi
+  so với Đợt 8 (đã verify 5/5 lần thành công thật ở đó); đợt này CHỈ thêm
+  1 lớp bọc retry + logic phân loại lỗi ở tầng gọi, không đụng gì tới bản
+  thân lệnh gọi AI — nên không cần lặp lại đúng bài test 5-10 lần gọi API
+  thật (sẽ chỉ lặp lại đúng kết quả 5/5 thành công không cần retry, không
+  chứng minh thêm được cơ chế retry mới). Thay vào đó verify cơ chế retry
+  bằng test đơn vị xác định (deterministic), đo thời gian thật — phù hợp
+  hơn vì cơ chế retry đúng/sai không phụ thuộc mạng thật.
+- **Chưa verify được trên thiết bị/emulator thật** (bấm "Xem chân dung"
+  nhiều lần liên tiếp, quan sát UI không nhấp nháy lỗi giữa chừng) — môi
+  trường thực thi không có thiết bị/emulator. Logic UI (retry nằm hoàn
+  toàn trong `Future` trước khi `setState`) đã được kiểm tra kỹ bằng đọc
+  code + test đơn vị cho phần lõi, nhưng trải nghiệm UI thật (VD cảm giác
+  chờ 111s tối đa có ổn không) cần người dùng tự xác nhận trên máy.
+
+### Commit của Đợt 10
+
+29. `5891df0` — feat: tự động thử lại tối đa 10 lần khi tổng hợp Chân dung toàn cảnh, ẩn lỗi tạm thời khỏi UI.
